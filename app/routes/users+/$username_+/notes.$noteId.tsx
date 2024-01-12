@@ -206,7 +206,7 @@ export const meta: MetaFunction<
 			? data?.note.content.slice(0, 97) + '...'
 			: 'No content'
 	return [
-		{ title: `${noteTitle} | ${displayName}'s Notes | Epic Notes` },
+		{ title: `${noteTitle} | ${displayName}'s Notes | Clearwater Farms 1` },
 		{
 			name: 'description',
 			content: noteContentsSummary,

@@ -11,13 +11,15 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(cuid())
-  email    String  @unique
-  username String  @unique
-  name     String?
+  id         String  @id @default(cuid())
+  username   String  @unique
+  email      String? @unique
+  name       String?
+  orangewood String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  schedules UserSchedule[]
+  ports     Port[]
+  deposits  Deposit[]
 
   image       UserImage?
   password    Password?
@@ -25,12 +27,60 @@ model User {
   roles       Role[]
   sessions    Session[]
   connections Connection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Port {
+  id       String  @id @default(cuid())
+  ditch    Int
+  position Int
+  entry    String?
+
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+}
+
+model Deposit {
+  id String @id @default(cuid())
+
+  amount      Float
+  depositDate DateTime @default(now())
+  note        String
+
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Schedule {
+  id            String         @id
+  source        String
+  deadline      DateTime
+  userSchedules UserSchedule[]
+}
+
+model UserSchedule {
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+  scheduleId String
+
+  hours Decimal
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, scheduleId])
 }
 
 model Note {
   id      String @id @default(cuid())
   title   String
-  content String
+  content Bytes
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

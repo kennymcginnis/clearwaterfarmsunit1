@@ -14,7 +14,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			name: true,
 			username: true,
 			image: { select: { id: true } },
-			notes: { select: { id: true, title: true } },
+			notes: { select: { id: true, title: true, createdAt: true } },
 		},
 		where: { username: params.username },
 	})
@@ -46,7 +46,7 @@ export default function NotesRoute() {
 								className="h-16 w-16 rounded-full object-cover lg:h-24 lg:w-24"
 							/>
 							<h1 className="text-center text-base font-bold md:text-lg lg:text-left lg:text-2xl">
-								{ownerDisplayName}'s Notes
+								Meeting Notes:
 							</h1>
 						</Link>
 						<ul className="overflow-y-auto overflow-x-hidden pb-12">
@@ -72,7 +72,7 @@ export default function NotesRoute() {
 											cn(navLinkDefaultClassName, isActive && 'bg-accent')
 										}
 									>
-										{note.title}
+										{note.createdAt.substring(0, 10)}: {note.title}
 									</NavLink>
 								</li>
 							))}

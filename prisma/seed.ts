@@ -10,6 +10,7 @@ import {
 	img,
 } from '#tests/db-utils.ts'
 import { insertGitHubUser } from '#tests/mocks/github.ts'
+import users from './seed.data.json'
 
 async function seed() {
 	console.log('🌱 Seeding...')
@@ -57,18 +58,32 @@ async function seed() {
 	})
 	console.timeEnd('👑 Created roles...')
 
-	const totalUsers = 5
+	const totalUsers = users.length
 	console.time(`👤 Created ${totalUsers} users...`)
 	const noteImages = await getNoteImages()
 	const userImages = await getUserImages()
 
+	type JsonUserType = {
+		username: string
+		name: string
+		orangewood: string
+		ports: JsonPortType[]
+	}
+
+	type JsonPortType = {
+		ditch: number
+		position: number
+		entry: string
+	}
+
 	for (let index = 0; index < totalUsers; index++) {
-		const userData = createUser()
+		const { ports, ...userData } = users[index]
 		await prisma.user
 			.create({
 				select: { id: true },
 				data: {
 					...userData,
+					email: `${userData.username}@example.com`,
 					password: { create: createPassword(userData.username) },
 					image: { create: userImages[index % userImages.length] },
 					roles: { connect: { name: 'user' } },
@@ -86,6 +101,12 @@ async function seed() {
 									return noteImages[imgNumber]
 								}),
 							},
+						})),
+					},
+					ports: {
+						create: ports.map(port => ({
+							id: `${port.ditch}-${port.position}`,
+							...port,
 						})),
 					},
 				},
@@ -134,18 +155,26 @@ async function seed() {
 
 	const githubUser = await insertGitHubUser('MOCK_CODE_GITHUB_KODY')
 
+	// {
+	//   "username": "mcginnis",
+	//   "name": "McGinnis",
+	//   "orangewood": "South",
+	//   "ports": [{ "ditch": 7, "position": 27 }]
+	// },
 	await prisma.user.create({
 		select: { id: true },
 		data: {
-			email: 'kody@kcd.dev',
-			username: 'kody',
-			name: 'Kody',
+			email: 'mcginnis@example.com',
+			username: 'mcginnis',
+			name: 'McGinnis',
 			image: { create: kodyImages.kodyUser },
-			password: { create: createPassword('kodylovesyou') },
+			password: { create: createPassword('mcginnis') },
 			connections: {
 				create: { providerName: 'github', providerId: githubUser.profile.id },
 			},
 			roles: { connect: [{ name: 'admin' }, { name: 'user' }] },
+			orangewood: 'South',
+			ports: { create: [{ id: '7-27', ditch: 7, position: 27 }] },
 			notes: {
 				create: [
 					{
