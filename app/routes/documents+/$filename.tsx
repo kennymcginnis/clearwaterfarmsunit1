@@ -28,7 +28,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	return json({ title, html })
 }
 
-export default function ArticleComponent() {
+export default function DocumentComponent() {
 	const { title, html } = useLoaderData<typeof loader>()
 	return (
 		<main className="container mx-auto flex h-full min-h-[400px] max-w-4xl flex-col px-0 pb-12 md:px-8">
@@ -36,7 +36,7 @@ export default function ArticleComponent() {
 				<h1 className="my-6 mb-2 border-b-2 pb-2 text-center text-3xl">
 					{title}
 				</h1>
-				<div dangerouslySetInnerHTML={{ __html: html }} />
+				<div className="my-6" dangerouslySetInnerHTML={{ __html: html }} />
 			</div>
 		</main>
 	)
