@@ -129,6 +129,7 @@ export async function signup({
 				create: {
 					email: email.toLowerCase(),
 					username: username.toLowerCase(),
+					orangewood: '',
 					name,
 					roles: { connect: { name: 'user' } },
 					password: {
@@ -167,6 +168,7 @@ export async function signupWithConnection({
 				create: {
 					email: email.toLowerCase(),
 					username: username.toLowerCase(),
+					orangewood: '',
 					name,
 					roles: { connect: { name: 'user' } },
 					connections: { create: { providerId, providerName } },

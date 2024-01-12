@@ -7,6 +7,17 @@ import { SearchBar } from '#app/components/search-bar.tsx'
 import { prisma } from '#app/utils/db.server.ts'
 import { cn, getUserImgSrc, useDelayedIsPending } from '#app/utils/misc.tsx'
 
+type DitchType = { [key: number]: PositionType }
+type PositionType = { [key: number]: UserType }
+type UserType = {
+	id: string
+	username: string
+	imageId: string | null
+	name: string | null
+	ditch: number
+	position: number
+}
+
 const UserSearchResultSchema = z.object({
 	id: z.string(),
 	username: z.string(),
@@ -42,16 +53,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		})
 	}
 
-	let users = Array.from({ length: 9 }, () => ({})).reduce((a, c, i) => {
-		a[i] = {}
-		return a
-	}, {})
-
-	for (let user of result.data) {
-		users[user.ditch - 1][user.position - 1] = user
+	// initializing all ditches so they all appear in position after searches
+	const ditches: DitchType = {
+		1: {},
+		2: {},
+		3: {},
+		4: {},
+		5: {},
+		6: {},
+		7: {},
+		8: {},
+		9: {},
 	}
-
-	return json({ status: 'idle', users } as const)
+	for (let user of result.data) {
+		ditches[user.ditch][user.position] = user
+	}
+	return json({ status: 'idle', users: ditches } as const)
 }
 
 export default function UsersRoute() {
@@ -80,10 +97,10 @@ export default function UsersRoute() {
 									'opacity-50': isPending,
 								})}
 							>
-								{Object.entries(data.users).map(([d, ditch]) => (
+								{Object.keys(data.users).map(d => (
 									<div key={`ditch-${d}`}>
 										<p className="mb-2 w-full text-center text-body-lg">
-											Ditch {+d + 1}
+											Ditch {d}
 										</p>
 									</div>
 								))}
@@ -108,7 +125,7 @@ export default function UsersRoute() {
 														</span>
 													) : null}
 													<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">
-														Ditch: {+d + 1} Pos: {+p + 1}
+														Ditch: {d} Pos: {p}
 													</span>
 												</Link>
 											</div>
