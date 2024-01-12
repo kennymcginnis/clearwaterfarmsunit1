@@ -1,5 +1,6 @@
 'use client'
 import { Link } from '@remix-run/react'
+import { Droplet, Droplets } from 'lucide-react'
 import React from 'react'
 import {
 	NavigationMenu,
@@ -11,8 +12,6 @@ import {
 	navigationMenuTriggerStyle,
 } from '#app/components/ui/navigation-menu'
 import { cn } from '#app/utils/misc.tsx'
-
-import { Droplet, Droplets } from 'lucide-react'
 
 const nav = {
 	irrigation: [

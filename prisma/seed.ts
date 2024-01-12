@@ -4,7 +4,6 @@ import { prisma } from '#app/utils/db.server.ts'
 import {
 	cleanupDb,
 	createPassword,
-	createUser,
 	getNoteImages,
 	getUserImages,
 	img,
@@ -62,19 +61,6 @@ async function seed() {
 	console.time(`👤 Created ${totalUsers} users...`)
 	const noteImages = await getNoteImages()
 	const userImages = await getUserImages()
-
-	type JsonUserType = {
-		username: string
-		name: string
-		orangewood: string
-		ports: JsonPortType[]
-	}
-
-	type JsonPortType = {
-		ditch: number
-		position: number
-		entry: string
-	}
 
 	for (let index = 0; index < totalUsers; index++) {
 		const { ports, ...userData } = users[index]

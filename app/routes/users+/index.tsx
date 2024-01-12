@@ -42,10 +42,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		})
 	}
 
-	let users = Array.from({ length: 9 }, () => {}).reduce(
-		(a, c, i) => ((a[i] = {}), a),
-		{},
-	)
+	let users = Array.from({ length: 9 }, () => ({})).reduce((a, c, i) => {
+		a[i] = {}
+		return a
+	}, {})
 
 	for (let user of result.data) {
 		users[user.ditch - 1][user.position - 1] = user
