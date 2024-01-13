@@ -6,7 +6,9 @@ import { extendTailwindMerge } from 'tailwind-merge'
 import { extendedTheme } from './extended-theme.ts'
 
 export function getUserImgSrc(imageId?: string | null) {
-	return imageId ? `/resources/user-images/${imageId}` : '/img/user.png'
+	return imageId
+		? `/resources/user-images/${imageId}`
+		: `/img/${Math.floor(Math.random() * 10) % 10}.jpg`
 }
 
 export function getNoteImgSrc(imageId: string) {
