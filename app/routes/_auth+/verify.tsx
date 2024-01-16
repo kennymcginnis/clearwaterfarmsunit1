@@ -10,20 +10,12 @@ import { ErrorList, Field } from '#app/components/forms.tsx'
 import { Spacer } from '#app/components/spacer.tsx'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
 import { handleVerification as handleChangeEmailVerification } from '#app/routes/settings+/profile.change-email.tsx'
-import { twoFAVerificationType } from '#app/routes/settings+/profile.two-factor.tsx'
-import { type twoFAVerifyVerificationType } from '#app/routes/settings+/profile.two-factor.verify.tsx'
-import { requireUserId } from '#app/utils/auth.server.ts'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { checkHoneypot } from '#app/utils/honeypot.server.ts'
 import { ensurePrimary } from '#app/utils/litefs.server.ts'
 import { getDomainUrl, useIsPending } from '#app/utils/misc.tsx'
-import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { generateTOTP, verifyTOTP } from '#app/utils/totp.server.ts'
-import {
-	handleVerification as handleLoginTwoFactorVerification,
-	shouldRequestTwoFA,
-} from './login.tsx'
 import { handleVerification as handleOnboardingVerification } from './onboarding.tsx'
 import { handleVerification as handleResetPasswordVerification } from './reset-password.tsx'
 
@@ -31,7 +23,7 @@ export const codeQueryParam = 'code'
 export const targetQueryParam = 'target'
 export const typeQueryParam = 'type'
 export const redirectToQueryParam = 'redirectTo'
-const types = ['onboarding', 'reset-password', 'change-email', '2fa'] as const
+const types = ['onboarding', 'reset-password', 'change-email'] as const
 const VerificationTypeSchema = z.enum(types)
 export type VerificationTypes = z.infer<typeof VerificationTypeSchema>
 
@@ -67,24 +59,6 @@ export function getRedirectToUrl({
 		redirectToUrl.searchParams.set(redirectToQueryParam, redirectTo)
 	}
 	return redirectToUrl
-}
-
-export async function requireRecentVerification(request: Request) {
-	const userId = await requireUserId(request)
-	const shouldReverify = await shouldRequestTwoFA(request)
-	if (shouldReverify) {
-		const reqUrl = new URL(request.url)
-		const redirectUrl = getRedirectToUrl({
-			request,
-			target: userId,
-			type: twoFAVerificationType,
-			redirectTo: reqUrl.pathname + reqUrl.search,
-		})
-		throw await redirectWithToast(redirectUrl.toString(), {
-			title: 'Please Reverify',
-			description: 'Please reverify your account before proceeding',
-		})
-	}
 }
 
 export async function prepareVerification({
@@ -137,7 +111,7 @@ export async function isCodeValid({
 	target,
 }: {
 	code: string
-	type: VerificationTypes | typeof twoFAVerifyVerificationType
+	type: VerificationTypes
 	target: string
 }) {
 	const verification = await prisma.verification.findUnique({
@@ -217,9 +191,6 @@ async function validateRequest(
 			await deleteVerification()
 			return handleChangeEmailVerification({ request, body, submission })
 		}
-		case '2fa': {
-			return handleLoginTwoFactorVerification({ request, body, submission })
-		}
 	}
 }
 
@@ -245,14 +216,6 @@ export default function VerifyRoute() {
 		onboarding: checkEmail,
 		'reset-password': checkEmail,
 		'change-email': checkEmail,
-		'2fa': (
-			<>
-				<h1 className="text-h1">Check your 2FA app</h1>
-				<p className="mt-3 text-body-md text-muted-foreground">
-					Please enter your 2FA code to verify your identity.
-				</p>
-			</>
-		),
 	}
 
 	const [form, fields] = useForm({

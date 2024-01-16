@@ -238,7 +238,8 @@ function App() {
 					<nav className="flex flex-wrap items-center justify-between gap-4 sm:flex-nowrap md:gap-8">
 						<Logo />
 						<MainNavigationMenu />
-						<div className="flex items-center gap-10">
+						<div className="flex items-center gap-5">
+							<ThemeSwitch userPreference={data.requestInfo.userPrefs.theme} />
 							{user ? (
 								<UserDropdown />
 							) : (
@@ -253,11 +254,6 @@ function App() {
 				<div className="flex-1">
 					<Outlet />
 				</div>
-
-				<div className="container flex justify-between pb-5">
-					<Logo />
-					<ThemeSwitch userPreference={data.requestInfo.userPrefs.theme} />
-				</div>
 			</div>
 			<EpicToaster closeButton position="top-center" theme={theme} />
 			<EpicProgress />
@@ -268,10 +264,10 @@ function App() {
 function Logo() {
 	return (
 		<Link to="/" className="group grid leading-snug">
-			<span className="font-bold transition group-hover:translate-x-1	">
+			<span className="text-lg font-bold transition group-hover:translate-x-1	">
 				Clearwater Farms
 			</span>
-			<span className="font-light transition group-hover:-translate-x-1	">
+			<span className="text-md font-light transition group-hover:-translate-x-1	">
 				Unit 1
 			</span>
 		</Link>
@@ -418,7 +414,7 @@ function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
 			<div className="flex gap-2">
 				<button
 					type="submit"
-					className="flex h-8 w-8 cursor-pointer items-center justify-center"
+					className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-secondary p-1 transition hover:border-primary focus:border-primary focus:outline-none"
 				>
 					{modeLabel[mode]}
 				</button>

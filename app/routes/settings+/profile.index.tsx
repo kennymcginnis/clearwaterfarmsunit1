@@ -21,7 +21,6 @@ import { getUserImgSrc, useDoubleCheck } from '#app/utils/misc.tsx'
 import { authSessionStorage } from '#app/utils/session.server.ts'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { NameSchema, UsernameSchema } from '#app/utils/user-validation.ts'
-import { twoFAVerificationType } from './profile.two-factor.tsx'
 
 export const handle: SEOHandle = {
 	getSitemapEntries: () => null,
@@ -56,11 +55,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		},
 	})
 
-	const twoFactorVerification = await prisma.verification.findUnique({
-		select: { id: true },
-		where: { target_type: { type: twoFAVerificationType, target: userId } },
-	})
-
 	const password = await prisma.password.findUnique({
 		select: { userId: true },
 		where: { userId },
@@ -69,7 +63,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	return json({
 		user,
 		hasPassword: Boolean(password),
-		isTwoFactorEnabled: Boolean(twoFactorVerification),
 	})
 }
 
@@ -143,24 +136,10 @@ export default function EditUserProfile() {
 					</Link>
 				</div>
 				<div>
-					<Link to="two-factor">
-						{data.isTwoFactorEnabled ? (
-							<Icon name="lock-closed">2FA is enabled</Icon>
-						) : (
-							<Icon name="lock-open-1">Enable 2FA</Icon>
-						)}
-					</Link>
-				</div>
-				<div>
 					<Link to={data.hasPassword ? 'password' : 'password/create'}>
 						<Icon name="dots-horizontal">
 							{data.hasPassword ? 'Change Password' : 'Create a Password'}
 						</Icon>
-					</Link>
-				</div>
-				<div>
-					<Link to="connections">
-						<Icon name="link-2">Manage connections</Icon>
 					</Link>
 				</div>
 				<div>

@@ -5,14 +5,21 @@ import { useSpinDelay } from 'spin-delay'
 import { extendTailwindMerge } from 'tailwind-merge'
 import { extendedTheme } from './extended-theme.ts'
 
-export function getUserImgSrc(imageId?: string | null) {
-	return imageId
-		? `/resources/user-images/${imageId}`
-		: `/img/${Math.floor(Math.random() * 10) % 10}.jpg`
+export function getUserImgSrc(imageId?: string | null, userId?: string | null) {
+	if (imageId) return `/resources/user-images/${imageId}`
+	if (userId) {
+		const stripped = userId.replace(/\D/g, '')
+		if (stripped) return `/img/${+stripped % 10}.jpg`
+	}
+	return `/img/${Math.floor(Math.random() * 10) % 10}.jpg`
 }
 
 export function getNoteImgSrc(imageId: string) {
 	return `/resources/note-images/${imageId}`
+}
+
+export function getDocumentImgSrc(imageId: string) {
+	return `/resources/document-images/${imageId}`
 }
 
 export function getErrorMessage(error: unknown) {

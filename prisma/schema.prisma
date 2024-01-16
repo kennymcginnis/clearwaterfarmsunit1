@@ -17,18 +17,22 @@ model User {
   name       String?
   orangewood String
 
-  schedules UserSchedule[]
-  ports     Port[]
-  deposits  Deposit[]
+  restricted Boolean        @default(false)
+  ports      Port[]
+  deposits   Deposit[]
+  schedules  UserSchedule[]
 
-  image       UserImage?
-  password    Password?
-  notes       Note[]
-  roles       Role[]
-  sessions    Session[]
-  connections Connection[]
+  defaultHours Int @default(0)
+  defaultHead  Int @default(70)
 
+  image    UserImage?
+  password Password?
+  roles    Role[]
+  sessions Session[]
+
+  createdBy String   @default("Admin")
   createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
 
@@ -40,76 +44,116 @@ model Port {
 
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
+
+  createdBy String   @default("Admin")
+  createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
+  updatedAt DateTime @updatedAt
 }
 
 model Deposit {
   id String @id @default(cuid())
 
-  amount      Float
-  depositDate DateTime @default(now())
-  note        String
+  date   DateTime @default(now())
+  amount Float
+  note   String
 
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
 
+  createdBy String   @default("Admin")
   createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
 
 model Schedule {
-  id            String         @id
-  source        String
-  deadline      DateTime
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  deadline    DateTime
+  source      String
+  costPerHour Int
+
   userSchedules UserSchedule[]
+
+  createdBy String   @default("Admin")
+  createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
+  updatedAt DateTime @updatedAt
 }
 
 model UserSchedule {
   user       User     @relation(fields: [userId], references: [id])
   userId     String
+  ditch      Int
   schedule   Schedule @relation(fields: [scheduleId], references: [id])
   scheduleId String
 
   hours Decimal
+  // userCost (schedule.cost * hours)
 
+  createdBy String   @default("Admin")
   createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 
-  @@id([userId, scheduleId])
+  @@id([userId, ditch, scheduleId])
 }
 
-model Note {
+model Meeting {
+  id   String @id @default(cuid())
+  date String
+
+  documents Document[]
+
+  createdBy String   @default("Admin")
+  createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
+  updatedAt DateTime @updatedAt
+}
+
+model Document {
   id      String @id @default(cuid())
+  type    String
   title   String
-  content String
+  content Bytes
 
+  meeting   Meeting?        @relation(fields: [meetingId], references: [id])
+  meetingId String?
+  images    DocumentImage[]
+
+  createdBy String   @default("Admin")
   createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
-
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId String
-
-  images NoteImage[]
-
-  // non-unique foreign key
-  @@index([ownerId])
-  // This helps our order by in the user search a LOT
-  @@index([ownerId, updatedAt])
 }
 
-model NoteImage {
+model Comment {
+  id      String @id @default(cuid())
+  comment String
+
+  createdBy String   @default("Admin")
+  createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
+  updatedAt DateTime @updatedAt
+}
+
+model DocumentImage {
   id          String  @id @default(cuid())
   altText     String?
   contentType String
   blob        Bytes
 
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  documentId String
+
+  createdBy String   @default("Admin")
   createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 
-  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  noteId String
-
   // non-unique foreign key
-  @@index([noteId])
+  @@index([documentId])
 }
 
 model UserImage {
@@ -118,11 +162,11 @@ model UserImage {
   contentType String
   blob        Bytes
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Password {
@@ -149,7 +193,7 @@ model Session {
 model Permission {
   id          String @id @default(cuid())
   action      String // e.g. create, read, update, delete
-  entity      String // e.g. note, user, etc.
+  entity      String // e.g. document, user, etc.
   access      String // e.g. own or any
   description String @default("")
 
@@ -166,11 +210,11 @@ model Role {
   name        String @unique
   description String @default("")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
   users       User[]
   permissions Permission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Verification {
@@ -202,18 +246,4 @@ model Verification {
   expiresAt DateTime?
 
   @@unique([target, type])
-}
-
-model Connection {
-  id           String @id @default(cuid())
-  providerName String
-  providerId   String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String
-
-  @@unique([providerName, providerId])
 }

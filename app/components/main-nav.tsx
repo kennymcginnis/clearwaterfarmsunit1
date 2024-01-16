@@ -18,40 +18,37 @@ const nav = {
 		{
 			title: 'Sign Up',
 			href: '/irrigation/sign-up',
-			description: 'Sign Up or modify next water cycle',
+			description: 'Sign Up or modify schedule',
 		},
 		{
 			title: 'Schedule',
 			href: '/irrigation/schedule',
-			description: "View the current cycle's schedule",
+			description: 'View the current schedule',
 		},
 	],
 	documents: [
 		{
 			title: 'Articles of Incorporation',
 			href: '/documents/articles-of-incorporation',
-			// href: 'http://clearwat.dot5hosting.com/documents/AofInc.pdf',
 			description:
 				'Articles of Incorporation of Clearwater Farms Unit #1 Property Owners Association',
 		},
 		{
 			title: "CC&R's",
 			href: '/documents/cc-and-r-s',
-			// href: 'http://clearwat.dot5hosting.com/documents/CCR.pdf',
 			description:
 				'Clearwater Farms | Declaration of Conditions, Covenants and Restrictions',
 		},
 		{
 			title: 'Bylaws',
 			href: '/documents/by-laws',
-			// href: 'http://clearwat.dot5hosting.com/documents/Bylaws.pdf',
 			description: 'By-Laws of Clearwater Farms Property Owners Association',
 		},
 	],
 	other: [
 		{
 			title: 'Meetings',
-			href: '/users/mcginnis/notes',
+			href: '/meetings',
 		},
 		{
 			title: 'Trade List',
@@ -100,7 +97,9 @@ export function MainNavigationMenu() {
 
 							{nav.irrigation.map(link => (
 								<ListItem key={link.href} title={link.title} href={link.href}>
-									{link.description}
+									<div className="mb-2 mt-4 text-sm font-medium">
+										{link.description}
+									</div>
 								</ListItem>
 							))}
 						</ul>
@@ -109,7 +108,7 @@ export function MainNavigationMenu() {
 				<NavigationMenuItem>
 					<NavigationMenuTrigger>POA Documents</NavigationMenuTrigger>
 					<NavigationMenuContent>
-						<ul className="grid w-[400px] gap-3 p-4 ">
+						<ul className="grid w-[400px] gap-3 p-4">
 							{nav.documents.map(doc => (
 								<ListItem key={doc.title} title={doc.title} href={doc.href}>
 									{doc.description}
@@ -148,8 +147,8 @@ const ListItem = React.forwardRef<
 					)}
 					{...props}
 				>
-					<div className="text-sm font-medium leading-none">{title}</div>
-					<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+					<div className="text-lg font-medium leading-none">{title}</div>
+					<p className="text-l line-clamp-2 leading-snug text-muted-foreground">
 						{children}
 					</p>
 				</a>
