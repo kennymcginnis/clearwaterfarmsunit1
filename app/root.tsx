@@ -105,7 +105,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 					prisma.user.findUniqueOrThrow({
 						select: {
 							id: true,
-							name: true,
+							member: true,
 							username: true,
 							image: { select: { id: true } },
 							roles: {
@@ -264,12 +264,8 @@ function App() {
 function Logo() {
 	return (
 		<Link to="/" className="group grid leading-snug">
-			<span className="text-lg font-bold transition group-hover:translate-x-1	">
-				Clearwater Farms
-			</span>
-			<span className="text-md font-light transition group-hover:-translate-x-1	">
-				Unit 1
-			</span>
+			<span className="text-lg font-bold transition group-hover:translate-x-1	">Clearwater Farms</span>
+			<span className="text-md font-light transition group-hover:-translate-x-1	">Unit 1</span>
 		</Link>
 	)
 }
@@ -303,12 +299,10 @@ function UserDropdown() {
 					>
 						<img
 							className="h-8 w-8 rounded-full object-cover"
-							alt={user.name ?? user.username}
-							src={getUserImgSrc(user.image?.id)}
+							alt={user.member ?? user.username}
+							src={getUserImgSrc(user.image?.id, user.id)}
 						/>
-						<span className="text-body-sm font-bold">
-							{user.name ?? user.username}
-						</span>
+						<span className="text-body-sm font-bold">{user.member ?? user.username}</span>
 					</Link>
 				</Button>
 			</DropdownMenuTrigger>
@@ -388,8 +382,7 @@ function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
 
 	const optimisticMode = useOptimisticThemeMode()
 	const mode = optimisticMode ?? userPreference ?? 'system'
-	const nextMode =
-		mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system'
+	const nextMode = mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system'
 	const modeLabel = {
 		light: (
 			<Icon name="sun">

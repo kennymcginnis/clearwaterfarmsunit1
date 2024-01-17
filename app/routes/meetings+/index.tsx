@@ -9,10 +9,7 @@ export default function MeetingIndexRoute() {
 	)
 }
 
-export const meta: MetaFunction<
-	null,
-	{ 'routes/meetings+/$date_+/meeting': typeof meetingLoader }
-> = ({ params }) => {
+export const meta: MetaFunction<null, { 'routes/meetings+/$date_+/meeting': typeof meetingLoader }> = ({ params }) => {
 	return [
 		{ title: `${params.date}'s Meeting | Clearwater Farms 1` },
 		{

@@ -37,9 +37,7 @@ function createDatabase(tryAgain = true): Database.Database {
 	} catch (error: unknown) {
 		fs.unlinkSync(CACHE_DATABASE_PATH)
 		if (tryAgain) {
-			console.error(
-				`Error creating cache database, deleting the file at "${CACHE_DATABASE_PATH}" and trying again...`,
-			)
+			console.error(`Error creating cache database, deleting the file at "${CACHE_DATABASE_PATH}" and trying again...`)
 			return createDatabase(false)
 		}
 		throw error
@@ -47,10 +45,7 @@ function createDatabase(tryAgain = true): Database.Database {
 	return db
 }
 
-const lru = remember(
-	'lru-cache',
-	() => new LRUCache<string, CacheEntry<unknown>>({ max: 5000 }),
-)
+const lru = remember('lru-cache', () => new LRUCache<string, CacheEntry<unknown>>({ max: 5000 }))
 
 export const lruCache = lruCacheAdapter(lru)
 
@@ -70,9 +65,7 @@ const cacheQueryResultSchema = z.object({
 export const cache: CachifiedCache = {
 	name: 'SQLite cache',
 	get(key) {
-		const result = cacheDb
-			.prepare('SELECT value, metadata FROM cache WHERE key = ?')
-			.get(key)
+		const result = cacheDb.prepare('SELECT value, metadata FROM cache WHERE key = ?').get(key)
 		const parseResult = cacheQueryResultSchema.safeParse(result)
 		if (!parseResult.success) return null
 
@@ -89,15 +82,11 @@ export const cache: CachifiedCache = {
 		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 		const { currentIsPrimary, primaryInstance } = await getInstanceInfo()
 		if (currentIsPrimary) {
-			cacheDb
-				.prepare(
-					'INSERT OR REPLACE INTO cache (key, value, metadata) VALUES (@key, @value, @metadata)',
-				)
-				.run({
-					key,
-					value: JSON.stringify(entry.value),
-					metadata: JSON.stringify(entry.metadata),
-				})
+			cacheDb.prepare('INSERT OR REPLACE INTO cache (key, value, metadata) VALUES (@key, @value, @metadata)').run({
+				key,
+				value: JSON.stringify(entry.value),
+				metadata: JSON.stringify(entry.metadata),
+			})
 		} else {
 			// fire-and-forget cache update
 			void updatePrimaryCacheValue({

@@ -3,8 +3,7 @@ import { type LoaderFunctionArgs } from '@remix-run/node'
 import { prisma } from '#app/utils/db.server.ts'
 
 export async function loader({ request }: LoaderFunctionArgs) {
-	const host =
-		request.headers.get('X-Forwarded-Host') ?? request.headers.get('host')
+	const host = request.headers.get('X-Forwarded-Host') ?? request.headers.get('host')
 
 	try {
 		// if we can connect to the database and make a simple query

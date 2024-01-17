@@ -1,12 +1,7 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import * as E from '@react-email/components'
-import {
-	json,
-	redirect,
-	type ActionFunctionArgs,
-	type MetaFunction,
-} from '@remix-run/node'
+import { json, redirect, type ActionFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { Link, useFetcher } from '@remix-run/react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { HoneypotInputs } from 'remix-utils/honeypot/react'
@@ -34,17 +29,26 @@ export async function action({ request }: ActionFunctionArgs) {
 			const user = await prisma.user.findFirst({
 				where: {
 					OR: [
-						{ email: data.usernameOrEmail },
 						{ username: data.usernameOrEmail },
+						{ primaryEmail: data.usernameOrEmail },
+						{ secondaryEmail: data.usernameOrEmail },
 					],
 				},
-				select: { id: true },
+				select: { id: true, primaryEmail: true, secondaryEmail: true },
 			})
 			if (!user) {
 				ctx.addIssue({
 					path: ['usernameOrEmail'],
 					code: z.ZodIssueCode.custom,
 					message: 'No user exists with this username or email',
+				})
+				return
+			}
+			if (!user.primaryEmail && !user.secondaryEmail) {
+				ctx.addIssue({
+					path: ['usernameOrEmail'],
+					code: z.ZodIssueCode.custom,
+					message: 'No email exists for this user',
 				})
 				return
 			}
@@ -60,8 +64,10 @@ export async function action({ request }: ActionFunctionArgs) {
 	const { usernameOrEmail } = submission.value
 
 	const user = await prisma.user.findFirstOrThrow({
-		where: { OR: [{ email: usernameOrEmail }, { username: usernameOrEmail }] },
-		select: { email: true, username: true },
+		where: {
+			OR: [{ username: usernameOrEmail }, { primaryEmail: usernameOrEmail }, { secondaryEmail: usernameOrEmail }],
+		},
+		select: { primaryEmail: true, username: true },
 	})
 
 	const { verifyUrl, redirectTo, otp } = await prepareVerification({
@@ -71,29 +77,25 @@ export async function action({ request }: ActionFunctionArgs) {
 		target: usernameOrEmail,
 	})
 
-	const response = await sendEmail({
-		to: user.email,
-		subject: `Clearwater Farms 1 Password Reset`,
-		react: (
-			<ForgotPasswordEmail onboardingUrl={verifyUrl.toString()} otp={otp} />
-		),
-	})
+	if (user.primaryEmail) {
+		const response = await sendEmail({
+			to: user.primaryEmail,
+			subject: `Clearwater Farms 1 Password Reset`,
+			react: <ForgotPasswordEmail onboardingUrl={verifyUrl.toString()} otp={otp} />,
+		})
 
-	if (response.status === 'success') {
-		return redirect(redirectTo.toString())
+		if (response.status === 'success') {
+			return redirect(redirectTo.toString())
+		} else {
+			submission.error[''] = [response.error.message]
+			return json({ status: 'error', submission } as const, { status: 500 })
+		}
 	} else {
-		submission.error[''] = [response.error.message]
 		return json({ status: 'error', submission } as const, { status: 500 })
 	}
 }
 
-function ForgotPasswordEmail({
-	onboardingUrl,
-	otp,
-}: {
-	onboardingUrl: string
-	otp: string
-}) {
+function ForgotPasswordEmail({ onboardingUrl, otp }: { onboardingUrl: string; otp: string }) {
 	return (
 		<E.Html lang="en" dir="ltr">
 			<E.Container>
@@ -136,9 +138,7 @@ export default function ForgotPasswordRoute() {
 			<div className="flex flex-col justify-center">
 				<div className="text-center">
 					<h1 className="text-h1">Forgot Password</h1>
-					<p className="mt-3 text-body-md text-muted-foreground">
-						No worries, we'll send you reset instructions.
-					</p>
+					<p className="mt-3 text-body-md text-muted-foreground">No worries, we'll send you reset instructions.</p>
 				</div>
 				<div className="mx-auto mt-16 min-w-full max-w-sm sm:min-w-[368px]">
 					<forgotPassword.Form method="POST" {...form.props}>
@@ -162,11 +162,7 @@ export default function ForgotPasswordRoute() {
 						<div className="mt-6">
 							<StatusButton
 								className="w-full"
-								status={
-									forgotPassword.state === 'submitting'
-										? 'pending'
-										: forgotPassword.data?.status ?? 'idle'
-								}
+								status={forgotPassword.state === 'submitting' ? 'pending' : forgotPassword.data?.status ?? 'idle'}
 								type="submit"
 								disabled={forgotPassword.state !== 'idle'}
 							>
@@ -174,10 +170,7 @@ export default function ForgotPasswordRoute() {
 							</StatusButton>
 						</div>
 					</forgotPassword.Form>
-					<Link
-						to="/login"
-						className="mt-11 text-center text-body-sm font-bold"
-					>
+					<Link to="/login" className="mt-11 text-center text-body-sm font-bold">
 						Back to Login
 					</Link>
 				</div>

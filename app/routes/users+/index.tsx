@@ -13,7 +13,7 @@ type UserType = {
 	id: string
 	username: string
 	imageId: string | null
-	name: string | null
+	member: string | null
 	ditch: number
 	position: number
 }
@@ -21,7 +21,7 @@ type UserType = {
 const UserSearchResultSchema = z.object({
 	id: z.string(),
 	username: z.string(),
-	name: z.string().nullable(),
+	member: z.string().nullable(),
 	imageId: z.string().nullable(),
 	ditch: z.number(),
 	position: z.number(),
@@ -37,12 +37,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, User.name, UserImage.id AS imageId, Port.ditch, Port.position
+		SELECT User.id, User.username, User.member, UserImage.id AS imageId, Port.ditch, Port.position
 		FROM User
 		LEFT JOIN UserImage ON User.id = UserImage.userId
 		INNER JOIN Port ON User.id = Port.userId
 		WHERE User.username LIKE ${like}
-		OR User.name LIKE ${like}
+		OR User.member LIKE ${like}
 		ORDER BY Port.ditch, Port.position
 	`
 
@@ -99,9 +99,7 @@ export default function UsersRoute() {
 							>
 								{Object.keys(data.users).map(d => (
 									<div key={`ditch-${d}`}>
-										<p className="mb-2 w-full text-center text-body-lg">
-											Ditch {d}
-										</p>
+										<p className="mb-2 w-full text-center text-body-lg">Ditch {d}</p>
 									</div>
 								))}
 							</div>
@@ -115,13 +113,13 @@ export default function UsersRoute() {
 													className="mb-2 flex h-36 w-44 flex-col items-center justify-center rounded-lg bg-muted px-5 py-3"
 												>
 													<img
-														alt={user.name ?? user.username}
+														alt={user.member ?? user.username}
 														src={getUserImgSrc(user.imageId, user.id)}
 														className="h-16 w-16 rounded-full"
 													/>
-													{user.name ? (
+													{user.member ? (
 														<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md">
-															{user.name}
+															{user.member}
 														</span>
 													) : null}
 													<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">

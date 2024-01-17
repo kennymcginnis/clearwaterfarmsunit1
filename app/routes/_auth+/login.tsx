@@ -1,13 +1,7 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { invariant } from '@epic-web/invariant'
-import {
-	json,
-	redirect,
-	type LoaderFunctionArgs,
-	type ActionFunctionArgs,
-	type MetaFunction,
-} from '@remix-run/node'
+import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { Form, Link, useActionData, useSearchParams } from '@remix-run/react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { HoneypotInputs } from 'remix-utils/honeypot/react'
@@ -46,9 +40,7 @@ export async function handleNewSession(
 	},
 	responseInit?: ResponseInit,
 ) {
-	const authSession = await authSessionStorage.getSession(
-		request.headers.get('cookie'),
-	)
+	const authSession = await authSessionStorage.getSession(request.headers.get('cookie'))
 	authSession.set(sessionKey, session.id)
 
 	return redirect(
@@ -66,17 +58,10 @@ export async function handleNewSession(
 	)
 }
 
-export async function handleVerification({
-	request,
-	submission,
-}: VerifyFunctionArgs) {
+export async function handleVerification({ request, submission }: VerifyFunctionArgs) {
 	invariant(submission.value, 'Submission should have a value by this point')
-	const authSession = await authSessionStorage.getSession(
-		request.headers.get('cookie'),
-	)
-	const verifySession = await verifySessionStorage.getSession(
-		request.headers.get('cookie'),
-	)
+	const authSession = await authSessionStorage.getSession(request.headers.get('cookie'))
+	const verifySession = await verifySessionStorage.getSession(request.headers.get('cookie'))
 
 	const remember = verifySession.get(rememberKey)
 	const { redirectTo } = submission.value
@@ -105,16 +90,10 @@ export async function handleVerification({
 			}),
 		)
 	} else {
-		headers.append(
-			'set-cookie',
-			await authSessionStorage.commitSession(authSession),
-		)
+		headers.append('set-cookie', await authSessionStorage.commitSession(authSession))
 	}
 
-	headers.append(
-		'set-cookie',
-		await verifySessionStorage.destroySession(verifySession),
-	)
+	headers.append('set-cookie', await verifySessionStorage.destroySession(verifySession))
 
 	return redirect(safeRedirect(redirectTo), { headers })
 }
@@ -198,9 +177,7 @@ export default function LoginPage() {
 			<div className="mx-auto w-full max-w-md">
 				<div className="flex flex-col gap-3 text-center">
 					<h1 className="text-h1">Welcome back!</h1>
-					<p className="text-body-md text-muted-foreground">
-						Please enter your details.
-					</p>
+					<p className="text-body-md text-muted-foreground">Please enter your details.</p>
 				</div>
 				<Spacer size="xs" />
 
@@ -243,18 +220,13 @@ export default function LoginPage() {
 									errors={fields.remember.errors}
 								/>
 								<div>
-									<Link
-										to="/forgot-password"
-										className="text-body-xs font-semibold"
-									>
+									<Link to="/forgot-password" className="text-body-xs font-semibold">
 										Forgot password?
 									</Link>
 								</div>
 							</div>
 
-							<input
-								{...conform.input(fields.redirectTo, { type: 'hidden' })}
-							/>
+							<input {...conform.input(fields.redirectTo, { type: 'hidden' })} />
 							<ErrorList errors={form.errors} id={form.errorId} />
 
 							<div className="flex items-center justify-between gap-6 pt-3">
@@ -268,18 +240,6 @@ export default function LoginPage() {
 								</StatusButton>
 							</div>
 						</Form>
-						<div className="flex items-center justify-center gap-2 pt-6">
-							<span className="text-muted-foreground">New here?</span>
-							<Link
-								to={
-									redirectTo
-										? `/signup?${encodeURIComponent(redirectTo)}`
-										: '/signup'
-								}
-							>
-								Create an account
-							</Link>
-						</div>
 					</div>
 				</div>
 			</div>

@@ -1,12 +1,9 @@
 import { test as base } from '@playwright/test'
 import { type User as UserModel } from '@prisma/client'
 import * as setCookieParser from 'set-cookie-parser'
-import {
-	getPasswordHash,
-	getSessionExpirationDate,
-	sessionKey,
-} from '#app/utils/auth.server.ts'
+import { getPasswordHash, getSessionExpirationDate, sessionKey } from '#app/utils/auth.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
+import { generatePublicId } from '#app/utils/public-id'
 import { authSessionStorage } from '#app/utils/session.server.ts'
 import { createUser } from './db-utils.ts'
 
@@ -16,23 +13,18 @@ type GetOrInsertUserOptions = {
 	id?: string
 	username?: UserModel['username']
 	password?: string
-	email?: UserModel['email']
+	primaryEmail?: UserModel['primaryEmail']
 }
 
 type User = {
 	id: string
-	email: string
+	member: string | null
 	username: string
-	name: string | null
+	primaryEmail: string | null
 }
 
-async function getOrInsertUser({
-	id,
-	username,
-	password,
-	email,
-}: GetOrInsertUserOptions = {}): Promise<User> {
-	const select = { id: true, email: true, username: true, name: true }
+async function getOrInsertUser({ id, username, password, primaryEmail }: GetOrInsertUserOptions = {}): Promise<User> {
+	const select = { id: true, primaryEmail: true, username: true, member: true }
 	if (id) {
 		return await prisma.user.findUniqueOrThrow({
 			select,
@@ -42,12 +34,13 @@ async function getOrInsertUser({
 		const userData = createUser()
 		username ??= userData.username
 		password ??= userData.username
-		email ??= userData.email
+		primaryEmail ??= userData.primaryEmail
 		return await prisma.user.create({
 			select,
 			data: {
 				...userData,
-				email,
+				id: generatePublicId(),
+				primaryEmail,
 				username,
 				roles: { connect: { name: 'user' } },
 				password: { create: { hash: await getPasswordHash(password) } },
@@ -84,12 +77,8 @@ export const test = base.extend<{
 
 			const authSession = await authSessionStorage.getSession()
 			authSession.set(sessionKey, session.id)
-			const cookieConfig = setCookieParser.parseString(
-				await authSessionStorage.commitSession(authSession),
-			) as any
-			await page
-				.context()
-				.addCookies([{ ...cookieConfig, domain: 'localhost' }])
+			const cookieConfig = setCookieParser.parseString(await authSessionStorage.commitSession(authSession)) as any
+			await page.context().addCookies([{ ...cookieConfig, domain: 'localhost' }])
 			return user
 		})
 		await prisma.user.deleteMany({ where: { id: userId } })
@@ -106,10 +95,7 @@ export const { expect } = test
  */
 export async function waitFor<ReturnValue>(
 	cb: () => ReturnValue | Promise<ReturnValue>,
-	{
-		errorMessage,
-		timeout = 5000,
-	}: { errorMessage?: string; timeout?: number } = {},
+	{ errorMessage, timeout = 5000 }: { errorMessage?: string; timeout?: number } = {},
 ) {
 	const endTime = Date.now() + timeout
 	let lastError: unknown = new Error(errorMessage)

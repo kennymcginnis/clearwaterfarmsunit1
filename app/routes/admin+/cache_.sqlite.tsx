@@ -6,13 +6,10 @@ import { cache } from '#app/utils/cache.server.ts'
 export async function action({ request }: ActionFunctionArgs) {
 	const { currentIsPrimary, primaryInstance } = await getInstanceInfo()
 	if (!currentIsPrimary) {
-		throw new Error(
-			`${request.url} should only be called on the primary instance (${primaryInstance})}`,
-		)
+		throw new Error(`${request.url} should only be called on the primary instance (${primaryInstance})}`)
 	}
 	const token = process.env.INTERNAL_COMMAND_TOKEN
-	const isAuthorized =
-		request.headers.get('Authorization') === `Bearer ${token}`
+	const isAuthorized = request.headers.get('Authorization') === `Bearer ${token}`
 	if (!isAuthorized) {
 		// nah, you can't be here...
 		return redirect('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
@@ -29,18 +26,10 @@ export async function action({ request }: ActionFunctionArgs) {
 	return json({ success: true })
 }
 
-export async function updatePrimaryCacheValue({
-	key,
-	cacheValue,
-}: {
-	key: string
-	cacheValue: any
-}) {
+export async function updatePrimaryCacheValue({ key, cacheValue }: { key: string; cacheValue: any }) {
 	const { currentIsPrimary, primaryInstance } = await getInstanceInfo()
 	if (currentIsPrimary) {
-		throw new Error(
-			`updatePrimaryCacheValue should not be called on the primary instance (${primaryInstance})}`,
-		)
+		throw new Error(`updatePrimaryCacheValue should not be called on the primary instance (${primaryInstance})}`)
 	}
 	const domain = getInternalInstanceDomain(primaryInstance)
 	const token = process.env.INTERNAL_COMMAND_TOKEN

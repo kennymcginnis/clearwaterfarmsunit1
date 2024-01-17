@@ -8,11 +8,7 @@ export function init() {
 		environment: ENV.MODE,
 		integrations: [
 			new Sentry.BrowserTracing({
-				routingInstrumentation: Sentry.remixRouterInstrumentation(
-					useEffect,
-					useLocation,
-					useMatches,
-				),
+				routingInstrumentation: Sentry.remixRouterInstrumentation(useEffect, useLocation, useMatches),
 			}),
 			// Replay is only available in the client
 			new Sentry.Replay(),

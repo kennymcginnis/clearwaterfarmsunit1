@@ -29,24 +29,19 @@ npx create-epic-app@latest
 
 ## Docs
 
-[Read the docs](https://github.com/epicweb-dev/epic-stack/blob/main/docs)
-(please 🙏).
+[Read the docs](https://github.com/epicweb-dev/epic-stack/blob/main/docs) (please 🙏).
 
 ## Support
 
-- 🆘 Join the
-  [discussion on GitHub](https://github.com/epicweb-dev/epic-stack/discussions)
-  and the [KCD Community on Discord](https://kcd.im/discord).
-- 💡 Create an
-  [idea discussion](https://github.com/epicweb-dev/epic-stack/discussions/new?category=ideas)
-  for suggestions.
-- 🐛 Open a [GitHub issue](https://github.com/epicweb-dev/epic-stack/issues) to
-  report a bug.
+- 🆘 Join the [discussion on GitHub](https://github.com/epicweb-dev/epic-stack/discussions) and the
+  [KCD Community on Discord](https://kcd.im/discord).
+- 💡 Create an [idea discussion](https://github.com/epicweb-dev/epic-stack/discussions/new?category=ideas) for
+  suggestions.
+- 🐛 Open a [GitHub issue](https://github.com/epicweb-dev/epic-stack/issues) to report a bug.
 
 ## Branding
 
-Want to talk about the Epic Stack in a blog post or talk? Great! Here are some
-assets you can use in your material:
+Want to talk about the Epic Stack in a blog post or talk? Great! Here are some assets you can use in your material:
 [EpicWeb.dev/brand](https://epicweb.dev/brand)
 
 ## Thanks

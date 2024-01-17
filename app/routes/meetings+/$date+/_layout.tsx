@@ -22,17 +22,11 @@ export default function ProfileRoute() {
 
 	return (
 		<div className="inset-0 flex flex-col px-10">
-			<h2 className="mb-2 pt-12 text-h2 lg:mb-6">
-				Meeting Documents dated: {date}
-			</h2>
+			<h2 className="mb-2 pt-12 text-h2 lg:mb-6">Meeting Documents dated: {date}</h2>
 			<Tabs defaultValue="account">
 				<TabsList className="m-2 flex flex-row justify-start">
 					{meetingTypes.map(type => (
-						<Link
-							key={type.type}
-							to={type.type}
-							defaultChecked={type.type === 'agenda'}
-						>
+						<Link key={type.type} to={type.type} defaultChecked={type.type === 'agenda'}>
 							<TabsTrigger value={type.type}>{type.descrption}</TabsTrigger>
 						</Link>
 					))}

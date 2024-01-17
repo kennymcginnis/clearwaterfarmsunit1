@@ -1,8 +1,6 @@
 import { bundleMDX } from 'mdx-bundler'
 
-export async function parseMdx<FrontmatterType extends Record<string, unknown>>(
-	mdx: string,
-) {
+export async function parseMdx<FrontmatterType extends Record<string, unknown>>(mdx: string) {
 	// prettier-ignore
 	const { default: remarkAutolinkHeader } = await import("remark-autolink-headings");
 	const { default: remarkGfm } = await import('remark-gfm')

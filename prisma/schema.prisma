@@ -11,19 +11,25 @@ datasource db {
 }
 
 model User {
-  id         String  @id @default(cuid())
-  username   String  @unique
-  email      String  @unique
-  name       String?
-  orangewood String
+  id       String  @id
+  username String  @unique
+  member   String?
 
-  restricted Boolean        @default(false)
-  ports      Port[]
-  deposits   Deposit[]
-  schedules  UserSchedule[]
+  userAddress UserAddress[]
+
+  primaryEmail   String? @unique
+  secondaryEmail String?
+
+  phones UserPhone[]
+
+  ports     Port[]
+  deposits  Deposit[]
+  schedules UserSchedule[]
 
   defaultHours Int @default(0)
   defaultHead  Int @default(70)
+
+  restricted Boolean @default(false)
 
   image    UserImage?
   password Password?
@@ -36,8 +42,68 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+model Address {
+  id      String @id
+  address String @unique
+
+  users        UserAddress[]
+  parcelAndLot ParcelAndLot[]
+
+  createdBy String   @default("Admin")
+  createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
+  updatedAt DateTime @updatedAt
+}
+
+model UserAddress {
+  id     String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String
+
+  address   Address @relation(fields: [addressId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  addressId String
+
+  active Boolean @default(true)
+
+  createdBy String   @default("Admin")
+  createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, addressId])
+}
+
+model ParcelAndLot {
+  id String @id
+
+  address   Address @relation(fields: [addressId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  addressId String
+
+  parcel String
+  lot    String
+
+  createdBy String   @default("Admin")
+  createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
+  updatedAt DateTime @updatedAt
+}
+
+model UserPhone {
+  id     String @id
+  number String
+  type   String
+
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  createdBy String   @default("Admin")
+  createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
+  updatedAt DateTime @updatedAt
+}
+
 model Port {
-  id       String  @id @default(cuid())
+  id       String  @id
   ditch    Int
   position Int
   entry    String?
@@ -52,7 +118,7 @@ model Port {
 }
 
 model Deposit {
-  id String @id @default(cuid())
+  id String @id
 
   date   DateTime @default(now())
   amount Float
@@ -68,7 +134,7 @@ model Deposit {
 }
 
 model Schedule {
-  id          String   @id @default(cuid())
+  id          String   @id
   date        DateTime @default(now())
   deadline    DateTime
   source      String
@@ -101,7 +167,7 @@ model UserSchedule {
 }
 
 model Meeting {
-  id   String @id @default(cuid())
+  id   String @id
   date String
 
   documents Document[]
@@ -113,7 +179,7 @@ model Meeting {
 }
 
 model Document {
-  id      String @id @default(cuid())
+  id      String @id
   type    String
   title   String
   content Bytes
@@ -129,7 +195,7 @@ model Document {
 }
 
 model Comment {
-  id      String @id @default(cuid())
+  id      String @id
   comment String
 
   createdBy String   @default("Admin")

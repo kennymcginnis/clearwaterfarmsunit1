@@ -1,12 +1,7 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { type SEOHandle } from '@nasa-gcn/remix-seo'
-import {
-	json,
-	redirect,
-	type LoaderFunctionArgs,
-	type ActionFunctionArgs,
-} from '@remix-run/node'
+import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node'
 import { Form, Link, useActionData } from '@remix-run/react'
 import { ErrorList, Field } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
@@ -116,10 +111,7 @@ export default function CreatePasswordRoute() {
 				<Button variant="secondary" asChild>
 					<Link to="..">Cancel</Link>
 				</Button>
-				<StatusButton
-					type="submit"
-					status={isPending ? 'pending' : actionData?.status ?? 'idle'}
-				>
+				<StatusButton type="submit" status={isPending ? 'pending' : actionData?.status ?? 'idle'}>
 					Create Password
 				</StatusButton>
 			</div>

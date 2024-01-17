@@ -1,4 +1,4 @@
-import  { type Data, type Node } from 'unist'
+import { type Data, type Node } from 'unist'
 
 export interface TagsCount {
 	[tag: string]: number

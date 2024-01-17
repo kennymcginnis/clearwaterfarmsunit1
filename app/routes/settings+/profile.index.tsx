@@ -2,11 +2,7 @@ import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { type SEOHandle } from '@nasa-gcn/remix-seo'
-import {
-	json,
-	type LoaderFunctionArgs,
-	type ActionFunctionArgs,
-} from '@remix-run/node'
+import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node'
 import { Link, useFetcher, useLoaderData } from '@remix-run/react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
@@ -27,7 +23,7 @@ export const handle: SEOHandle = {
 }
 
 const ProfileFormSchema = z.object({
-	name: NameSchema.optional(),
+	member: NameSchema.optional(),
 	username: UsernameSchema,
 })
 
@@ -37,12 +33,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		where: { id: userId },
 		select: {
 			id: true,
-			name: true,
+			member: true,
 			username: true,
-			email: true,
-			image: {
-				select: { id: true },
-			},
+			primaryEmail: true,
+			secondaryEmail: true,
+			image: { select: { id: true } },
 			_count: {
 				select: {
 					sessions: {
@@ -104,7 +99,7 @@ export default function EditUserProfile() {
 			<div className="flex justify-center">
 				<div className="relative h-52 w-52">
 					<img
-						src={getUserImgSrc(data.user.image?.id)}
+						src={getUserImgSrc(data.user.image?.id, data.user.id)}
 						alt={data.user.username}
 						className="h-full w-full rounded-full object-cover"
 					/>
@@ -113,12 +108,7 @@ export default function EditUserProfile() {
 						variant="outline"
 						className="absolute -right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full p-0"
 					>
-						<Link
-							preventScrollReset
-							to="photo"
-							title="Change profile photo"
-							aria-label="Change profile photo"
-						>
+						<Link preventScrollReset to="photo" title="Change profile photo" aria-label="Change profile photo">
 							<Icon name="camera" className="h-4 w-4" />
 						</Link>
 					</Button>
@@ -131,23 +121,26 @@ export default function EditUserProfile() {
 				<div>
 					<Link to="change-email">
 						<Icon name="envelope-closed">
-							Change email from {data.user.email}
+							{data.user.primaryEmail ? `Change primary email from ${data.user.primaryEmail}` : 'Add primary email'}
+						</Icon>
+					</Link>
+				</div>
+				<div>
+					<Link to="change-email">
+						<Icon name="envelope-closed">
+							{data.user.secondaryEmail
+								? `Change secondary email from ${data.user.secondaryEmail}`
+								: 'Add secondary email'}
 						</Icon>
 					</Link>
 				</div>
 				<div>
 					<Link to={data.hasPassword ? 'password' : 'password/create'}>
-						<Icon name="dots-horizontal">
-							{data.hasPassword ? 'Change Password' : 'Create a Password'}
-						</Icon>
+						<Icon name="dots-horizontal">{data.hasPassword ? 'Change Password' : 'Create a Password'}</Icon>
 					</Link>
 				</div>
 				<div>
-					<Link
-						reloadDocument
-						download="my-epic-notes-data.json"
-						to="/resources/download-user-data"
-					>
+					<Link reloadDocument download="my-epic-notes-data.json" to="/resources/download-user-data">
 						<Icon name="download">Download your data</Icon>
 					</Link>
 				</div>
@@ -188,7 +181,7 @@ async function profileUpdateAction({ userId, formData }: ProfileActionArgs) {
 		select: { username: true },
 		where: { id: userId },
 		data: {
-			name: data.name,
+			member: data.member,
 			username: data.username,
 		},
 	})
@@ -210,8 +203,9 @@ function UpdateProfile() {
 		},
 		defaultValue: {
 			username: data.user.username,
-			name: data.user.name ?? '',
-			email: data.user.email,
+			member: data.user.member ?? '',
+			primaryEmail: data.user.primaryEmail,
+			secondaryEmail: data.user.secondaryEmail,
 		},
 	})
 
@@ -230,9 +224,9 @@ function UpdateProfile() {
 				/>
 				<Field
 					className="col-span-3"
-					labelProps={{ htmlFor: fields.name.id, children: 'Name' }}
-					inputProps={conform.input(fields.name)}
-					errors={fields.name.errors}
+					labelProps={{ htmlFor: fields.member.id, children: 'Member Name' }}
+					inputProps={conform.input(fields.member)}
+					errors={fields.member.errors}
 				/>
 			</div>
 
@@ -244,11 +238,7 @@ function UpdateProfile() {
 					size="wide"
 					name="intent"
 					value={profileUpdateActionIntent}
-					status={
-						fetcher.state !== 'idle'
-							? 'pending'
-							: fetcher.data?.status ?? 'idle'
-					}
+					status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
 				>
 					Save changes
 				</StatusButton>
@@ -258,14 +248,9 @@ function UpdateProfile() {
 }
 
 async function signOutOfSessionsAction({ request, userId }: ProfileActionArgs) {
-	const authSession = await authSessionStorage.getSession(
-		request.headers.get('cookie'),
-	)
+	const authSession = await authSessionStorage.getSession(request.headers.get('cookie'))
 	const sessionId = authSession.get(sessionKey)
-	invariantResponse(
-		sessionId,
-		'You must be authenticated to sign out of other sessions',
-	)
+	invariantResponse(sessionId, 'You must be authenticated to sign out of other sessions')
 	await prisma.session.deleteMany({
 		where: {
 			userId,
@@ -293,16 +278,10 @@ function SignOutOfSessions() {
 							value: signOutOfSessionsActionIntent,
 						})}
 						variant={dc.doubleCheck ? 'destructive' : 'default'}
-						status={
-							fetcher.state !== 'idle'
-								? 'pending'
-								: fetcher.data?.status ?? 'idle'
-						}
+						status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
 					>
 						<Icon name="avatar">
-							{dc.doubleCheck
-								? `Are you sure?`
-								: `Sign out of ${otherSessionsCount} other sessions`}
+							{dc.doubleCheck ? `Are you sure?` : `Sign out of ${otherSessionsCount} other sessions`}
 						</Icon>
 					</StatusButton>
 				</fetcher.Form>
@@ -339,9 +318,7 @@ function DeleteData() {
 					variant={dc.doubleCheck ? 'destructive' : 'default'}
 					status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
 				>
-					<Icon name="trash">
-						{dc.doubleCheck ? `Are you sure?` : `Delete all your data`}
-					</Icon>
+					<Icon name="trash">{dc.doubleCheck ? `Are you sure?` : `Delete all your data`}</Icon>
 				</StatusButton>
 			</fetcher.Form>
 		</div>

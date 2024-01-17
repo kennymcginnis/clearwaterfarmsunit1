@@ -13,10 +13,8 @@ test('Users can update their basic info', async ({ page, login }) => {
 
 	const newUserData = createUser()
 
-	await page.getByRole('textbox', { name: /^name/i }).fill(newUserData.name)
-	await page
-		.getByRole('textbox', { name: /^username/i })
-		.fill(newUserData.username)
+	await page.getByRole('textbox', { name: /^member/i }).fill(newUserData.member)
+	await page.getByRole('textbox', { name: /^username/i }).fill(newUserData.username)
 
 	await page.getByRole('button', { name: /^save/i }).click()
 })
@@ -29,55 +27,36 @@ test('Users can update their password', async ({ page, login }) => {
 
 	await page.getByRole('link', { name: /change password/i }).click()
 
-	await page
-		.getByRole('textbox', { name: /^current password/i })
-		.fill(oldPassword)
+	await page.getByRole('textbox', { name: /^current password/i }).fill(oldPassword)
 	await page.getByRole('textbox', { name: /^new password/i }).fill(newPassword)
-	await page
-		.getByRole('textbox', { name: /^confirm new password/i })
-		.fill(newPassword)
+	await page.getByRole('textbox', { name: /^confirm new password/i }).fill(newPassword)
 
 	await page.getByRole('button', { name: /^change password/i }).click()
 
 	await expect(page).toHaveURL(`/settings/profile`)
 
 	const { username } = user
-	expect(
-		await verifyUserPassword({ username }, oldPassword),
-		'Old password still works',
-	).toEqual(null)
-	expect(
-		await verifyUserPassword({ username }, newPassword),
-		'New password does not work',
-	).toEqual({ id: user.id })
+	expect(await verifyUserPassword({ username }, oldPassword), 'Old password still works').toEqual(null)
+	expect(await verifyUserPassword({ username }, newPassword), 'New password does not work').toEqual({ id: user.id })
 })
 
 test('Users can update their profile photo', async ({ page, login }) => {
 	const user = await login()
 	await page.goto('/settings/profile')
 
-	const beforeSrc = await page
-		.getByRole('img', { name: user.name ?? user.username })
-		.getAttribute('src')
+	const beforeSrc = await page.getByRole('img', { name: user.member ?? user.username }).getAttribute('src')
 
 	await page.getByRole('link', { name: /change profile photo/i }).click()
 
 	await expect(page).toHaveURL(`/settings/profile/photo`)
 
-	await page
-		.getByRole('textbox', { name: /change/i })
-		.setInputFiles('./tests/fixtures/images/user/kody.png')
+	await page.getByRole('textbox', { name: /change/i }).setInputFiles('./tests/fixtures/images/user/kody.png')
 
 	await page.getByRole('button', { name: /save/i }).click()
 
-	await expect(
-		page,
-		'Was not redirected after saving the profile photo',
-	).toHaveURL(`/settings/profile`)
+	await expect(page, 'Was not redirected after saving the profile photo').toHaveURL(`/settings/profile`)
 
-	const afterSrc = await page
-		.getByRole('img', { name: user.name ?? user.username })
-		.getAttribute('src')
+	const afterSrc = await page.getByRole('img', { name: user.member ?? user.username }).getAttribute('src')
 
 	expect(beforeSrc).not.toEqual(afterSrc)
 })
@@ -85,7 +64,7 @@ test('Users can update their profile photo', async ({ page, login }) => {
 test('Users can change their email address', async ({ page, login }) => {
 	const preUpdateUser = await login()
 	const newEmailAddress = faker.internet.email().toLowerCase()
-	expect(preUpdateUser.email).not.toEqual(newEmailAddress)
+	expect(preUpdateUser.primaryEmail).not.toEqual(newEmailAddress)
 	await page.goto('/settings/profile')
 	await page.getByRole('link', { name: /change email/i }).click()
 	await page.getByRole('textbox', { name: /new email/i }).fill(newEmailAddress)
@@ -104,11 +83,11 @@ test('Users can change their email address', async ({ page, login }) => {
 
 	const updatedUser = await prisma.user.findUnique({
 		where: { id: preUpdateUser.id },
-		select: { email: true },
+		select: { primaryEmail: true },
 	})
 	invariant(updatedUser, 'Updated user not found')
-	expect(updatedUser.email).toBe(newEmailAddress)
-	const noticeEmail = await waitFor(() => readEmail(preUpdateUser.email), {
+	expect(updatedUser.primaryEmail).toBe(newEmailAddress)
+	const noticeEmail = await waitFor(() => readEmail(preUpdateUser.primaryEmail), {
 		errorMessage: 'Notice email was not sent',
 	})
 	expect(noticeEmail.subject).toContain('changed')

@@ -10,12 +10,7 @@ import {
 	type LoaderFunctionArgs,
 	type ActionFunctionArgs,
 } from '@remix-run/node'
-import {
-	Form,
-	useActionData,
-	useLoaderData,
-	useNavigation,
-} from '@remix-run/react'
+import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/react'
 import { useState } from 'react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
@@ -26,11 +21,7 @@ import { StatusButton } from '#app/components/ui/status-button.tsx'
 import { requireUserId } from '#app/utils/auth.server.ts'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
-import {
-	getUserImgSrc,
-	useDoubleCheck,
-	useIsPending,
-} from '#app/utils/misc.tsx'
+import { getUserImgSrc, useDoubleCheck, useIsPending } from '#app/utils/misc.tsx'
 import { type BreadcrumbHandle } from './profile.tsx'
 
 export const handle: BreadcrumbHandle & SEOHandle = {
@@ -60,8 +51,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		where: { id: userId },
 		select: {
 			id: true,
-			name: true,
 			username: true,
+			member: true,
 			image: { select: { id: true } },
 		},
 	})
@@ -157,11 +148,9 @@ export default function PhotoRoute() {
 			>
 				<AuthenticityTokenInput />
 				<img
-					src={
-						newImageSrc ?? (data.user ? getUserImgSrc(data.user.image?.id) : '')
-					}
+					src={newImageSrc ?? (data.user ? getUserImgSrc(data.user.image?.id, data.user.id) : '')}
 					className="h-52 w-52 rounded-full object-cover"
-					alt={data.user?.name ?? data.user?.username}
+					alt={data.user?.member ?? data.user?.username}
 				/>
 				<ErrorList errors={fields.photoFile.errors} id={fields.photoFile.id} />
 				<div className="flex gap-4">
@@ -211,11 +200,7 @@ export default function PhotoRoute() {
 					>
 						Save Photo
 					</StatusButton>
-					<Button
-						type="reset"
-						variant="destructive"
-						className="peer-invalid:hidden"
-					>
+					<Button type="reset" variant="destructive" className="peer-invalid:hidden">
 						<Icon name="trash">Reset</Icon>
 					</Button>
 					{data.user.image?.id ? (
@@ -235,11 +220,7 @@ export default function PhotoRoute() {
 									  : 'idle'
 							}
 						>
-							<Icon name="trash">
-								{doubleCheckDeleteImage.doubleCheck
-									? 'Are you sure?'
-									: 'Delete'}
-							</Icon>
+							<Icon name="trash">{doubleCheckDeleteImage.doubleCheck ? 'Are you sure?' : 'Delete'}</Icon>
 						</StatusButton>
 					) : null}
 				</div>

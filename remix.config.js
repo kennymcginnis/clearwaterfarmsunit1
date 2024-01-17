@@ -14,12 +14,7 @@ export default {
 	browserNodeBuiltinsPolyfill: { modules: { buffer: true } },
 	routes: async defineRoutes => {
 		return flatRoutes('routes', defineRoutes, {
-			ignoredRouteFiles: [
-				'.*',
-				'**/*.css',
-				'**/*.test.{js,jsx,ts,tsx}',
-				'**/__*.*',
-			],
+			ignoredRouteFiles: ['.*', '**/*.css', '**/*.test.{js,jsx,ts,tsx}', '**/__*.*'],
 		})
 	},
 	mdx: async filename => {

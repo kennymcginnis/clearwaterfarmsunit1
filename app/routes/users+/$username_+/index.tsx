@@ -13,10 +13,46 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	const user = await prisma.user.findFirst({
 		select: {
 			id: true,
-			name: true,
 			username: true,
-			createdAt: true,
+			member: true,
+			defaultHours: true,
+			defaultHead: true,
+			restricted: true,
+			userAddress: {
+				select: {
+					address: { select: { address: true, parcelAndLot: { select: { parcel: true, lot: true } } } },
+				},
+			},
+			primaryEmail: true,
+			secondaryEmail: true,
+			phones: {
+				select: {
+					type: true,
+					number: true,
+				},
+			},
+			ports: {
+				select: {
+					ditch: true,
+					position: true,
+				},
+			},
+			deposits: {
+				select: {
+					date: true,
+					amount: true,
+					note: true,
+				},
+			},
+			schedules: {
+				select: {
+					schedule: { select: { date: true, deadline: true, source: true, costPerHour: true } },
+					hours: true,
+					ditch: true,
+				},
+			},
 			image: { select: { id: true } },
+			createdAt: true,
 		},
 		where: {
 			username: params.username,
@@ -29,11 +65,10 @@ export async function loader({ params }: LoaderFunctionArgs) {
 }
 
 export default function ProfileRoute() {
-	const data = useLoaderData<typeof loader>()
-	const user = data.user
-	const userDisplayName = user.name ?? user.username
+	const { user, userJoinedDisplay } = useLoaderData<typeof loader>()
+	const userDisplayName = user.member ?? user.username
 	const loggedInUser = useOptionalUser()
-	const isLoggedInUser = data.user.id === loggedInUser?.id
+	const isLoggedInUser = user.id === loggedInUser?.id
 
 	return (
 		<div className="container mb-48 mt-36 flex flex-col items-center justify-center">
@@ -44,7 +79,7 @@ export default function ProfileRoute() {
 					<div className="absolute -top-40">
 						<div className="relative">
 							<img
-								src={getUserImgSrc(data.user.image?.id)}
+								src={getUserImgSrc(user.image?.id, user.id)}
 								alt={userDisplayName}
 								className="h-52 w-52 rounded-full object-cover"
 							/>
@@ -58,9 +93,7 @@ export default function ProfileRoute() {
 					<div className="flex flex-wrap items-center justify-center gap-4">
 						<h1 className="text-center text-h2">{userDisplayName}</h1>
 					</div>
-					<p className="mt-2 text-center text-muted-foreground">
-						Joined {data.userJoinedDisplay}
-					</p>
+					<p className="mt-2 text-center text-muted-foreground">Joined {userJoinedDisplay}</p>
 					{isLoggedInUser ? (
 						<Form action="/logout" method="POST" className="mt-3">
 							<Button type="submit" variant="link" size="pill">
@@ -94,12 +127,14 @@ export default function ProfileRoute() {
 					</div>
 				</div>
 			</div>
+
+			<pre>{JSON.stringify(user, null, 2)}</pre>
 		</div>
 	)
 }
 
 export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
-	const displayName = data?.user.name ?? params.username
+	const displayName = data?.user.member ?? params.username
 	return [
 		{ title: `${displayName} | Clearwater Farms 1` },
 		{
@@ -113,9 +148,7 @@ export function ErrorBoundary() {
 	return (
 		<GeneralErrorBoundary
 			statusHandlers={{
-				404: ({ params }) => (
-					<p>No user with the username "{params.username}" exists</p>
-				),
+				404: ({ params }) => <p>No user with the username "{params.username}" exists</p>,
 			}}
 		/>
 	)

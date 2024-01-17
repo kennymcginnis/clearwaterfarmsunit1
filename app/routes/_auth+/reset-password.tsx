@@ -1,13 +1,7 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { invariant } from '@epic-web/invariant'
-import {
-	json,
-	redirect,
-	type LoaderFunctionArgs,
-	type ActionFunctionArgs,
-	type MetaFunction,
-} from '@remix-run/node'
+import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { Form, useActionData, useLoaderData } from '@remix-run/react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { ErrorList, Field } from '#app/components/forms.tsx'
@@ -25,8 +19,8 @@ export async function handleVerification({ submission }: VerifyFunctionArgs) {
 	invariant(submission.value, 'submission.value should be defined by now')
 	const target = submission.value.target
 	const user = await prisma.user.findFirst({
-		where: { OR: [{ email: target }, { username: target }] },
-		select: { email: true, username: true },
+		where: { OR: [{ primaryEmail: target }, { secondaryEmail: target }, { username: target }] },
+		select: { primaryEmail: true, username: true },
 	})
 	// we don't want to say the user is not found if the email is not found
 	// because that would allow an attacker to check if an email is registered
@@ -48,12 +42,8 @@ const ResetPasswordSchema = PasswordAndConfirmPasswordSchema
 
 async function requireResetPasswordUsername(request: Request) {
 	await requireAnonymous(request)
-	const verifySession = await verifySessionStorage.getSession(
-		request.headers.get('cookie'),
-	)
-	const resetPasswordUsername = verifySession.get(
-		resetPasswordUsernameSessionKey,
-	)
+	const verifySession = await verifySessionStorage.getSession(request.headers.get('cookie'))
+	const resetPasswordUsername = verifySession.get(resetPasswordUsernameSessionKey)
 	if (typeof resetPasswordUsername !== 'string' || !resetPasswordUsername) {
 		throw redirect('/login')
 	}

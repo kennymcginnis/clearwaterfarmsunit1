@@ -1,15 +1,8 @@
 import crypto from 'crypto'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import {
-	createRequestHandler as _createRequestHandler,
-	type RequestHandler,
-} from '@remix-run/express'
-import {
-	broadcastDevReady,
-	installGlobals,
-	type ServerBuild,
-} from '@remix-run/node'
+import { createRequestHandler as _createRequestHandler, type RequestHandler } from '@remix-run/express'
+import { broadcastDevReady, installGlobals, type ServerBuild } from '@remix-run/node'
 import * as Sentry from '@sentry/remix'
 import { ip as ipAddress } from 'address'
 import chalk from 'chalk'
@@ -25,9 +18,7 @@ installGlobals()
 
 const MODE = process.env.NODE_ENV
 
-const createRequestHandler = Sentry.wrapExpressCreateRequestHandler(
-	_createRequestHandler,
-)
+const createRequestHandler = Sentry.wrapExpressCreateRequestHandler(_createRequestHandler)
 
 const BUILD_PATH = '../build/index.js'
 const WATCH_PATH = '../build/version.txt'
@@ -80,10 +71,7 @@ app.use(Sentry.Handlers.requestHandler())
 app.use(Sentry.Handlers.tracingHandler())
 
 // Remix fingerprints its assets so we can cache forever.
-app.use(
-	'/build',
-	express.static('public/build', { immutable: true, maxAge: '1y' }),
-)
+app.use('/build', express.static('public/build', { immutable: true, maxAge: '1y' }))
 
 // Everything else (like favicon.ico) is cached for an hour. You may want to be
 // more aggressive with this caching.
@@ -146,8 +134,7 @@ app.use(
 // When running tests or running in development, we want to effectively disable
 // rate limiting because playwright tests are very fast and we don't want to
 // have to wait for the rate limit to reset between tests.
-const maxMultiple =
-	MODE !== 'production' || process.env.PLAYWRIGHT_TEST_BASE_URL ? 10_000 : 1
+const maxMultiple = MODE !== 'production' || process.env.PLAYWRIGHT_TEST_BASE_URL ? 10_000 : 1
 const rateLimitDefault = {
 	windowMs: 60 * 1000,
 	max: 1000 * maxMultiple,
@@ -206,12 +193,7 @@ function getRequestHandler(build: ServerBuild): RequestHandler {
 	return createRequestHandler({ build, mode: MODE, getLoadContext })
 }
 
-app.all(
-	'*',
-	MODE === 'development'
-		? (...args) => getRequestHandler(devBuild)(...args)
-		: getRequestHandler(build),
-)
+app.all('*', MODE === 'development' ? (...args) => getRequestHandler(devBuild)(...args) : getRequestHandler(build))
 
 const desiredPort = Number(process.env.PORT || 3000)
 const portToUse = await getPort({
@@ -220,19 +202,10 @@ const portToUse = await getPort({
 
 const server = app.listen(portToUse, () => {
 	const addy = server.address()
-	const portUsed =
-		desiredPort === portToUse
-			? desiredPort
-			: addy && typeof addy === 'object'
-			  ? addy.port
-			  : 0
+	const portUsed = desiredPort === portToUse ? desiredPort : addy && typeof addy === 'object' ? addy.port : 0
 
 	if (portUsed !== desiredPort) {
-		console.warn(
-			chalk.yellow(
-				`⚠️  Port ${desiredPort} is not available, using ${portUsed} instead.`,
-			),
-		)
+		console.warn(chalk.yellow(`⚠️  Port ${desiredPort} is not available, using ${portUsed} instead.`))
 	}
 	console.log(`🚀  We have liftoff!`)
 	const localUrl = `http://localhost:${portUsed}`

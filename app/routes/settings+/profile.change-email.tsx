@@ -3,22 +3,14 @@ import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { invariant } from '@epic-web/invariant'
 import { type SEOHandle } from '@nasa-gcn/remix-seo'
 import * as E from '@react-email/components'
-import {
-	json,
-	redirect,
-	type LoaderFunctionArgs,
-	type ActionFunctionArgs,
-} from '@remix-run/node'
+import { json, redirect, type DataFunctionArgs } from '@remix-run/node'
 import { Form, useActionData, useLoaderData } from '@remix-run/react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
 import { ErrorList, Field } from '#app/components/forms.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
-import {
-	prepareVerification,
-	type VerifyFunctionArgs,
-} from '#app/routes/_auth+/verify.tsx'
+import { prepareVerification, type VerifyFunctionArgs } from '#app/routes/_auth+/verify.tsx'
 import { requireUserId } from '#app/utils/auth.server.ts'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
@@ -36,44 +28,39 @@ export const handle: BreadcrumbHandle & SEOHandle = {
 
 const newEmailAddressSessionKey = 'new-email-address'
 
-export async function handleVerification({
-	request,
-	submission,
-}: VerifyFunctionArgs) {
+export async function handleVerification({ request, submission }: VerifyFunctionArgs) {
 	invariant(submission.value, 'submission.value should be defined by now')
 
-	const verifySession = await verifySessionStorage.getSession(
-		request.headers.get('cookie'),
-	)
+	const verifySession = await verifySessionStorage.getSession(request.headers.get('cookie'))
 	const newEmail = verifySession.get(newEmailAddressSessionKey)
 	if (!newEmail) {
-		submission.error[''] = [
-			'You must submit the code on the same device that requested the email change.',
-		]
+		submission.error[''] = ['You must submit the code on the same device that requested the email change.']
 		return json({ status: 'error', submission } as const, { status: 400 })
 	}
 	const preUpdateUser = await prisma.user.findFirstOrThrow({
-		select: { email: true },
+		select: { primaryEmail: true },
 		where: { id: submission.value.target },
 	})
 	const user = await prisma.user.update({
 		where: { id: submission.value.target },
-		select: { id: true, email: true, username: true },
-		data: { email: newEmail },
+		select: { id: true, primaryEmail: true, username: true },
+		data: { primaryEmail: newEmail },
 	})
 
-	void sendEmail({
-		to: preUpdateUser.email,
-		subject: 'Epic Stack email changed',
-		react: <EmailChangeNoticeEmail userId={user.id} />,
-	})
-
+	if (preUpdateUser.primaryEmail) {
+		void sendEmail({
+			to: preUpdateUser.primaryEmail,
+			subject: 'Clearwater Farms Unit 1 email changed',
+			react: <EmailChangeNoticeEmail userId={user.id} />,
+		})
+	}
+	
 	return redirectWithToast(
 		'/settings/profile',
 		{
 			title: 'Email Changed',
 			type: 'success',
-			description: `Your email has been changed to ${user.email}`,
+			description: `Your email has been changed to ${user.primaryEmail}`,
 		},
 		{
 			headers: {
@@ -87,11 +74,11 @@ const ChangeEmailSchema = z.object({
 	email: EmailSchema,
 })
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: DataFunctionArgs) {
 	const userId = await requireUserId(request)
 	const user = await prisma.user.findUnique({
 		where: { id: userId },
-		select: { email: true },
+		select: { primaryEmail: true },
 	})
 	if (!user) {
 		const params = new URLSearchParams({ redirectTo: request.url })
@@ -100,14 +87,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	return json({ user })
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: DataFunctionArgs) {
 	const userId = await requireUserId(request)
 	const formData = await request.formData()
 	await validateCSRF(formData, request.headers)
 	const submission = await parse(formData, {
 		schema: ChangeEmailSchema.superRefine(async (data, ctx) => {
 			const existingUser = await prisma.user.findUnique({
-				where: { email: data.email },
+				where: { primaryEmail: data.email },
 			})
 			if (existingUser) {
 				ctx.addIssue({
@@ -135,7 +122,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	const response = await sendEmail({
 		to: submission.value.email,
-		subject: `Clearwater Farms 1 Email Change Verification`,
+		subject: `Clearwater Farms Unit 1 Email Change Verification`,
 		react: <EmailChangeEmail verifyUrl={verifyUrl.toString()} otp={otp} />,
 	})
 
@@ -153,18 +140,12 @@ export async function action({ request }: ActionFunctionArgs) {
 	}
 }
 
-export function EmailChangeEmail({
-	verifyUrl,
-	otp,
-}: {
-	verifyUrl: string
-	otp: string
-}) {
+export function EmailChangeEmail({ verifyUrl, otp }: { verifyUrl: string; otp: string }) {
 	return (
 		<E.Html lang="en" dir="ltr">
 			<E.Container>
 				<h1>
-					<E.Text>Clearwater Farms 1 Email Change</E.Text>
+					<E.Text>Clearwater Farms Unit 1 Email Change</E.Text>
 				</h1>
 				<p>
 					<E.Text>
@@ -185,19 +166,15 @@ export function EmailChangeNoticeEmail({ userId }: { userId: string }) {
 		<E.Html lang="en" dir="ltr">
 			<E.Container>
 				<h1>
-					<E.Text>Your Clearwater Farms 1 email has been changed</E.Text>
+					<E.Text>Your Clearwater Farms Unit 1 email has been changed</E.Text>
 				</h1>
 				<p>
-					<E.Text>
-						We're writing to let you know that your Clearwater Farms 1 email has
-						been changed.
-					</E.Text>
+					<E.Text>We're writing to let you know that your Clearwater Farms Unit 1 email has been changed.</E.Text>
 				</p>
 				<p>
 					<E.Text>
-						If you changed your email address, then you can safely ignore this.
-						But if you did not change your email address, then please contact
-						support immediately.
+						If you changed your email address, then you can safely ignore this. But if you did not change your email
+						address, then please contact support immediately.
 					</E.Text>
 				</p>
 				<p>
@@ -226,9 +203,7 @@ export default function ChangeEmailIndex() {
 		<div>
 			<h1 className="text-h1">Change Email</h1>
 			<p>You will receive an email at the new email address to confirm.</p>
-			<p>
-				An email notice will also be sent to your old address {data.user.email}.
-			</p>
+			<p>An email notice will also be sent to your old address {data.user.primaryEmail}.</p>
 			<div className="mx-auto mt-5 max-w-sm">
 				<Form method="POST" {...form.props}>
 					<AuthenticityTokenInput />
@@ -242,11 +217,7 @@ export default function ChangeEmailIndex() {
 					/>
 					<ErrorList id={form.errorId} errors={form.errors} />
 					<div>
-						<StatusButton
-							status={isPending ? 'pending' : actionData?.status ?? 'idle'}
-						>
-							Send Confirmation
-						</StatusButton>
+						<StatusButton status={isPending ? 'pending' : actionData?.status ?? 'idle'}>Send Confirmation</StatusButton>
 					</div>
 				</Form>
 			</div>

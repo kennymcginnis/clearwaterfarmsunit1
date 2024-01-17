@@ -743,8 +743,7 @@ September 6th at 7230 N. 18st Ave.`,
 	},
 	{
 		type: 'minutes',
-		title:
-			'Clearwater Farms Property Owners Association Unit 1 Board Meeting June 7, 2023',
+		title: 'Clearwater Farms Property Owners Association Unit 1 Board Meeting June 7, 2023',
 		content: `CLEARWATER FARMS PROPERTY OWNERS' ASSOCIATION UNIT 1 BOARD MEETING - June 7, 2023
 LOCATION: 7230 N. 181st Ave.
 ATTENDEES

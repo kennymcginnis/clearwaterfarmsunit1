@@ -21,6 +21,7 @@ import { requireUserId } from '#app/utils/auth.server.ts'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { useIsPending } from '#app/utils/misc.tsx'
+import { generatePublicId } from '#app/utils/public-id'
 
 const dateMinLength = 1
 const dateMaxLength = 10
@@ -33,10 +34,7 @@ const MeetingEditorSchema = z.object({
 export async function action({ request }: ActionFunctionArgs) {
 	const userId = await requireUserId(request)
 
-	const formData = await parseMultipartFormData(
-		request,
-		createMemoryUploadHandler(),
-	)
+	const formData = await parseMultipartFormData(request, createMemoryUploadHandler())
 	await validateCSRF(formData, request.headers)
 
 	const submission = await parse(formData, {
@@ -70,18 +68,14 @@ export async function action({ request }: ActionFunctionArgs) {
 	const updatedMeeting = await prisma.meeting.upsert({
 		select: { id: true, date: true },
 		where: { id: meetingId ?? '__new_meeting__' },
-		create: { date, createdBy: userId },
+		create: { id: generatePublicId(), date, createdBy: userId, updatedBy: userId },
 		update: { date, updatedBy: userId },
 	})
 
 	return redirect(`/meeting/${updatedMeeting.date}/agenda`)
 }
 
-export function MeetingEditor({
-	meeting,
-}: {
-	meeting?: SerializeFrom<Pick<Meeting, 'id' | 'date'>>
-}) {
+export function MeetingEditor({ meeting }: { meeting?: SerializeFrom<Pick<Meeting, 'id' | 'date'>> }) {
 	const actionData = useActionData<typeof action>()
 	const isPending = useIsPending()
 
@@ -129,12 +123,7 @@ export function MeetingEditor({
 				<Button form={form.id} variant="destructive" type="reset">
 					Reset
 				</Button>
-				<StatusButton
-					form={form.id}
-					type="submit"
-					disabled={isPending}
-					status={isPending ? 'pending' : 'idle'}
-				>
+				<StatusButton form={form.id} type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
 					Submit
 				</StatusButton>
 			</div>
@@ -146,9 +135,7 @@ export function ErrorBoundary() {
 	return (
 		<GeneralErrorBoundary
 			statusHandlers={{
-				404: ({ params }) => (
-					<p>No meeting with the id "{params.meetingId}" exists</p>
-				),
+				404: ({ params }) => <p>No meeting with the id "{params.meetingId}" exists</p>,
 			}}
 		/>
 	)

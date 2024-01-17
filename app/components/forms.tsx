@@ -7,13 +7,7 @@ import { Textarea } from './ui/textarea.tsx'
 
 export type ListOfErrors = Array<string | null | undefined> | null | undefined
 
-export function ErrorList({
-	id,
-	errors,
-}: {
-	errors?: ListOfErrors
-	id?: string
-}) {
+export function ErrorList({ id, errors }: { errors?: ListOfErrors; id?: string }) {
 	const errorsToRender = errors?.filter(Boolean)
 	if (!errorsToRender?.length) return null
 	return (
@@ -44,15 +38,8 @@ export function Field({
 	return (
 		<div className={className}>
 			<Label htmlFor={id} {...labelProps} />
-			<Input
-				id={id}
-				aria-invalid={errorId ? true : undefined}
-				aria-describedby={errorId}
-				{...inputProps}
-			/>
-			<div className="min-h-[32px] px-4 pb-3 pt-1">
-				{errorId ? <ErrorList id={errorId} errors={errors} /> : null}
-			</div>
+			<Input id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...inputProps} />
+			<div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
 		</div>
 	)
 }
@@ -74,15 +61,8 @@ export function TextareaField({
 	return (
 		<div className={className}>
 			<Label htmlFor={id} {...labelProps} />
-			<Textarea
-				id={id}
-				aria-invalid={errorId ? true : undefined}
-				aria-describedby={errorId}
-				{...textareaProps}
-			/>
-			<div className="min-h-[32px] px-4 pb-3 pt-1">
-				{errorId ? <ErrorList id={errorId} errors={errors} /> : null}
-			</div>
+			<Textarea id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...textareaProps} />
+			<div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
 		</div>
 	)
 }
@@ -105,8 +85,7 @@ export function CheckboxField({
 	const control = useInputEvent({
 		// Retrieve the checkbox element by name instead as Radix does not expose the internal checkbox element
 		// See https://github.com/radix-ui/primitives/discussions/874
-		ref: () =>
-			buttonRef.current?.form?.elements.namedItem(buttonProps.name ?? ''),
+		ref: () => buttonRef.current?.form?.elements.namedItem(buttonProps.name ?? ''),
 		onFocus: () => buttonRef.current?.focus(),
 	})
 	const id = buttonProps.id ?? buttonProps.name ?? fallbackId
@@ -134,15 +113,9 @@ export function CheckboxField({
 					}}
 					type="button"
 				/>
-				<label
-					htmlFor={id}
-					{...labelProps}
-					className="self-center text-body-xs text-muted-foreground"
-				/>
+				<label htmlFor={id} {...labelProps} className="self-center text-body-xs text-muted-foreground" />
 			</div>
-			<div className="px-4 pb-3 pt-1">
-				{errorId ? <ErrorList id={errorId} errors={errors} /> : null}
-			</div>
+			<div className="px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
 		</div>
 	)
 }

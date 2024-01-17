@@ -30,14 +30,12 @@ const nav = {
 		{
 			title: 'Articles of Incorporation',
 			href: '/documents/articles-of-incorporation',
-			description:
-				'Articles of Incorporation of Clearwater Farms Unit #1 Property Owners Association',
+			description: 'Articles of Incorporation of Clearwater Farms Unit #1 Property Owners Association',
 		},
 		{
 			title: "CC&R's",
 			href: '/documents/cc-and-r-s',
-			description:
-				'Clearwater Farms | Declaration of Conditions, Covenants and Restrictions',
+			description: 'Clearwater Farms | Declaration of Conditions, Covenants and Restrictions',
 		},
 		{
 			title: 'Bylaws',
@@ -67,9 +65,7 @@ export function MainNavigationMenu() {
 			<NavigationMenuList>
 				<NavigationMenuItem>
 					<Link to="/announcements">
-						<NavigationMenuLink className={navigationMenuTriggerStyle()}>
-							Home
-						</NavigationMenuLink>
+						<NavigationMenuLink className={navigationMenuTriggerStyle()}>Home</NavigationMenuLink>
 					</Link>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
@@ -84,12 +80,8 @@ export function MainNavigationMenu() {
 												<Droplet className="h-8 w-8" aria-hidden="true" />
 												<Droplets className="h-8 w-8" aria-hidden="true" />
 											</div>
-											<div className="mb-2 mt-4 text-lg font-medium">
-												Schedule for:
-											</div>
-											<p className="text-sm leading-tight text-muted-foreground">
-												Jan 11th to Jan 15th
-											</p>
+											<div className="mb-2 mt-4 text-lg font-medium">Schedule for:</div>
+											<p className="text-sm leading-tight text-muted-foreground">Jan 11th to Jan 15th</p>
 										</div>
 									</Link>
 								</NavigationMenuLink>
@@ -97,9 +89,7 @@ export function MainNavigationMenu() {
 
 							{nav.irrigation.map(link => (
 								<ListItem key={link.href} title={link.title} href={link.href}>
-									<div className="mb-2 mt-4 text-sm font-medium">
-										{link.description}
-									</div>
+									<div className="mb-2 mt-4 text-sm font-medium">{link.description}</div>
 								</ListItem>
 							))}
 						</ul>
@@ -121,9 +111,7 @@ export function MainNavigationMenu() {
 				{nav.other.map(link => (
 					<NavigationMenuItem key={link.href}>
 						<Link to={link.href}>
-							<NavigationMenuLink className={navigationMenuTriggerStyle()}>
-								{link.title}
-							</NavigationMenuLink>
+							<NavigationMenuLink className={navigationMenuTriggerStyle()}>{link.title}</NavigationMenuLink>
 						</Link>
 					</NavigationMenuItem>
 				))}
@@ -132,28 +120,25 @@ export function MainNavigationMenu() {
 	)
 }
 
-const ListItem = React.forwardRef<
-	React.ElementRef<'a'>,
-	React.ComponentPropsWithoutRef<'a'>
->(({ className, title, children, ...props }, ref) => {
-	return (
-		<li>
-			<NavigationMenuLink asChild>
-				<a
-					ref={ref}
-					className={cn(
-						'block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground',
-						className,
-					)}
-					{...props}
-				>
-					<div className="text-lg font-medium leading-none">{title}</div>
-					<p className="text-l line-clamp-2 leading-snug text-muted-foreground">
-						{children}
-					</p>
-				</a>
-			</NavigationMenuLink>
-		</li>
-	)
-})
+const ListItem = React.forwardRef<React.ElementRef<'a'>, React.ComponentPropsWithoutRef<'a'>>(
+	({ className, title, children, ...props }, ref) => {
+		return (
+			<li>
+				<NavigationMenuLink asChild>
+					<a
+						ref={ref}
+						className={cn(
+							'block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground',
+							className,
+						)}
+						{...props}
+					>
+						<div className="text-lg font-medium leading-none">{title}</div>
+						<p className="text-l line-clamp-2 leading-snug text-muted-foreground">{children}</p>
+					</a>
+				</NavigationMenuLink>
+			</li>
+		)
+	},
+)
 ListItem.displayName = 'ListItem'
