@@ -1,7 +1,7 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
-import { getMDXComponent } from 'mdx-bundler/client'
+import { getMDXComponent } from 'mdx-bundler/client/index.js'
 import React from 'react'
 import { Spacer } from '#app/components/spacer.tsx'
 import { prisma } from '#app/utils/db.server.ts'
