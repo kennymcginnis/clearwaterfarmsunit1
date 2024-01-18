@@ -8,7 +8,7 @@ export async function setup() {
 	const databaseExists = await fsExtra.pathExists(BASE_DATABASE_PATH)
 	if (databaseExists) return
 
-	await execaCommand('prisma migrate reset --force --skip-seed --skip-generate', {
+	await execaCommand('prisma migrate reset --force --skip-seed', {
 		stdio: 'inherit',
 		env: {
 			...process.env,
