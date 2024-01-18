@@ -58,9 +58,9 @@ export async function handleVerification({ request, submission }: VerifyFunction
 	return redirectWithToast(
 		'/settings/profile',
 		{
-			title: 'Email Changed',
+			title: 'Primary Email Changed',
 			type: 'success',
-			description: `Your email has been changed to ${user.primaryEmail}`,
+			description: `Your primary email has been changed to ${user.primaryEmail}`,
 		},
 		{
 			headers: {
@@ -166,10 +166,10 @@ export function EmailChangeNoticeEmail({ userId }: { userId: string }) {
 		<E.Html lang="en" dir="ltr">
 			<E.Container>
 				<h1>
-					<E.Text>Your Clearwater Farms Unit 1 email has been changed</E.Text>
+					<E.Text>Your Clearwater Farms Unit 1 primary email has been changed</E.Text>
 				</h1>
 				<p>
-					<E.Text>We're writing to let you know that your Clearwater Farms Unit 1 email has been changed.</E.Text>
+					<E.Text>We're writing to let you know that your Clearwater Farms Unit 1 primary email has been changed.</E.Text>
 				</p>
 				<p>
 					<E.Text>

@@ -9,7 +9,6 @@ export function getUserImgSrc(imageId?: string | null, userId?: string | null) {
 	if (imageId) return `/resources/user-images/${imageId}`
 	if (userId) {
 		const stripped = userId.replace(/\D/g, '')
-		console.log({ stripped })
 		if (stripped) return `/img/${+stripped % 10}.jpg`
 	}
 	return `/img/${Math.floor(Math.random() * 10) % 10}.jpg`

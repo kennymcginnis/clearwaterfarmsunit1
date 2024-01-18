@@ -16,7 +16,7 @@ import { prisma } from '#app/utils/db.server.ts'
 import { getUserImgSrc, useDoubleCheck } from '#app/utils/misc.tsx'
 import { authSessionStorage } from '#app/utils/session.server.ts'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { NameSchema, UsernameSchema } from '#app/utils/user-validation.ts'
+import { EmailSchema, NameSchema, UsernameSchema } from '#app/utils/user-validation.ts'
 
 export const handle: SEOHandle = {
 	getSitemapEntries: () => null,
@@ -25,6 +25,7 @@ export const handle: SEOHandle = {
 const ProfileFormSchema = z.object({
 	member: NameSchema.optional(),
 	username: UsernameSchema,
+	secondaryEmail: EmailSchema.optional(),
 })
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -95,7 +96,7 @@ export default function EditUserProfile() {
 	const data = useLoaderData<typeof loader>()
 
 	return (
-		<div className="flex flex-col gap-12">
+		<div className="flex flex-col gap-10">
 			<div className="flex justify-center">
 				<div className="relative h-52 w-52">
 					<img
@@ -116,24 +117,8 @@ export default function EditUserProfile() {
 			</div>
 			<UpdateProfile />
 
-			<div className="col-span-6 my-6 h-1 border-b-[1.5px] border-foreground" />
+			<div className="col-span-6 my-4 h-1 border-b-[1.5px] border-foreground" />
 			<div className="col-span-full flex flex-col gap-6">
-				<div>
-					<Link to="change-email">
-						<Icon name="envelope-closed">
-							{data.user.primaryEmail ? `Change primary email from ${data.user.primaryEmail}` : 'Add primary email'}
-						</Icon>
-					</Link>
-				</div>
-				<div>
-					<Link to="change-email">
-						<Icon name="envelope-closed">
-							{data.user.secondaryEmail
-								? `Change secondary email from ${data.user.secondaryEmail}`
-								: 'Add secondary email'}
-						</Icon>
-					</Link>
-				</div>
 				<div>
 					<Link to={data.hasPassword ? 'password' : 'password/create'}>
 						<Icon name="dots-horizontal">{data.hasPassword ? 'Change Password' : 'Create a Password'}</Icon>
@@ -183,6 +168,7 @@ async function profileUpdateAction({ userId, formData }: ProfileActionArgs) {
 		data: {
 			member: data.member,
 			username: data.username,
+			secondaryEmail: data.secondaryEmail,
 		},
 	})
 
@@ -227,6 +213,27 @@ function UpdateProfile() {
 					labelProps={{ htmlFor: fields.member.id, children: 'Member Name' }}
 					inputProps={conform.input(fields.member)}
 					errors={fields.member.errors}
+				/>
+				<div className="col-span-6 pb-4">
+					<label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+						Primary Email
+					</label>
+					<Link
+						className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid]:border-input-invalid"
+						to="change-email"
+						aria-label="Change email"
+					>
+						<Icon name="envelope-closed">
+							{data.user.primaryEmail ? `Change email from ${data.user.primaryEmail}` : 'Add primary email'}
+						</Icon>
+					</Link>
+				</div>
+
+				<Field
+					className="col-span-6"
+					labelProps={{ htmlFor: fields.secondaryEmail.id, children: 'Secondary Email' }}
+					inputProps={conform.input(fields.secondaryEmail)}
+					errors={fields.secondaryEmail.errors}
 				/>
 			</div>
 
