@@ -7,7 +7,7 @@ import { Spacer } from '#app/components/spacer.tsx'
 import { prisma } from '#app/utils/db.server.ts'
 import { parseMdx } from '#app/utils/mdx-bundler.server'
 import { getDocumentImgSrc } from '#app/utils/misc.tsx'
-import { userHasPermission } from '#app/utils/permissions.ts'
+import { userHasRole } from '#app/utils/permissions.ts'
 import { useOptionalUser } from '#app/utils/user.ts'
 
 export async function loader({ params }: LoaderFunctionArgs) {
@@ -48,7 +48,7 @@ export default function ProfileRoute() {
 	const Component = React.useMemo(() => getMDXComponent(code), [code])
 
 	const user = useOptionalUser()
-	const displayBar = userHasPermission(user, 'delete:document')
+	const displayBar = userHasRole(user, 'admin')
 
 	return (
 		<div className="container mb-48 mt-36">

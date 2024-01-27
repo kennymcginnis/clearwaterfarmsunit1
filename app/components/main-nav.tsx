@@ -1,7 +1,7 @@
 'use client'
 import { Link } from '@remix-run/react'
-import { Droplet, Droplets } from 'lucide-react'
 import React from 'react'
+import { Icon } from '#app/components/ui/icon.tsx'
 import {
 	NavigationMenu,
 	NavigationMenuContent,
@@ -14,18 +14,6 @@ import {
 import { cn } from '#app/utils/misc.tsx'
 
 const nav = {
-	irrigation: [
-		{
-			title: 'Sign Up',
-			href: '/irrigation/sign-up',
-			description: 'Sign Up or modify schedule',
-		},
-		{
-			title: 'Schedule',
-			href: '/irrigation/schedule',
-			description: 'View the current schedule',
-		},
-	],
 	documents: [
 		{
 			title: 'Articles of Incorporation',
@@ -59,7 +47,15 @@ const nav = {
 	],
 }
 
-export function MainNavigationMenu() {
+export function MainNavigationMenu({
+	isAdminUser,
+	open,
+	closed,
+}: {
+	isAdminUser: boolean
+	open: { date: string }
+	closed: { date: string }
+}) {
 	return (
 		<NavigationMenu>
 			<NavigationMenuList>
@@ -74,24 +70,32 @@ export function MainNavigationMenu() {
 						<ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
 							<li className="row-span-3">
 								<NavigationMenuLink asChild>
-									<Link to="/users">
+									<Link to="/schedules" className={isAdminUser ? '' : 'pointer-events-none'}>
 										<div className="flex h-full w-full select-none flex-col items-center justify-center rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md">
 											<div className="flex flex-row">
-												<Droplet className="h-8 w-8" aria-hidden="true" />
-												<Droplets className="h-8 w-8" aria-hidden="true" />
+												<Icon name="droplet" className="h-8 w-8" aria-hidden="true" />
+												<Icon name="droplets" className="h-8 w-8" aria-hidden="true" />
 											</div>
-											<div className="mb-2 mt-4 text-lg font-medium">Schedule for:</div>
-											<p className="text-sm leading-tight text-muted-foreground">Jan 11th to Jan 15th</p>
+											<div className="mb-2 mt-4 text-lg font-medium">Irrigation</div>
+											<p className="text-sm leading-tight text-muted-foreground">Schedules</p>
 										</div>
 									</Link>
 								</NavigationMenuLink>
 							</li>
-
-							{nav.irrigation.map(link => (
-								<ListItem key={link.href} title={link.title} href={link.href}>
-									<div className="mb-2 mt-4 text-sm font-medium">{link.description}</div>
+							<Link to={`/schedule/${open?.date}/sign-up`} className={open ? '' : 'pointer-events-none'}>
+								<ListItem key="sign-up" title="Sign Up">
+									<div className="mb-2 mt-4 text-sm font-medium">
+										Sign Up or modify schedule {open ? `for ${open.date}` : ''}
+									</div>
 								</ListItem>
-							))}
+							</Link>
+							<Link to={`/schedule/${closed?.date}/timeline`} className={closed ? '' : 'pointer-events-none'}>
+								<ListItem key="schedule" title="Schedule">
+									<div className="mb-2 mt-4 text-sm font-medium">
+										View the current schedule {closed ? `for ${closed.date}` : ''}
+									</div>
+								</ListItem>
+							</Link>
 						</ul>
 					</NavigationMenuContent>
 				</NavigationMenuItem>

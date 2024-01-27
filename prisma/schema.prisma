@@ -22,9 +22,9 @@ model User {
 
   phones UserPhone[]
 
-  ports     Port[]
-  deposits  Deposit[]
-  schedules UserSchedule[]
+  ports        Port[]
+  transactions Transaction[]
+  schedules    UserSchedule[]
 
   defaultHours Int @default(0)
   defaultHead  Int @default(70)
@@ -117,12 +117,13 @@ model Port {
   updatedAt DateTime @updatedAt
 }
 
-model Deposit {
+model Transaction {
   id String @id
 
-  date   DateTime @default(now())
-  amount Float
-  note   String
+  date   String
+  debit  Float?
+  credit Float?
+  note   String?
 
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
@@ -131,14 +132,18 @@ model Deposit {
   createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
+
+  @@map("Transaction")
 }
 
 model Schedule {
-  id          String   @id
-  date        DateTime @default(now())
-  deadline    DateTime
+  id          String  @id
+  date        String
+  deadline    String
   source      String
   costPerHour Int
+  open        Boolean @default(false)
+  closed      Boolean @default(false)
 
   userSchedules UserSchedule[]
 
@@ -155,8 +160,11 @@ model UserSchedule {
   schedule   Schedule @relation(fields: [scheduleId], references: [id])
   scheduleId String
 
-  hours Decimal
-  // userCost (schedule.cost * hours)
+  start DateTime?
+  stop  DateTime?
+
+  hours Float
+  head  Int   @default(70)
 
   createdBy String   @default("Admin")
   createdAt DateTime @default(now())
@@ -312,4 +320,25 @@ model Verification {
   expiresAt DateTime?
 
   @@unique([target, type])
+}
+
+model ContentState {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  sha       String
+  timestamp DateTime @updatedAt
+}
+
+model Content {
+  id               String   @id @default(uuid())
+  contentDirectory String
+  slug             String   @unique
+  title            String
+  code             String
+  frontmatter      String
+  timestamp        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  published        Boolean
+  requiresUpdate   Boolean? @default(false)
+  description      String   @default("")
 }

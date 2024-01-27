@@ -14,7 +14,7 @@ export function useOptionalUser() {
 	return data.user
 }
 
-export function useUser() {
+export function useUser(){
 	const maybeUser = useOptionalUser()
 	if (!maybeUser) {
 		throw new Error(

@@ -1,6 +1,7 @@
-import { useFormAction, useNavigation } from '@remix-run/react'
+import { useFormAction, useNavigation, Link, type LinkProps } from '@remix-run/react'
 import { clsx, type ClassValue } from 'clsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import * as React from 'react'
 import { useSpinDelay } from 'spin-delay'
 import { extendTailwindMerge } from 'tailwind-merge'
 import { extendedTheme } from './extended-theme.ts'
@@ -20,6 +21,26 @@ export function getNoteImgSrc(imageId: string) {
 
 export function getDocumentImgSrc(imageId: string) {
 	return `/resources/document-images/${imageId}`
+}
+
+export function removeTrailingSlash(s: string) {
+	return s.endsWith('/') ? s.slice(0, -1) : s
+}
+
+export function getOrigin(requestInfo?: { origin?: string; path: string }) {
+	return requestInfo?.origin ?? 'https://kentcdodds.com'
+}
+
+export function getDisplayUrl(requestInfo?: { origin: string; path: string }) {
+	return getUrl(requestInfo).replace(/^https?:\/\//, '')
+}
+
+export function getUrl(requestInfo?: { origin: string; path: string }) {
+	return removeTrailingSlash(`${getOrigin(requestInfo)}${requestInfo?.path ?? ''}`)
+}
+
+export function typedBoolean<T>(value: T): value is Exclude<T, '' | 0 | false | null | undefined> {
+	return Boolean(value)
 }
 
 export function getErrorMessage(error: unknown) {
@@ -228,6 +249,49 @@ function debounce<Callback extends (...args: Parameters<Callback>) => void>(fn: 
 	}
 }
 
+type AnchorProps = React.DetailedHTMLProps<React.AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>
+
+export const AnchorOrLink = React.forwardRef<
+	HTMLAnchorElement,
+	AnchorProps & {
+		reload?: boolean
+		to?: LinkProps['to']
+		prefetch?: LinkProps['prefetch']
+	}
+>(function AnchorOrLink(props, ref) {
+	const { to, href, download, reload = false, prefetch, children, ...rest } = props
+	let toUrl = ''
+	let shouldUserRegularAnchor = reload || download
+
+	if (!shouldUserRegularAnchor && typeof href === 'string') {
+		shouldUserRegularAnchor = href.includes(':') || href.startsWith('#')
+	}
+
+	if (!shouldUserRegularAnchor && typeof to === 'string') {
+		toUrl = to
+		shouldUserRegularAnchor = to.includes(':')
+	}
+
+	if (!shouldUserRegularAnchor && typeof to === 'object') {
+		toUrl = `${to.pathname ?? ''}${to.hash ? `#${to.hash}` : ''}${to.search ? `?${to.search}` : ''}`
+		shouldUserRegularAnchor = to.pathname?.includes(':')
+	}
+
+	if (shouldUserRegularAnchor) {
+		return (
+			<a {...rest} download={download} href={href ?? toUrl} ref={ref}>
+				{children}
+			</a>
+		)
+	} else {
+		return (
+			<Link prefetch={prefetch} to={to ?? href ?? ''} {...rest} ref={ref}>
+				{children}
+			</Link>
+		)
+	}
+})
+
 /**
  * Debounce a callback function
  */
@@ -256,4 +320,11 @@ export async function downloadFile(url: string, retries: number = 0) {
 		if (retries > MAX_RETRIES) throw e
 		return downloadFile(url, retries + 1)
 	}
+}
+export function getRequiredEnvVar(key: string, env = process.env): string {
+	if (key in env && typeof env[key] === 'string') {
+		return env[key] ?? ''
+	}
+
+	throw new Error(`Environment variable ${key} is not defined`)
 }

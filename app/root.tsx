@@ -28,6 +28,7 @@ import { useRef } from 'react'
 import { AuthenticityTokenProvider } from 'remix-utils/csrf/react'
 import { HoneypotProvider } from 'remix-utils/honeypot/react'
 import { z } from 'zod'
+import { userHasRole } from '#app/utils/permissions.ts'
 import { GeneralErrorBoundary } from './components/error-boundary.tsx'
 import { ErrorList } from './components/forms.tsx'
 import { MainNavigationMenu } from './components/main-nav.tsx'
@@ -132,9 +133,34 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const honeyProps = honeypot.getInputProps()
 	const [csrfToken, csrfCookieHeader] = await csrf.commitToken()
 
+	let isAdminUser: boolean = false
+	if (user) isAdminUser = userHasRole(user, 'admin')
+
+	const open = await time(() => prisma.schedule.findFirst({ select: { date: true }, where: { open: true } }), {
+		timings,
+		type: 'find open schedule',
+		desc: 'find open schedule in root',
+	})
+	const closed = await time(
+		() =>
+			prisma.schedule.findFirst({
+				select: { date: true },
+				where: { closed: true },
+				orderBy: { date: 'desc' },
+			}),
+		{
+			timings,
+			type: 'find latest closed schedule',
+			desc: 'find latest closed schedule in root',
+		},
+	)
+
 	return json(
 		{
 			user,
+			isAdminUser,
+			open,
+			closed,
 			requestInfo: {
 				hints: getHints(request),
 				origin: getDomainUrl(request),
@@ -164,6 +190,8 @@ export const headers: HeadersFunction = ({ loaderHeaders }) => {
 	}
 	return headers
 }
+
+export type RootLoaderType = typeof loader
 
 const ThemeFormSchema = z.object({
 	theme: z.enum(['system', 'light', 'dark']),
@@ -237,7 +265,7 @@ function App() {
 				<header className="container py-6">
 					<nav className="flex flex-wrap items-center justify-between gap-4 sm:flex-nowrap md:gap-8">
 						<Logo />
-						<MainNavigationMenu />
+						<MainNavigationMenu isAdminUser={data.isAdminUser} open={data.open} closed={data.closed} />
 						<div className="flex items-center gap-5">
 							<ThemeSwitch userPreference={data.requestInfo.userPrefs.theme} />
 							{user ? (

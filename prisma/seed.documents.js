@@ -9,7 +9,7 @@ Please if you are going to do work around the Irrigation ditchs, service roads, 
 
 Just a reminder that any time a irrigation is cancelled. Do not take it for granted you will be on the next run. It is your responsibility to sign up for the next run.
 
-# NOTICE
+## NOTICE
 
 - Beginning March 1st we will return to surface water this will be delivered at a 70 inch head. 
 
@@ -42,6 +42,9 @@ set forth herein below do here by adopt these Articles of Incorporation of and
 for Clearwater Farms Property owners Association a non-profit corporation.
 
 ### ARTICLE I 
+
+
+
 
 The name and addresses of all the incorporators are:
 

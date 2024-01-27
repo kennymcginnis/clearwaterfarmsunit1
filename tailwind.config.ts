@@ -1,4 +1,4 @@
-import typography from '@tailwindcss/typography'
+import tailwindPlugin from '@tailwindcss/typography'
 import { type Config } from 'tailwindcss'
 import animatePlugin from 'tailwindcss-animate'
 import radixPlugin from 'tailwindcss-radix'
@@ -13,11 +13,11 @@ export default {
 			center: true,
 			padding: '2rem',
 			screens: {
-				'2xl': '2400px',
+				'2xl': '1400px',
 			},
 		},
 		extend: extendedTheme,
 	},
 	presets: [marketingPreset],
-	plugins: [animatePlugin, radixPlugin, typography],
+	plugins: [animatePlugin, radixPlugin, tailwindPlugin],
 } satisfies Config

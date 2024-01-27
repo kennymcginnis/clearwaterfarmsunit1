@@ -18,13 +18,16 @@ export default {
 		})
 	},
 	// mdx: async filename => {
-	// 	const [rehypeHighlight, remarkToc] = await Promise.all([
-	// 		import('rehype-highlight').then(mod => mod.default),
+	// 	const [remarkAutolinkHeader, remarkGfm, remarkSlug, remarkToc, rehypeHighlight] = await Promise.all([
+	// 		import('remark-autolink-headings').then(mod => mod.default),
+	// 		import('remark-gfm').then(mod => mod.default),
+	// 		import('remark-slug').then(mod => mod.default),
 	// 		import('remark-toc').then(mod => mod.default),
+	// 		import('rehype-highlight').then(mod => mod.default),
 	// 	])
 
 	// 	return {
-	// 		remarkPlugins: [remarkToc],
+	// 		remarkPlugins: [remarkSlug, [remarkAutolinkHeader, { behavior: 'wrap' }], remarkGfm, remarkToc],
 	// 		rehypePlugins: [rehypeHighlight],
 	// 	}
 	// },

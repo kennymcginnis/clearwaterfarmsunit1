@@ -593,6 +593,12 @@ export const users = [
 				note: '2024 Starting Balance',
 			},
 		],
+		schedules: [
+			{
+				ditch: 1,
+				hours: 2,
+			},
+		],
 	},
 	{
 		username: 'chandler',
@@ -632,12 +638,6 @@ export const users = [
 			{
 				amount: 183,
 				note: '2024 Starting Balance',
-			},
-		],
-		schedules: [
-			{
-				ditch: 1,
-				hours: 2,
 			},
 		],
 	},
@@ -984,6 +984,11 @@ export const users = [
 				ditch: 1,
 				position: 28,
 				entry: 'Front',
+			},
+			{
+				ditch: 2,
+				position: 26,
+				entry: 'Rear',
 			},
 		],
 	},
@@ -2108,16 +2113,6 @@ export const users = [
 		],
 	},
 	{
-		username: 'redbern',
-		ports: [
-			{
-				ditch: 2,
-				position: 26,
-				entry: 'Rear',
-			},
-		],
-	},
-	{
 		username: 'runstadler',
 		member: 'Runstadler, Linda',
 		address: [
@@ -2938,6 +2933,21 @@ export const users = [
 	},
 	{
 		username: 'enriquez',
+		address: [
+			{
+				address: '7319 N 185th Ave',
+				parcelAndLot: [
+					{
+						parcel: '502-21-067A',
+						lot: '4557 E & 4558 A',
+					},
+					{
+						parcel: '502-21-067B',
+						lot: '4558 B&C',
+					},
+				],
+			},
+		],
 		ports: [
 			{
 				ditch: 3,
@@ -4049,6 +4059,18 @@ export const users = [
 	},
 	{
 		username: 'wakeford',
+		member: 'Tansy, April Suzzane',
+		address: [
+			{
+				address: '7302 N 183rd Ave',
+				parcelAndLot: [
+					{
+						parcel: '502-21-088',
+						lot: '4568 A&B',
+					},
+				],
+			},
+		],
 		ports: [
 			{
 				ditch: 4,

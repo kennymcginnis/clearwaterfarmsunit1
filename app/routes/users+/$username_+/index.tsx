@@ -4,7 +4,9 @@ import { Form, Link, useLoaderData, type MetaFunction } from '@remix-run/react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Spacer } from '#app/components/spacer.tsx'
 import { Button } from '#app/components/ui/button.tsx'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon.tsx'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#app/components/ui/tabs'
 import { prisma } from '#app/utils/db.server.ts'
 import { getUserImgSrc } from '#app/utils/misc.tsx'
 import { useOptionalUser } from '#app/utils/user.ts'
@@ -37,10 +39,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
 					position: true,
 				},
 			},
-			deposits: {
+			transactions: {
 				select: {
 					date: true,
-					amount: true,
+					debit: true,
+					credit: true,
 					note: true,
 				},
 			},
@@ -69,6 +72,19 @@ export default function ProfileRoute() {
 	const userDisplayName = user.member ?? user.username
 	const loggedInUser = useOptionalUser()
 	const isLoggedInUser = user.id === loggedInUser?.id
+
+	const {
+		username,
+		member,
+		primaryEmail,
+		secondaryEmail,
+		phones,
+		defaultHours,
+		defaultHead,
+		restricted,
+		schedules,
+		ports,
+	} = user
 
 	return (
 		<div className="container mb-48 mt-36 flex flex-col items-center justify-center">
@@ -105,18 +121,73 @@ export default function ProfileRoute() {
 					) : null}
 					<div className="mt-10 flex gap-4">
 						{isLoggedInUser ? (
-							<>
-								<Button asChild>
-									<Link to="notes" prefetch="intent">
-										My notes
-									</Link>
-								</Button>
-								<Button asChild>
-									<Link to="/settings/profile" prefetch="intent">
-										Edit profile
-									</Link>
-								</Button>
-							</>
+							<Tabs defaultValue="contact" className="w-[800px]">
+								<TabsList className="grid w-[400px] grid-cols-4">
+									<TabsTrigger value="contact" defaultChecked>
+										Contact
+									</TabsTrigger>
+									<TabsTrigger value="property">Property</TabsTrigger>
+									<TabsTrigger value="deposits">Deposits</TabsTrigger>
+									<TabsTrigger value="irrigation">Irrigation</TabsTrigger>
+								</TabsList>
+								<TabsContent value="contact">
+									<Card>
+										<CardHeader>
+											<CardTitle>Contact Information</CardTitle>
+										</CardHeader>
+										<CardContent className="space-y-2">
+											<Button asChild variant="default">
+												<Link className="button" to="/settings/profile" prefetch="intent">
+													Edit profile
+												</Link>
+											</Button>
+											<div className="space-y-1">
+												<pre>{JSON.stringify({ username, member, primaryEmail, secondaryEmail, phones }, null, 2)}</pre>
+											</div>
+										</CardContent>
+									</Card>
+								</TabsContent>
+								<TabsContent value="property">
+									<Card>
+										<CardHeader>
+											<CardTitle>Property</CardTitle>
+										</CardHeader>
+										<CardContent className="space-y-2">
+											<div className="space-y-1">
+												<pre>{JSON.stringify([...user.userAddress], null, 2)}</pre>
+											</div>
+										</CardContent>
+									</Card>
+								</TabsContent>
+								<TabsContent value="deposits">
+									<Card>
+										<CardHeader>
+											<CardTitle>Deposits</CardTitle>
+											<CardDescription>Irrigation Account Balance</CardDescription>
+										</CardHeader>
+										<CardContent className="space-y-2">
+											<div className="space-y-1">
+												<pre>{JSON.stringify([...user.transactions], null, 2)}</pre>
+											</div>
+										</CardContent>
+									</Card>
+								</TabsContent>
+								<TabsContent value="irrigation">
+									<Card>
+										<CardHeader>
+											<CardTitle>Irrigation</CardTitle>
+											<CardDescription>Irrigation Schedules</CardDescription>
+										</CardHeader>
+										<CardContent className="space-y-2">
+											<div className="space-y-1">
+												<pre>
+													{JSON.stringify({ defaultHours, defaultHead, restricted, ports, schedules }, null, 2)}
+												</pre>
+											</div>
+										</CardContent>
+									</Card>
+								</TabsContent>
+							</Tabs>
 						) : (
 							<Button asChild>
 								<Link to="notes" prefetch="intent">
@@ -127,8 +198,6 @@ export default function ProfileRoute() {
 					</div>
 				</div>
 			</div>
-
-			<pre>{JSON.stringify(user, null, 2)}</pre>
 		</div>
 	)
 }

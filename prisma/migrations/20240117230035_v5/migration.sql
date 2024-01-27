@@ -1838,184 +1838,189 @@ INSERT INTO Port VALUES('xwct-g3sq-ba2g',9,20,NULL,'uhtq-ahu5-efww','Admin',1705
 INSERT INTO Port VALUES('6yyr-pfah-zewz',9,21,NULL,'cbrw-2kpx-83qc','Admin',1705532453337,'Admin',1705532453337);
 INSERT INTO Port VALUES('ac54-d9zd-z3rp',9,22,NULL,'ty4s-4tpa-xvwb','Admin',1705532453391,'Admin',1705532453391);
 INSERT INTO Port VALUES('e4qa-49vm-gpth',9,23,NULL,'wfvs-5c2d-3yvu','Admin',1705532453445,'Admin',1705532453445);
-CREATE TABLE IF NOT EXISTS "Deposit" (
+
+CREATE TABLE "Transaction" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "date" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "amount" REAL NOT NULL,
-    "note" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "debit" REAL,
+    "credit" REAL,
+    "note" TEXT,
     "userId" TEXT,
     "createdBy" TEXT NOT NULL DEFAULT 'Admin',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedBy" TEXT NOT NULL DEFAULT 'Admin',
     "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Deposit_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    CONSTRAINT "Transaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
-INSERT INTO Deposit VALUES('gusf-6y74-ymmv',1704092400000,96.5,'2024 Starting Balance','z5a9-da4r-sa4h','Admin',1705532438269,'Admin',1705532438269);
-INSERT INTO Deposit VALUES('42xn-vmy3-h64b',1704092400000,-47.0,'2024 Starting Balance','a493-trf4-am98','Admin',1705532438323,'Admin',1705532438323);
-INSERT INTO Deposit VALUES('bn3t-q96a-rgws',1704092400000,39.0,'2024 Starting Balance','mh4c-qrzp-8xvw','Admin',1705532438378,'Admin',1705532438378);
-INSERT INTO Deposit VALUES('hbe6-36zx-5gyb',1704092400000,46.5,'2024 Starting Balance','p6zk-76tb-yp5k','Admin',1705532438491,'Admin',1705532438491);
-INSERT INTO Deposit VALUES('78p5-cdag-uugp',1704092400000,55.0,'2024 Starting Balance','rukk-vps6-5atg','Admin',1705532438546,'Admin',1705532438546);
-INSERT INTO Deposit VALUES('qd8n-mvdb-4rnx',1704092400000,8.0,'2024 Starting Balance','nmq2-g827-h82h','Admin',1705532438717,'Admin',1705532438717);
-INSERT INTO Deposit VALUES('q5wh-yryp-gt8t',1704092400000,35.5,'2024 Starting Balance','yxsc-p3ay-r9gq','Admin',1705532438779,'Admin',1705532438779);
-INSERT INTO Deposit VALUES('h9nb-u2zg-m3mt',1704092400000,4.5,'2024 Starting Balance','u6yh-mzr3-pzup','Admin',1705532438833,'Admin',1705532438833);
-INSERT INTO Deposit VALUES('ez55-3npr-8a89',1704092400000,-27.0,'2024 Starting Balance','emza-7nvz-mksr','Admin',1705532438888,'Admin',1705532438888);
-INSERT INTO Deposit VALUES('skd9-abny-d298',1704092400000,-18.0,'2024 Starting Balance','gzex-grx4-ww6p','Admin',1705532439002,'Admin',1705532439002);
-INSERT INTO Deposit VALUES('eqvq-zyt8-gq67',1704092400000,-46.5,'2024 Starting Balance','c9g2-v2ef-y6yv','Admin',1705532439059,'Admin',1705532439059);
-INSERT INTO Deposit VALUES('nx9x-xayx-fsk4',1704092400000,100.0,'2024 Starting Balance','wt85-tbxe-ycnh','Admin',1705532439114,'Admin',1705532439114);
-INSERT INTO Deposit VALUES('7rka-gyff-czr2',1704092400000,36.0,'2024 Starting Balance','e67q-b44d-mmk8','Admin',1705532439170,'Admin',1705532439170);
-INSERT INTO Deposit VALUES('s74n-rfqh-wtvd',1704092400000,183.0,'2024 Starting Balance','rw9p-p5rb-5kzs','Admin',1705532439223,'Admin',1705532439223);
-INSERT INTO Deposit VALUES('4mrr-va4x-eqzg',1704092400000,27.0,'2024 Starting Balance','g9mx-z3au-ncs3','Admin',1705532439337,'Admin',1705532439337);
-INSERT INTO Deposit VALUES('kykf-3qvn-hgzp',1704092400000,166.5,'2024 Starting Balance','v9tv-ztd8-3wa9','Admin',1705532439391,'Admin',1705532439391);
-INSERT INTO Deposit VALUES('6czt-xsus-ahyg',1704092400000,72.0,'2024 Starting Balance','pkxz-rurv-99qv','Admin',1705532439454,'Admin',1705532439454);
-INSERT INTO Deposit VALUES('w4rw-2hmq-274r',1704092400000,31.5,'2024 Starting Balance','4r5z-w7kr-7zk2','Admin',1705532439695,'Admin',1705532439695);
-INSERT INTO Deposit VALUES('hgb9-efr7-vzfh',1704092400000,90.0,'2024 Starting Balance','rwwe-nvs7-x3fh','Admin',1705532439750,'Admin',1705532439750);
-INSERT INTO Deposit VALUES('gh7y-s4nw-s834',1704092400000,48.0,'2024 Starting Balance','np2e-tqct-zhcs','Admin',1705532439926,'Admin',1705532439926);
-INSERT INTO Deposit VALUES('aefk-3c58-95ht',1704092400000,-1.0,'2024 Starting Balance','n3ev-sf3y-y6hp','Admin',1705532439983,'Admin',1705532439983);
-INSERT INTO Deposit VALUES('vp89-rnb9-ark5',1704092400000,79.5,'2024 Starting Balance','2t9b-9kfq-75zu','Admin',1705532440042,'Admin',1705532440042);
-INSERT INTO Deposit VALUES('hf8b-aem4-v9xn',1704092400000,125.5,'2024 Starting Balance','ar53-d5yu-txds','Admin',1705532440101,'Admin',1705532440101);
-INSERT INTO Deposit VALUES('nav5-cqrr-abbr',1704092400000,9.0,'2024 Starting Balance','n6d2-nsmz-k7mx','Admin',1705532440210,'Admin',1705532440210);
-INSERT INTO Deposit VALUES('4sys-tw99-gwh8',1704092400000,179.5,'2024 Starting Balance','6aku-z225-qsps','Admin',1705532440265,'Admin',1705532440265);
-INSERT INTO Deposit VALUES('t7yt-t6eh-ngwf',1704092400000,58.5,'2024 Starting Balance','bsn5-m4fb-f8n6','Admin',1705532440322,'Admin',1705532440322);
-INSERT INTO Deposit VALUES('s4m4-q2hz-ggvr',1704092400000,4.5,'2024 Starting Balance','kf82-zesz-ev7v','Admin',1705532440491,'Admin',1705532440491);
-INSERT INTO Deposit VALUES('u29z-qkfx-xxd7',1704092400000,-36.0,'2024 Starting Balance','mcpa-qz3m-2y38','Admin',1705532440605,'Admin',1705532440605);
-INSERT INTO Deposit VALUES('sg4p-f68e-yu5a',1704092400000,-40.0,'2024 Starting Balance','hdtw-b5rr-bgvm','Admin',1705532440661,'Admin',1705532440661);
-INSERT INTO Deposit VALUES('npy8-66r6-s85f',1704092400000,66.0,'2024 Starting Balance','x5yb-vnsh-4sv8','Admin',1705532440880,'Admin',1705532440880);
-INSERT INTO Deposit VALUES('mhxw-8kkw-62w7',1704092400000,2.5,'2024 Starting Balance','awbg-chak-zwdu','Admin',1705532440990,'Admin',1705532440990);
-INSERT INTO Deposit VALUES('6mbn-ks6y-vts6',1704092400000,50.0,'2024 Starting Balance','yzkc-npkc-ktwn','Admin',1705532441043,'Admin',1705532441043);
-INSERT INTO Deposit VALUES('dxvy-eb83-r9yn',1704092400000,58.0,'2024 Starting Balance','5frv-7gdb-wtz2','Admin',1705532441098,'Admin',1705532441098);
-INSERT INTO Deposit VALUES('qhkd-4kt2-seyp',1704092400000,18.0,'2024 Starting Balance','sy7f-w36n-e4mg','Admin',1705532441205,'Admin',1705532441205);
-INSERT INTO Deposit VALUES('9h2t-zssf-8d63',1704092400000,57.5,'2024 Starting Balance','tbdd-9pug-779y','Admin',1705532441313,'Admin',1705532441313);
-INSERT INTO Deposit VALUES('q4br-9ay7-r3f6',1704092400000,68.0,'2024 Starting Balance','y5k4-5xub-3rtn','Admin',1705532441368,'Admin',1705532441368);
-INSERT INTO Deposit VALUES('extz-4ucb-udba',1704092400000,8.5,'2024 Starting Balance','d53b-exkg-n6rq','Admin',1705532441423,'Admin',1705532441423);
-INSERT INTO Deposit VALUES('py73-eep5-w9z7',1704092400000,100.0,'2024 Starting Balance','6mn5-636s-nzfy','Admin',1705532441477,'Admin',1705532441477);
-INSERT INTO Deposit VALUES('ap58-xhvg-8hvf',1704092400000,530.5,'2024 Starting Balance','qw9p-wb9v-vuff','Admin',1705532441531,'Admin',1705532441531);
-INSERT INTO Deposit VALUES('wtx4-sawb-pxag',1704092400000,166.5,'2024 Starting Balance','5vs6-c3t7-ke63','Admin',1705532441586,'Admin',1705532441586);
-INSERT INTO Deposit VALUES('au35-fkzh-d35e',1704092400000,81.0,'2024 Starting Balance','xpb7-3gk2-fzx2','Admin',1705532441696,'Admin',1705532441696);
-INSERT INTO Deposit VALUES('k7pv-rba7-c9vb',1704092400000,72.0,'2024 Starting Balance','4h4z-yemy-xrzf','Admin',1705532441803,'Admin',1705532441803);
-INSERT INTO Deposit VALUES('k4vz-6ay4-57dh',1704092400000,-3.5,'2024 Starting Balance','rara-bbb7-r88n','Admin',1705532441857,'Admin',1705532441857);
-INSERT INTO Deposit VALUES('fbpa-gffr-gb7g',1704092400000,-26.0,'2024 Starting Balance','b7x2-56fv-eyer','Admin',1705532441913,'Admin',1705532441913);
-INSERT INTO Deposit VALUES('q3qa-2662-zg78',1704092400000,20.0,'2024 Starting Balance','x999-7dyd-7gv4','Admin',1705532441970,'Admin',1705532441970);
-INSERT INTO Deposit VALUES('5ez8-45wq-6r52',1704092400000,40.0,'2024 Starting Balance','xhv7-a8g5-prnb','Admin',1705532442025,'Admin',1705532442025);
-INSERT INTO Deposit VALUES('6a5q-sz58-xw7s',1704092400000,172.5,'2024 Starting Balance','g9d9-xsxw-rz4k','Admin',1705532442239,'Admin',1705532442239);
-INSERT INTO Deposit VALUES('ubq2-auk2-4af2',1704092400000,95.0,'2024 Starting Balance','7cmv-5dhq-7nap','Admin',1705532442293,'Admin',1705532442293);
-INSERT INTO Deposit VALUES('whgk-sdx2-unw4',1704092400000,14.5,'2024 Starting Balance','n7bu-3ez4-337a','Admin',1705532442347,'Admin',1705532442347);
-INSERT INTO Deposit VALUES('78tv-qth6-mvtu',1704092400000,55.0,'2024 Starting Balance','h3r4-wu66-g35x','Admin',1705532442455,'Admin',1705532442455);
-INSERT INTO Deposit VALUES('f6gw-3qg7-zux8',1704092400000,-1.0,'2024 Starting Balance','yrsd-7f3z-w4fv','Admin',1705532442565,'Admin',1705532442565);
-INSERT INTO Deposit VALUES('ysc8-nab5-em82',1704092400000,91.0,'2024 Starting Balance','ntu4-v8xh-2ky6','Admin',1705532442620,'Admin',1705532442620);
-INSERT INTO Deposit VALUES('qwe6-fedp-vt8z',1704092400000,58.0,'2024 Starting Balance','d69g-vamq-s44y','Admin',1705532442673,'Admin',1705532442673);
-INSERT INTO Deposit VALUES('ckgs-56he-xtms',1704092400000,104.5,'2024 Starting Balance','rshk-aw4a-fzpa','Admin',1705532442891,'Admin',1705532442891);
-INSERT INTO Deposit VALUES('2vvm-wv6x-r4gf',1704092400000,32.0,'2024 Starting Balance','vrzd-pk4w-r6s3','Admin',1705532442946,'Admin',1705532442946);
-INSERT INTO Deposit VALUES('egwc-bg2n-axmk',1704092400000,-31.5,'2024 Starting Balance','dbc3-4uzs-c5ug','Admin',1705532443002,'Admin',1705532443002);
-INSERT INTO Deposit VALUES('kra2-n55u-s35n',1704092400000,-11.0,'2024 Starting Balance','4fwm-vggh-yhhq','Admin',1705532443164,'Admin',1705532443164);
-INSERT INTO Deposit VALUES('a4qw-up4b-uawm',1704092400000,92.0,'2024 Starting Balance','d786-ze8k-wxc3','Admin',1705532443219,'Admin',1705532443219);
-INSERT INTO Deposit VALUES('nnts-nta7-2dvf',1704092400000,50.5,'2024 Starting Balance','ueru-z2tz-8p3t','Admin',1705532443273,'Admin',1705532443273);
-INSERT INTO Deposit VALUES('7pce-e7uv-9gqg',1704092400000,18.0,'2024 Starting Balance','dsg8-dpfd-uvye','Admin',1705532443597,'Admin',1705532443597);
-INSERT INTO Deposit VALUES('3wc3-3bww-9d7d',1704092400000,70.0,'2024 Starting Balance','vb78-frh4-htcy','Admin',1705532443651,'Admin',1705532443651);
-INSERT INTO Deposit VALUES('n7f7-d8mv-wwek',1704092400000,50.95000000000000284,'2024 Starting Balance','tcg8-6dhp-gkpz','Admin',1705532443921,'Admin',1705532443921);
-INSERT INTO Deposit VALUES('n8e9-z4hp-8tuv',1704092400000,163.0,'2024 Starting Balance','69mb-2bza-bss4','Admin',1705532443975,'Admin',1705532443975);
-INSERT INTO Deposit VALUES('xqfd-7fud-cpg3',1704092400000,93.5,'2024 Starting Balance','89ud-rssw-qf9d','Admin',1705532444030,'Admin',1705532444030);
-INSERT INTO Deposit VALUES('347s-p5k4-t5zt',1704092400000,81.0,'2024 Starting Balance','pqdc-56z7-xkzn','Admin',1705532444086,'Admin',1705532444086);
-INSERT INTO Deposit VALUES('7wba-w9k8-vp97',1704092400000,105.0,'2024 Starting Balance','xyyq-frus-78qm','Admin',1705532444139,'Admin',1705532444139);
-INSERT INTO Deposit VALUES('eys6-gug5-a5b9',1704092400000,122.0,'2024 Starting Balance','py59-kvnw-bqzr','Admin',1705532444247,'Admin',1705532444247);
-INSERT INTO Deposit VALUES('8yka-erv8-e426',1704092400000,37.5,'2024 Starting Balance','e7ds-9yt8-mpew','Admin',1705532444301,'Admin',1705532444301);
-INSERT INTO Deposit VALUES('tx6u-re3p-q3az',1704092400000,36.0,'2024 Starting Balance','7qr3-gyhk-mnck','Admin',1705532444355,'Admin',1705532444355);
-INSERT INTO Deposit VALUES('fa3e-dn4v-sm8q',1704092400000,5.0,'2024 Starting Balance','nzeb-bwpe-9zw6','Admin',1705532444571,'Admin',1705532444571);
-INSERT INTO Deposit VALUES('dmq2-6q4d-vbbd',1704092400000,54.0,'2024 Starting Balance','pvgx-s8pe-gbca','Admin',1705532444733,'Admin',1705532444733);
-INSERT INTO Deposit VALUES('bu3e-8ayd-af2d',1704092400000,-2.5,'2024 Starting Balance','ek9d-gb2e-9yzp','Admin',1705532445057,'Admin',1705532445057);
-INSERT INTO Deposit VALUES('3rsh-hmd4-xu46',1704092400000,-28.0,'2024 Starting Balance','7nqb-2rpb-48z3','Admin',1705532445218,'Admin',1705532445218);
-INSERT INTO Deposit VALUES('kazx-q8vk-9cy6',1704092400000,54.0,'2024 Starting Balance','kaew-x248-gder','Admin',1705532445271,'Admin',1705532445271);
-INSERT INTO Deposit VALUES('fuhc-a2mc-7cvt',1704092400000,-27.0,'2024 Starting Balance','tk54-2sx9-kh76','Admin',1705532445433,'Admin',1705532445433);
-INSERT INTO Deposit VALUES('6cu2-xmtm-8d2a',1704092400000,31.5,'2024 Starting Balance','r9p9-edzq-2rpr','Admin',1705532445487,'Admin',1705532445487);
-INSERT INTO Deposit VALUES('8apn-86fd-9gvq',1704092400000,3.0,'2024 Starting Balance','pdn9-b6ym-m2ny','Admin',1705532445541,'Admin',1705532445541);
-INSERT INTO Deposit VALUES('agm2-quqr-qkf8',1704092400000,0.5,'2024 Starting Balance','m4cf-4bnn-ag7m','Admin',1705532445650,'Admin',1705532445650);
-INSERT INTO Deposit VALUES('fwm7-4589-42bs',1704092400000,6.0,'2024 Starting Balance','uhu9-z66c-7pf4','Admin',1705532445811,'Admin',1705532445811);
-INSERT INTO Deposit VALUES('yq82-rm87-n22c',1704092400000,43.0,'2024 Starting Balance','7mh8-vzpu-acbk','Admin',1705532445919,'Admin',1705532445919);
-INSERT INTO Deposit VALUES('2mks-abse-3b3a',1704092400000,1.5,'2024 Starting Balance','7u56-dmy6-w348','Admin',1705532446081,'Admin',1705532446081);
-INSERT INTO Deposit VALUES('agur-g72x-kz29',1704092400000,32.0,'2024 Starting Balance','kqpx-pa9y-wkck','Admin',1705532446135,'Admin',1705532446135);
-INSERT INTO Deposit VALUES('z4sr-pwv2-3hce',1704092400000,119.0,'2024 Starting Balance','3rc6-vq8c-h7pt','Admin',1705532446189,'Admin',1705532446189);
-INSERT INTO Deposit VALUES('rv7c-dqzg-3dr7',1704092400000,2.5,'2024 Starting Balance','qk6e-95sh-nuwq','Admin',1705532446244,'Admin',1705532446244);
-INSERT INTO Deposit VALUES('s37f-9uc2-wn5k',1704092400000,300.0,'2024 Starting Balance','ycag-pdbq-pvfc','Admin',1705532446297,'Admin',1705532446297);
-INSERT INTO Deposit VALUES('ywu2-a3an-3dzz',1704092400000,46.0,'2024 Starting Balance','cbv4-qdxz-7z8m','Admin',1705532446352,'Admin',1705532446352);
-INSERT INTO Deposit VALUES('8ztz-6fhv-dgsu',1704092400000,-18.5,'2024 Starting Balance','h9ba-fbfc-92ty','Admin',1705532446405,'Admin',1705532446405);
-INSERT INTO Deposit VALUES('ss27-54y2-u6ab',1704092400000,149.0,'2024 Starting Balance','8xvy-h3wf-3m98','Admin',1705532446513,'Admin',1705532446513);
-INSERT INTO Deposit VALUES('mkag-3yeh-6mhy',1704092400000,130.0,'2024 Starting Balance','7arn-6z3a-8rrt','Admin',1705532446621,'Admin',1705532446621);
-INSERT INTO Deposit VALUES('gv53-y8fa-qc6q',1704092400000,20.0,'2024 Starting Balance','4gtb-rg87-hu6q','Admin',1705532446729,'Admin',1705532446729);
-INSERT INTO Deposit VALUES('rtf9-yr7p-zhtw',1704092400000,364.0,'2024 Starting Balance','u8ms-4s6g-vweg','Admin',1705532446785,'Admin',1705532446785);
-INSERT INTO Deposit VALUES('bagb-qkhp-be8r',1704092400000,11.5,'2024 Starting Balance','pnsp-7ys3-8sw9','Admin',1705532446893,'Admin',1705532446893);
-INSERT INTO Deposit VALUES('sem5-g4cg-9q8r',1704092400000,36.0,'2024 Starting Balance','wmag-xkyx-mman','Admin',1705532446947,'Admin',1705532446947);
-INSERT INTO Deposit VALUES('x2t4-2698-8tyf',1704092400000,-26.5,'2024 Starting Balance','akaf-w43t-nwts','Admin',1705532447001,'Admin',1705532447001);
-INSERT INTO Deposit VALUES('63vq-tcuv-5h38',1704092400000,117.5,'2024 Starting Balance','m3bp-5tuy-r8ny','Admin',1705532447109,'Admin',1705532447109);
-INSERT INTO Deposit VALUES('99t5-gq82-r5ta',1704092400000,6.0,'2024 Starting Balance','5vq4-m5ke-fmcp','Admin',1705532447163,'Admin',1705532447163);
-INSERT INTO Deposit VALUES('d5z6-636z-8f7r',1704092400000,1.0,'2024 Starting Balance','gddx-envk-mcy7','Admin',1705532447217,'Admin',1705532447217);
-INSERT INTO Deposit VALUES('gp7k-6f8g-u6w5',1704092400000,39.35000000000000142,'2024 Starting Balance','hmgm-s4w5-a6gn','Admin',1705532447326,'Admin',1705532447326);
-INSERT INTO Deposit VALUES('x873-kupx-vru3',1704092400000,130.5,'2024 Starting Balance','qhex-ydn7-6ta9','Admin',1705532447379,'Admin',1705532447379);
-INSERT INTO Deposit VALUES('b3wn-wury-888f',1704092400000,118.5,'2024 Starting Balance','ycfu-rw88-n72a','Admin',1705532447433,'Admin',1705532447433);
-INSERT INTO Deposit VALUES('gna7-2q2a-5s3n',1704092400000,-54.0,'2024 Starting Balance','rtpg-nbfx-kwsu','Admin',1705532447922,'Admin',1705532447922);
-INSERT INTO Deposit VALUES('2yub-zkg3-e3bb',1704092400000,5.0,'2024 Starting Balance','qn5b-yad3-tb6b','Admin',1705532448031,'Admin',1705532448031);
-INSERT INTO Deposit VALUES('nk2a-6c92-sbmg',1704092400000,66.0,'2024 Starting Balance','pzs4-q6ga-qcsu','Admin',1705532448142,'Admin',1705532448142);
-INSERT INTO Deposit VALUES('xexm-3mng-h4a2',1704092400000,22.5,'2024 Starting Balance','fkxy-h96s-7ctb','Admin',1705532448197,'Admin',1705532448197);
-INSERT INTO Deposit VALUES('29n8-evwg-nmqy',1704092400000,119.0,'2024 Starting Balance','d9gm-a3bz-vzte','Admin',1705532448252,'Admin',1705532448252);
-INSERT INTO Deposit VALUES('aku4-nes8-rtcu',1704092400000,118.0,'2024 Starting Balance','5tkb-nyb3-hbvp','Admin',1705532448305,'Admin',1705532448305);
-INSERT INTO Deposit VALUES('q6u2-5b6f-ktam',1704092400000,150.0,'2024 Starting Balance','ge73-n3yg-r9bk','Admin',1705532448521,'Admin',1705532448521);
-INSERT INTO Deposit VALUES('psqn-3zb2-wnq7',1704092400000,38.0,'2024 Starting Balance','7pwb-egs4-3c9t','Admin',1705532448683,'Admin',1705532448683);
-INSERT INTO Deposit VALUES('mwbx-du8n-5ykq',1704092400000,176.0,'2024 Starting Balance','ue7z-6zvg-pvvd','Admin',1705532448737,'Admin',1705532448737);
-INSERT INTO Deposit VALUES('efur-dqyc-gtrx',1704092400000,5.25,'2024 Starting Balance','tsss-2sps-kq6v','Admin',1705532448955,'Admin',1705532448955);
-INSERT INTO Deposit VALUES('5mbc-cx67-4vsf',1704092400000,71.0,'2024 Starting Balance','7864-232y-qy7m','Admin',1705532449009,'Admin',1705532449009);
-INSERT INTO Deposit VALUES('q63w-nzpy-dc2d',1704092400000,53.0,'2024 Starting Balance','zchx-tqey-ncsw','Admin',1705532449063,'Admin',1705532449063);
-INSERT INTO Deposit VALUES('4v42-z884-pwu4',1704092400000,16.0,'2024 Starting Balance','9cf7-2xaz-99xx','Admin',1705532449117,'Admin',1705532449117);
-INSERT INTO Deposit VALUES('7cf3-nmd5-yn2e',1704092400000,99.0,'2024 Starting Balance','q452-5mft-chv7','Admin',1705532449171,'Admin',1705532449171);
-INSERT INTO Deposit VALUES('cpes-n6n9-bzvc',1704092400000,115.5,'2024 Starting Balance','h35g-5b2m-hs7k','Admin',1705532449225,'Admin',1705532449225);
-INSERT INTO Deposit VALUES('gu8p-7hm4-cr9t',1704092400000,26.19999999999999929,'2024 Starting Balance','ngwy-4sma-dst5','Admin',1705532449387,'Admin',1705532449387);
-INSERT INTO Deposit VALUES('6x5h-2ux2-t6n7',1704092400000,247.0,'2024 Starting Balance','hmyt-u33x-mmqm','Admin',1705532449441,'Admin',1705532449441);
-INSERT INTO Deposit VALUES('vbg2-r4tg-42qt',1704092400000,49.5,'2024 Starting Balance','cb32-yr8k-hkf8','Admin',1705532449549,'Admin',1705532449549);
-INSERT INTO Deposit VALUES('qsg6-69fs-4p4u',1704092400000,56.75,'2024 Starting Balance','fub6-nsvk-ku3a','Admin',1705532449657,'Admin',1705532449657);
-INSERT INTO Deposit VALUES('66rp-pqdz-vy2k',1704092400000,1.5,'2024 Starting Balance','fvft-5hsc-qbwf','Admin',1705532449712,'Admin',1705532449712);
-INSERT INTO Deposit VALUES('ec2a-6etb-x2bd',1704092400000,-2.5,'2024 Starting Balance','2wqm-t87y-xp9y','Admin',1705532449927,'Admin',1705532449927);
-INSERT INTO Deposit VALUES('t6fr-24hh-9s2r',1704092400000,205.5,'2024 Starting Balance','hnts-s44t-k7vt','Admin',1705532449983,'Admin',1705532449983);
-INSERT INTO Deposit VALUES('38p4-fa68-8avk',1704092400000,84.0,'2024 Starting Balance','kpnb-re5r-7bb4','Admin',1705532450037,'Admin',1705532450037);
-INSERT INTO Deposit VALUES('fvwk-sxk6-fxmc',1704092400000,185.5,'2024 Starting Balance','m527-8372-zb5u','Admin',1705532450096,'Admin',1705532450096);
-INSERT INTO Deposit VALUES('k4bf-2nu8-emtp',1704092400000,16.0,'2024 Starting Balance','vhvv-yqv7-aw4a','Admin',1705532450259,'Admin',1705532450259);
-INSERT INTO Deposit VALUES('f5n5-xdhw-wqnh',1704092400000,165.0,'2024 Starting Balance','643v-t9rg-2pvq','Admin',1705532450421,'Admin',1705532450421);
-INSERT INTO Deposit VALUES('n8km-nnbw-c77a',1704092400000,14.0,'2024 Starting Balance','2drm-ke3g-4py6','Admin',1705532450583,'Admin',1705532450583);
-INSERT INTO Deposit VALUES('wpfg-p4pe-nu78',1704092400000,88.0,'2024 Starting Balance','fgup-yyhk-aasf','Admin',1705532450637,'Admin',1705532450637);
-INSERT INTO Deposit VALUES('fupz-8h44-8t4z',1704092400000,-17.0,'2024 Starting Balance','82cx-bk3p-g5pu','Admin',1705532450749,'Admin',1705532450749);
-INSERT INTO Deposit VALUES('smvv-qwyq-gqzm',1704092400000,125.5,'2024 Starting Balance','yyz3-92bb-hxmk','Admin',1705532450855,'Admin',1705532450855);
-INSERT INTO Deposit VALUES('qtdu-f4v2-yguc',1704092400000,54.0,'2024 Starting Balance','fkv8-3rac-mfs2','Admin',1705532450909,'Admin',1705532450909);
-INSERT INTO Deposit VALUES('7qgc-z34a-7q5a',1704092400000,118.5,'2024 Starting Balance','u8mf-qpe6-q563','Admin',1705532451125,'Admin',1705532451125);
-INSERT INTO Deposit VALUES('ze6k-cuk9-8muz',1704092400000,2.0,'2024 Starting Balance','s73a-k46s-4k8s','Admin',1705532451179,'Admin',1705532451179);
-INSERT INTO Deposit VALUES('pz53-3tam-575e',1704092400000,73.5,'2024 Starting Balance','s8kh-r5mx-quak','Admin',1705532451233,'Admin',1705532451233);
-INSERT INTO Deposit VALUES('mh67-w9am-wxrm',1704092400000,59.0,'2024 Starting Balance','vdge-82cp-s4aw','Admin',1705532451449,'Admin',1705532451449);
-INSERT INTO Deposit VALUES('t7nz-q639-ckb5',1704092400000,107.0,'2024 Starting Balance','dan8-rbny-8k96','Admin',1705532451555,'Admin',1705532451555);
-INSERT INTO Deposit VALUES('3ava-k62s-2wbf',1704092400000,13.5,'2024 Starting Balance','7zqh-89dz-x55b','Admin',1705532451825,'Admin',1705532451825);
-INSERT INTO Deposit VALUES('g8zp-xt5w-vgb8',1704092400000,33.5,'2024 Starting Balance','zz3y-2bs8-tmdg','Admin',1705532451934,'Admin',1705532451934);
-INSERT INTO Deposit VALUES('7nsu-g3fg-sf3y',1704092400000,126.5,'2024 Starting Balance','3n4d-3va6-yygs','Admin',1705532452041,'Admin',1705532452041);
-INSERT INTO Deposit VALUES('3hyc-u6gg-m766',1704092400000,25.5,'2024 Starting Balance','5g8m-98nh-t5tf','Admin',1705532452635,'Admin',1705532452635);
-INSERT INTO Deposit VALUES('m3ag-vcxw-cfdf',1704092400000,-48.0,'2024 Starting Balance','bqfr-vm6r-9kq5','Admin',1705532452689,'Admin',1705532452689);
-INSERT INTO Deposit VALUES('rex9-z9fn-9z82',1704092400000,36.0,'2024 Starting Balance','rrty-vezg-avrz','Admin',1705532452796,'Admin',1705532452796);
-INSERT INTO Deposit VALUES('d66m-crps-xtxt',1704092400000,18.0,'2024 Starting Balance','p8cc-pbvy-9xq2','Admin',1705532453013,'Admin',1705532453013);
-INSERT INTO Deposit VALUES('53x4-rtb2-yrc8',1704092400000,12.0,'2024 Starting Balance','wrxd-h54f-wtas','Admin',1705532453067,'Admin',1705532453067);
-INSERT INTO Deposit VALUES('d3ad-ppsp-vxq3',1704092400000,29.5,'2024 Starting Balance','rxwe-t345-pxpp','Admin',1705532453121,'Admin',1705532453121);
-INSERT INTO Deposit VALUES('53zq-pvev-ryeu',1704092400000,75.0,'2024 Starting Balance','5h4h-58h6-sukb','Admin',1705532453175,'Admin',1705532453175);
-INSERT INTO Deposit VALUES('42w8-nxey-2v3z',1704092400000,1.0,'2024 Starting Balance','9beg-k39x-crgb','Admin',1705532453230,'Admin',1705532453230);
-INSERT INTO Deposit VALUES('qybr-mqv8-w2hf',1704092400000,-9.0,'2024 Starting Balance','uhtq-ahu5-efww','Admin',1705532453283,'Admin',1705532453283);
-INSERT INTO Deposit VALUES('pxsb-vwrw-r8yc',1704092400000,-27.5,'2024 Starting Balance','cbrw-2kpx-83qc','Admin',1705532453337,'Admin',1705532453337);
+
+INSERT INTO "Transaction" VALUES('gusf-6y74-ymmv','2024-01-01',null,96.5,'2024 Starting Balance','z5a9-da4r-sa4h','Admin',1705532438269,'Admin',1705532438269);
+INSERT INTO "Transaction" VALUES('42xn-vmy3-h64b','2024-01-01',47.0,null,'2024 Starting Balance','a493-trf4-am98','Admin',1705532438323,'Admin',1705532438323);
+INSERT INTO "Transaction" VALUES('bn3t-q96a-rgws','2024-01-01',null,39.0,'2024 Starting Balance','mh4c-qrzp-8xvw','Admin',1705532438378,'Admin',1705532438378);
+INSERT INTO "Transaction" VALUES('hbe6-36zx-5gyb','2024-01-01',null,46.5,'2024 Starting Balance','p6zk-76tb-yp5k','Admin',1705532438491,'Admin',1705532438491);
+INSERT INTO "Transaction" VALUES('78p5-cdag-uugp','2024-01-01',null,55.0,'2024 Starting Balance','rukk-vps6-5atg','Admin',1705532438546,'Admin',1705532438546);
+INSERT INTO "Transaction" VALUES('qd8n-mvdb-4rnx','2024-01-01',null,8.0,'2024 Starting Balance','nmq2-g827-h82h','Admin',1705532438717,'Admin',1705532438717);
+INSERT INTO "Transaction" VALUES('q5wh-yryp-gt8t','2024-01-01',null,35.5,'2024 Starting Balance','yxsc-p3ay-r9gq','Admin',1705532438779,'Admin',1705532438779);
+INSERT INTO "Transaction" VALUES('h9nb-u2zg-m3mt','2024-01-01',null,4.5,'2024 Starting Balance','u6yh-mzr3-pzup','Admin',1705532438833,'Admin',1705532438833);
+INSERT INTO "Transaction" VALUES('ez55-3npr-8a89','2024-01-01',27.0,null,'2024 Starting Balance','emza-7nvz-mksr','Admin',1705532438888,'Admin',1705532438888);
+INSERT INTO "Transaction" VALUES('skd9-abny-d298','2024-01-01',18.0,null,'2024 Starting Balance','gzex-grx4-ww6p','Admin',1705532439002,'Admin',1705532439002);
+INSERT INTO "Transaction" VALUES('eqvq-zyt8-gq67','2024-01-01',46.5,null,'2024 Starting Balance','c9g2-v2ef-y6yv','Admin',1705532439059,'Admin',1705532439059);
+INSERT INTO "Transaction" VALUES('nx9x-xayx-fsk4','2024-01-01',null,100.0,'2024 Starting Balance','wt85-tbxe-ycnh','Admin',1705532439114,'Admin',1705532439114);
+INSERT INTO "Transaction" VALUES('7rka-gyff-czr2','2024-01-01',null,36.0,'2024 Starting Balance','e67q-b44d-mmk8','Admin',1705532439170,'Admin',1705532439170);
+INSERT INTO "Transaction" VALUES('s74n-rfqh-wtvd','2024-01-01',null,183.0,'2024 Starting Balance','rw9p-p5rb-5kzs','Admin',1705532439223,'Admin',1705532439223);
+INSERT INTO "Transaction" VALUES('4mrr-va4x-eqzg','2024-01-01',null,27.0,'2024 Starting Balance','g9mx-z3au-ncs3','Admin',1705532439337,'Admin',1705532439337);
+INSERT INTO "Transaction" VALUES('kykf-3qvn-hgzp','2024-01-01',null,166.5,'2024 Starting Balance','v9tv-ztd8-3wa9','Admin',1705532439391,'Admin',1705532439391);
+INSERT INTO "Transaction" VALUES('6czt-xsus-ahyg','2024-01-01',null,72.0,'2024 Starting Balance','pkxz-rurv-99qv','Admin',1705532439454,'Admin',1705532439454);
+INSERT INTO "Transaction" VALUES('w4rw-2hmq-274r','2024-01-01',null,31.5,'2024 Starting Balance','4r5z-w7kr-7zk2','Admin',1705532439695,'Admin',1705532439695);
+INSERT INTO "Transaction" VALUES('hgb9-efr7-vzfh','2024-01-01',null,90.0,'2024 Starting Balance','rwwe-nvs7-x3fh','Admin',1705532439750,'Admin',1705532439750);
+INSERT INTO "Transaction" VALUES('gh7y-s4nw-s834','2024-01-01',null,48.0,'2024 Starting Balance','np2e-tqct-zhcs','Admin',1705532439926,'Admin',1705532439926);
+INSERT INTO "Transaction" VALUES('aefk-3c58-95ht','2024-01-01',1.0,null,'2024 Starting Balance','n3ev-sf3y-y6hp','Admin',1705532439983,'Admin',1705532439983);
+INSERT INTO "Transaction" VALUES('vp89-rnb9-ark5','2024-01-01',null,79.5,'2024 Starting Balance','2t9b-9kfq-75zu','Admin',1705532440042,'Admin',1705532440042);
+INSERT INTO "Transaction" VALUES('hf8b-aem4-v9xn','2024-01-01',null,125.5,'2024 Starting Balance','ar53-d5yu-txds','Admin',1705532440101,'Admin',1705532440101);
+INSERT INTO "Transaction" VALUES('nav5-cqrr-abbr','2024-01-01',null,9.0,'2024 Starting Balance','n6d2-nsmz-k7mx','Admin',1705532440210,'Admin',1705532440210);
+INSERT INTO "Transaction" VALUES('4sys-tw99-gwh8','2024-01-01',null,179.5,'2024 Starting Balance','6aku-z225-qsps','Admin',1705532440265,'Admin',1705532440265);
+INSERT INTO "Transaction" VALUES('t7yt-t6eh-ngwf','2024-01-01',null,58.5,'2024 Starting Balance','bsn5-m4fb-f8n6','Admin',1705532440322,'Admin',1705532440322);
+INSERT INTO "Transaction" VALUES('s4m4-q2hz-ggvr','2024-01-01',null,4.5,'2024 Starting Balance','kf82-zesz-ev7v','Admin',1705532440491,'Admin',1705532440491);
+INSERT INTO "Transaction" VALUES('u29z-qkfx-xxd7','2024-01-01',36.0,null,'2024 Starting Balance','mcpa-qz3m-2y38','Admin',1705532440605,'Admin',1705532440605);
+INSERT INTO "Transaction" VALUES('sg4p-f68e-yu5a','2024-01-01',40.0,null,'2024 Starting Balance','hdtw-b5rr-bgvm','Admin',1705532440661,'Admin',1705532440661);
+INSERT INTO "Transaction" VALUES('npy8-66r6-s85f','2024-01-01',null,66.0,'2024 Starting Balance','x5yb-vnsh-4sv8','Admin',1705532440880,'Admin',1705532440880);
+INSERT INTO "Transaction" VALUES('mhxw-8kkw-62w7','2024-01-01',null,2.5,'2024 Starting Balance','awbg-chak-zwdu','Admin',1705532440990,'Admin',1705532440990);
+INSERT INTO "Transaction" VALUES('6mbn-ks6y-vts6','2024-01-01',null,50.0,'2024 Starting Balance','yzkc-npkc-ktwn','Admin',1705532441043,'Admin',1705532441043);
+INSERT INTO "Transaction" VALUES('dxvy-eb83-r9yn','2024-01-01',null,58.0,'2024 Starting Balance','5frv-7gdb-wtz2','Admin',1705532441098,'Admin',1705532441098);
+INSERT INTO "Transaction" VALUES('qhkd-4kt2-seyp','2024-01-01',null,18.0,'2024 Starting Balance','sy7f-w36n-e4mg','Admin',1705532441205,'Admin',1705532441205);
+INSERT INTO "Transaction" VALUES('9h2t-zssf-8d63','2024-01-01',null,57.5,'2024 Starting Balance','tbdd-9pug-779y','Admin',1705532441313,'Admin',1705532441313);
+INSERT INTO "Transaction" VALUES('q4br-9ay7-r3f6','2024-01-01',null,68.0,'2024 Starting Balance','y5k4-5xub-3rtn','Admin',1705532441368,'Admin',1705532441368);
+INSERT INTO "Transaction" VALUES('extz-4ucb-udba','2024-01-01',null,8.5,'2024 Starting Balance','d53b-exkg-n6rq','Admin',1705532441423,'Admin',1705532441423);
+INSERT INTO "Transaction" VALUES('py73-eep5-w9z7','2024-01-01',null,100.0,'2024 Starting Balance','6mn5-636s-nzfy','Admin',1705532441477,'Admin',1705532441477);
+INSERT INTO "Transaction" VALUES('ap58-xhvg-8hvf','2024-01-01',null,530.5,'2024 Starting Balance','qw9p-wb9v-vuff','Admin',1705532441531,'Admin',1705532441531);
+INSERT INTO "Transaction" VALUES('wtx4-sawb-pxag','2024-01-01',null,166.5,'2024 Starting Balance','5vs6-c3t7-ke63','Admin',1705532441586,'Admin',1705532441586);
+INSERT INTO "Transaction" VALUES('au35-fkzh-d35e','2024-01-01',null,81.0,'2024 Starting Balance','xpb7-3gk2-fzx2','Admin',1705532441696,'Admin',1705532441696);
+INSERT INTO "Transaction" VALUES('k7pv-rba7-c9vb','2024-01-01',null,72.0,'2024 Starting Balance','4h4z-yemy-xrzf','Admin',1705532441803,'Admin',1705532441803);
+INSERT INTO "Transaction" VALUES('k4vz-6ay4-57dh','2024-01-01',3.5,null,'2024 Starting Balance','rara-bbb7-r88n','Admin',1705532441857,'Admin',1705532441857);
+INSERT INTO "Transaction" VALUES('fbpa-gffr-gb7g','2024-01-01',26.0,null,'2024 Starting Balance','b7x2-56fv-eyer','Admin',1705532441913,'Admin',1705532441913);
+INSERT INTO "Transaction" VALUES('q3qa-2662-zg78','2024-01-01',null,20.0,'2024 Starting Balance','x999-7dyd-7gv4','Admin',1705532441970,'Admin',1705532441970);
+INSERT INTO "Transaction" VALUES('5ez8-45wq-6r52','2024-01-01',null,40.0,'2024 Starting Balance','xhv7-a8g5-prnb','Admin',1705532442025,'Admin',1705532442025);
+INSERT INTO "Transaction" VALUES('6a5q-sz58-xw7s','2024-01-01',null,172.5,'2024 Starting Balance','g9d9-xsxw-rz4k','Admin',1705532442239,'Admin',1705532442239);
+INSERT INTO "Transaction" VALUES('ubq2-auk2-4af2','2024-01-01',null,95.0,'2024 Starting Balance','7cmv-5dhq-7nap','Admin',1705532442293,'Admin',1705532442293);
+INSERT INTO "Transaction" VALUES('whgk-sdx2-unw4','2024-01-01',null,14.5,'2024 Starting Balance','n7bu-3ez4-337a','Admin',1705532442347,'Admin',1705532442347);
+INSERT INTO "Transaction" VALUES('78tv-qth6-mvtu','2024-01-01',null,55.0,'2024 Starting Balance','h3r4-wu66-g35x','Admin',1705532442455,'Admin',1705532442455);
+INSERT INTO "Transaction" VALUES('f6gw-3qg7-zux8','2024-01-01',1.0,null,'2024 Starting Balance','yrsd-7f3z-w4fv','Admin',1705532442565,'Admin',1705532442565);
+INSERT INTO "Transaction" VALUES('ysc8-nab5-em82','2024-01-01',null,91.0,'2024 Starting Balance','ntu4-v8xh-2ky6','Admin',1705532442620,'Admin',1705532442620);
+INSERT INTO "Transaction" VALUES('qwe6-fedp-vt8z','2024-01-01',null,58.0,'2024 Starting Balance','d69g-vamq-s44y','Admin',1705532442673,'Admin',1705532442673);
+INSERT INTO "Transaction" VALUES('ckgs-56he-xtms','2024-01-01',null,104.5,'2024 Starting Balance','rshk-aw4a-fzpa','Admin',1705532442891,'Admin',1705532442891);
+INSERT INTO "Transaction" VALUES('2vvm-wv6x-r4gf','2024-01-01',null,32.0,'2024 Starting Balance','vrzd-pk4w-r6s3','Admin',1705532442946,'Admin',1705532442946);
+INSERT INTO "Transaction" VALUES('egwc-bg2n-axmk','2024-01-01',31.5,null,'2024 Starting Balance','dbc3-4uzs-c5ug','Admin',1705532443002,'Admin',1705532443002);
+INSERT INTO "Transaction" VALUES('kra2-n55u-s35n','2024-01-01',11.0,null,'2024 Starting Balance','4fwm-vggh-yhhq','Admin',1705532443164,'Admin',1705532443164);
+INSERT INTO "Transaction" VALUES('a4qw-up4b-uawm','2024-01-01',null,92.0,'2024 Starting Balance','d786-ze8k-wxc3','Admin',1705532443219,'Admin',1705532443219);
+INSERT INTO "Transaction" VALUES('nnts-nta7-2dvf','2024-01-01',null,50.5,'2024 Starting Balance','ueru-z2tz-8p3t','Admin',1705532443273,'Admin',1705532443273);
+INSERT INTO "Transaction" VALUES('7pce-e7uv-9gqg','2024-01-01',null,18.0,'2024 Starting Balance','dsg8-dpfd-uvye','Admin',1705532443597,'Admin',1705532443597);
+INSERT INTO "Transaction" VALUES('3wc3-3bww-9d7d','2024-01-01',null,70.0,'2024 Starting Balance','vb78-frh4-htcy','Admin',1705532443651,'Admin',1705532443651);
+INSERT INTO "Transaction" VALUES('n7f7-d8mv-wwek','2024-01-01',null,50.95000000000000284,'2024 Starting Balance','tcg8-6dhp-gkpz','Admin',1705532443921,'Admin',1705532443921);
+INSERT INTO "Transaction" VALUES('n8e9-z4hp-8tuv','2024-01-01',null,163.0,'2024 Starting Balance','69mb-2bza-bss4','Admin',1705532443975,'Admin',1705532443975);
+INSERT INTO "Transaction" VALUES('xqfd-7fud-cpg3','2024-01-01',null,93.5,'2024 Starting Balance','89ud-rssw-qf9d','Admin',1705532444030,'Admin',1705532444030);
+INSERT INTO "Transaction" VALUES('347s-p5k4-t5zt','2024-01-01',null,81.0,'2024 Starting Balance','pqdc-56z7-xkzn','Admin',1705532444086,'Admin',1705532444086);
+INSERT INTO "Transaction" VALUES('7wba-w9k8-vp97','2024-01-01',null,105.0,'2024 Starting Balance','xyyq-frus-78qm','Admin',1705532444139,'Admin',1705532444139);
+INSERT INTO "Transaction" VALUES('eys6-gug5-a5b9','2024-01-01',null,122.0,'2024 Starting Balance','py59-kvnw-bqzr','Admin',1705532444247,'Admin',1705532444247);
+INSERT INTO "Transaction" VALUES('8yka-erv8-e426','2024-01-01',null,37.5,'2024 Starting Balance','e7ds-9yt8-mpew','Admin',1705532444301,'Admin',1705532444301);
+INSERT INTO "Transaction" VALUES('tx6u-re3p-q3az','2024-01-01',null,36.0,'2024 Starting Balance','7qr3-gyhk-mnck','Admin',1705532444355,'Admin',1705532444355);
+INSERT INTO "Transaction" VALUES('fa3e-dn4v-sm8q','2024-01-01',null,5.0,'2024 Starting Balance','nzeb-bwpe-9zw6','Admin',1705532444571,'Admin',1705532444571);
+INSERT INTO "Transaction" VALUES('dmq2-6q4d-vbbd','2024-01-01',null,54.0,'2024 Starting Balance','pvgx-s8pe-gbca','Admin',1705532444733,'Admin',1705532444733);
+INSERT INTO "Transaction" VALUES('bu3e-8ayd-af2d','2024-01-01',2.5,null,'2024 Starting Balance','ek9d-gb2e-9yzp','Admin',1705532445057,'Admin',1705532445057);
+INSERT INTO "Transaction" VALUES('3rsh-hmd4-xu46','2024-01-01',28.0,null,'2024 Starting Balance','7nqb-2rpb-48z3','Admin',1705532445218,'Admin',1705532445218);
+INSERT INTO "Transaction" VALUES('kazx-q8vk-9cy6','2024-01-01',null,54.0,'2024 Starting Balance','kaew-x248-gder','Admin',1705532445271,'Admin',1705532445271);
+INSERT INTO "Transaction" VALUES('fuhc-a2mc-7cvt','2024-01-01',27.0,null,'2024 Starting Balance','tk54-2sx9-kh76','Admin',1705532445433,'Admin',1705532445433);
+INSERT INTO "Transaction" VALUES('6cu2-xmtm-8d2a','2024-01-01',null,31.5,'2024 Starting Balance','r9p9-edzq-2rpr','Admin',1705532445487,'Admin',1705532445487);
+INSERT INTO "Transaction" VALUES('8apn-86fd-9gvq','2024-01-01',null,3.0,'2024 Starting Balance','pdn9-b6ym-m2ny','Admin',1705532445541,'Admin',1705532445541);
+INSERT INTO "Transaction" VALUES('agm2-quqr-qkf8','2024-01-01',null,0.5,'2024 Starting Balance','m4cf-4bnn-ag7m','Admin',1705532445650,'Admin',1705532445650);
+INSERT INTO "Transaction" VALUES('fwm7-4589-42bs','2024-01-01',null,6.0,'2024 Starting Balance','uhu9-z66c-7pf4','Admin',1705532445811,'Admin',1705532445811);
+INSERT INTO "Transaction" VALUES('yq82-rm87-n22c','2024-01-01',null,43.0,'2024 Starting Balance','7mh8-vzpu-acbk','Admin',1705532445919,'Admin',1705532445919);
+INSERT INTO "Transaction" VALUES('2mks-abse-3b3a','2024-01-01',null,1.5,'2024 Starting Balance','7u56-dmy6-w348','Admin',1705532446081,'Admin',1705532446081);
+INSERT INTO "Transaction" VALUES('agur-g72x-kz29','2024-01-01',null,32.0,'2024 Starting Balance','kqpx-pa9y-wkck','Admin',1705532446135,'Admin',1705532446135);
+INSERT INTO "Transaction" VALUES('z4sr-pwv2-3hce','2024-01-01',null,119.0,'2024 Starting Balance','3rc6-vq8c-h7pt','Admin',1705532446189,'Admin',1705532446189);
+INSERT INTO "Transaction" VALUES('rv7c-dqzg-3dr7','2024-01-01',null,2.5,'2024 Starting Balance','qk6e-95sh-nuwq','Admin',1705532446244,'Admin',1705532446244);
+INSERT INTO "Transaction" VALUES('s37f-9uc2-wn5k','2024-01-01',null,300.0,'2024 Starting Balance','ycag-pdbq-pvfc','Admin',1705532446297,'Admin',1705532446297);
+INSERT INTO "Transaction" VALUES('ywu2-a3an-3dzz','2024-01-01',null,46.0,'2024 Starting Balance','cbv4-qdxz-7z8m','Admin',1705532446352,'Admin',1705532446352);
+INSERT INTO "Transaction" VALUES('8ztz-6fhv-dgsu','2024-01-01',18.5,null,'2024 Starting Balance','h9ba-fbfc-92ty','Admin',1705532446405,'Admin',1705532446405);
+INSERT INTO "Transaction" VALUES('ss27-54y2-u6ab','2024-01-01',null,149.0,'2024 Starting Balance','8xvy-h3wf-3m98','Admin',1705532446513,'Admin',1705532446513);
+INSERT INTO "Transaction" VALUES('mkag-3yeh-6mhy','2024-01-01',null,130.0,'2024 Starting Balance','7arn-6z3a-8rrt','Admin',1705532446621,'Admin',1705532446621);
+INSERT INTO "Transaction" VALUES('gv53-y8fa-qc6q','2024-01-01',null,20.0,'2024 Starting Balance','4gtb-rg87-hu6q','Admin',1705532446729,'Admin',1705532446729);
+INSERT INTO "Transaction" VALUES('rtf9-yr7p-zhtw','2024-01-01',null,364.0,'2024 Starting Balance','u8ms-4s6g-vweg','Admin',1705532446785,'Admin',1705532446785);
+INSERT INTO "Transaction" VALUES('bagb-qkhp-be8r','2024-01-01',null,11.5,'2024 Starting Balance','pnsp-7ys3-8sw9','Admin',1705532446893,'Admin',1705532446893);
+INSERT INTO "Transaction" VALUES('sem5-g4cg-9q8r','2024-01-01',null,36.0,'2024 Starting Balance','wmag-xkyx-mman','Admin',1705532446947,'Admin',1705532446947);
+INSERT INTO "Transaction" VALUES('x2t4-2698-8tyf','2024-01-01',26.5,null,'2024 Starting Balance','akaf-w43t-nwts','Admin',1705532447001,'Admin',1705532447001);
+INSERT INTO "Transaction" VALUES('63vq-tcuv-5h38','2024-01-01',null,117.5,'2024 Starting Balance','m3bp-5tuy-r8ny','Admin',1705532447109,'Admin',1705532447109);
+INSERT INTO "Transaction" VALUES('99t5-gq82-r5ta','2024-01-01',null,6.0,'2024 Starting Balance','5vq4-m5ke-fmcp','Admin',1705532447163,'Admin',1705532447163);
+INSERT INTO "Transaction" VALUES('d5z6-636z-8f7r','2024-01-01',null,1.0,'2024 Starting Balance','gddx-envk-mcy7','Admin',1705532447217,'Admin',1705532447217);
+INSERT INTO "Transaction" VALUES('gp7k-6f8g-u6w5','2024-01-01',null,39.35000000000000142,'2024 Starting Balance','hmgm-s4w5-a6gn','Admin',1705532447326,'Admin',1705532447326);
+INSERT INTO "Transaction" VALUES('x873-kupx-vru3','2024-01-01',null,130.5,'2024 Starting Balance','qhex-ydn7-6ta9','Admin',1705532447379,'Admin',1705532447379);
+INSERT INTO "Transaction" VALUES('b3wn-wury-888f','2024-01-01',null,118.5,'2024 Starting Balance','ycfu-rw88-n72a','Admin',1705532447433,'Admin',1705532447433);
+INSERT INTO "Transaction" VALUES('gna7-2q2a-5s3n','2024-01-01',54.0,null,'2024 Starting Balance','rtpg-nbfx-kwsu','Admin',1705532447922,'Admin',1705532447922);
+INSERT INTO "Transaction" VALUES('2yub-zkg3-e3bb','2024-01-01',null,5.0,'2024 Starting Balance','qn5b-yad3-tb6b','Admin',1705532448031,'Admin',1705532448031);
+INSERT INTO "Transaction" VALUES('nk2a-6c92-sbmg','2024-01-01',null,66.0,'2024 Starting Balance','pzs4-q6ga-qcsu','Admin',1705532448142,'Admin',1705532448142);
+INSERT INTO "Transaction" VALUES('xexm-3mng-h4a2','2024-01-01',null,22.5,'2024 Starting Balance','fkxy-h96s-7ctb','Admin',1705532448197,'Admin',1705532448197);
+INSERT INTO "Transaction" VALUES('29n8-evwg-nmqy','2024-01-01',null,119.0,'2024 Starting Balance','d9gm-a3bz-vzte','Admin',1705532448252,'Admin',1705532448252);
+INSERT INTO "Transaction" VALUES('aku4-nes8-rtcu','2024-01-01',null,118.0,'2024 Starting Balance','5tkb-nyb3-hbvp','Admin',1705532448305,'Admin',1705532448305);
+INSERT INTO "Transaction" VALUES('q6u2-5b6f-ktam','2024-01-01',null,150.0,'2024 Starting Balance','ge73-n3yg-r9bk','Admin',1705532448521,'Admin',1705532448521);
+INSERT INTO "Transaction" VALUES('psqn-3zb2-wnq7','2024-01-01',null,38.0,'2024 Starting Balance','7pwb-egs4-3c9t','Admin',1705532448683,'Admin',1705532448683);
+INSERT INTO "Transaction" VALUES('mwbx-du8n-5ykq','2024-01-01',null,176.0,'2024 Starting Balance','ue7z-6zvg-pvvd','Admin',1705532448737,'Admin',1705532448737);
+INSERT INTO "Transaction" VALUES('efur-dqyc-gtrx','2024-01-01',null,5.25,'2024 Starting Balance','tsss-2sps-kq6v','Admin',1705532448955,'Admin',1705532448955);
+INSERT INTO "Transaction" VALUES('5mbc-cx67-4vsf','2024-01-01',null,71.0,'2024 Starting Balance','7864-232y-qy7m','Admin',1705532449009,'Admin',1705532449009);
+INSERT INTO "Transaction" VALUES('q63w-nzpy-dc2d','2024-01-01',null,53.0,'2024 Starting Balance','zchx-tqey-ncsw','Admin',1705532449063,'Admin',1705532449063);
+INSERT INTO "Transaction" VALUES('4v42-z884-pwu4','2024-01-01',null,16.0,'2024 Starting Balance','9cf7-2xaz-99xx','Admin',1705532449117,'Admin',1705532449117);
+INSERT INTO "Transaction" VALUES('7cf3-nmd5-yn2e','2024-01-01',null,99.0,'2024 Starting Balance','q452-5mft-chv7','Admin',1705532449171,'Admin',1705532449171);
+INSERT INTO "Transaction" VALUES('cpes-n6n9-bzvc','2024-01-01',null,115.5,'2024 Starting Balance','h35g-5b2m-hs7k','Admin',1705532449225,'Admin',1705532449225);
+INSERT INTO "Transaction" VALUES('gu8p-7hm4-cr9t','2024-01-01',null,26.19999999999999929,'2024 Starting Balance','ngwy-4sma-dst5','Admin',1705532449387,'Admin',1705532449387);
+INSERT INTO "Transaction" VALUES('6x5h-2ux2-t6n7','2024-01-01',null,247.0,'2024 Starting Balance','hmyt-u33x-mmqm','Admin',1705532449441,'Admin',1705532449441);
+INSERT INTO "Transaction" VALUES('vbg2-r4tg-42qt','2024-01-01',null,49.5,'2024 Starting Balance','cb32-yr8k-hkf8','Admin',1705532449549,'Admin',1705532449549);
+INSERT INTO "Transaction" VALUES('qsg6-69fs-4p4u','2024-01-01',null,56.75,'2024 Starting Balance','fub6-nsvk-ku3a','Admin',1705532449657,'Admin',1705532449657);
+INSERT INTO "Transaction" VALUES('66rp-pqdz-vy2k','2024-01-01',null,1.5,'2024 Starting Balance','fvft-5hsc-qbwf','Admin',1705532449712,'Admin',1705532449712);
+INSERT INTO "Transaction" VALUES('ec2a-6etb-x2bd','2024-01-01',2.5,null,'2024 Starting Balance','2wqm-t87y-xp9y','Admin',1705532449927,'Admin',1705532449927);
+INSERT INTO "Transaction" VALUES('t6fr-24hh-9s2r','2024-01-01',null,205.5,'2024 Starting Balance','hnts-s44t-k7vt','Admin',1705532449983,'Admin',1705532449983);
+INSERT INTO "Transaction" VALUES('38p4-fa68-8avk','2024-01-01',null,84.0,'2024 Starting Balance','kpnb-re5r-7bb4','Admin',1705532450037,'Admin',1705532450037);
+INSERT INTO "Transaction" VALUES('fvwk-sxk6-fxmc','2024-01-01',null,185.5,'2024 Starting Balance','m527-8372-zb5u','Admin',1705532450096,'Admin',1705532450096);
+INSERT INTO "Transaction" VALUES('k4bf-2nu8-emtp','2024-01-01',null,16.0,'2024 Starting Balance','vhvv-yqv7-aw4a','Admin',1705532450259,'Admin',1705532450259);
+INSERT INTO "Transaction" VALUES('f5n5-xdhw-wqnh','2024-01-01',null,165.0,'2024 Starting Balance','643v-t9rg-2pvq','Admin',1705532450421,'Admin',1705532450421);
+INSERT INTO "Transaction" VALUES('n8km-nnbw-c77a','2024-01-01',null,14.0,'2024 Starting Balance','2drm-ke3g-4py6','Admin',1705532450583,'Admin',1705532450583);
+INSERT INTO "Transaction" VALUES('wpfg-p4pe-nu78','2024-01-01',null,88.0,'2024 Starting Balance','fgup-yyhk-aasf','Admin',1705532450637,'Admin',1705532450637);
+INSERT INTO "Transaction" VALUES('fupz-8h44-8t4z','2024-01-01',17.0,null,'2024 Starting Balance','82cx-bk3p-g5pu','Admin',1705532450749,'Admin',1705532450749);
+INSERT INTO "Transaction" VALUES('smvv-qwyq-gqzm','2024-01-01',null,125.5,'2024 Starting Balance','yyz3-92bb-hxmk','Admin',1705532450855,'Admin',1705532450855);
+INSERT INTO "Transaction" VALUES('qtdu-f4v2-yguc','2024-01-01',null,54.0,'2024 Starting Balance','fkv8-3rac-mfs2','Admin',1705532450909,'Admin',1705532450909);
+INSERT INTO "Transaction" VALUES('7qgc-z34a-7q5a','2024-01-01',null,118.5,'2024 Starting Balance','u8mf-qpe6-q563','Admin',1705532451125,'Admin',1705532451125);
+INSERT INTO "Transaction" VALUES('ze6k-cuk9-8muz','2024-01-01',null,2.0,'2024 Starting Balance','s73a-k46s-4k8s','Admin',1705532451179,'Admin',1705532451179);
+INSERT INTO "Transaction" VALUES('pz53-3tam-575e','2024-01-01',null,73.5,'2024 Starting Balance','s8kh-r5mx-quak','Admin',1705532451233,'Admin',1705532451233);
+INSERT INTO "Transaction" VALUES('mh67-w9am-wxrm','2024-01-01',null,59.0,'2024 Starting Balance','vdge-82cp-s4aw','Admin',1705532451449,'Admin',1705532451449);
+INSERT INTO "Transaction" VALUES('t7nz-q639-ckb5','2024-01-01',null,107.0,'2024 Starting Balance','dan8-rbny-8k96','Admin',1705532451555,'Admin',1705532451555);
+INSERT INTO "Transaction" VALUES('3ava-k62s-2wbf','2024-01-01',null,13.5,'2024 Starting Balance','7zqh-89dz-x55b','Admin',1705532451825,'Admin',1705532451825);
+INSERT INTO "Transaction" VALUES('g8zp-xt5w-vgb8','2024-01-01',null,33.5,'2024 Starting Balance','zz3y-2bs8-tmdg','Admin',1705532451934,'Admin',1705532451934);
+INSERT INTO "Transaction" VALUES('7nsu-g3fg-sf3y','2024-01-01',null,126.5,'2024 Starting Balance','3n4d-3va6-yygs','Admin',1705532452041,'Admin',1705532452041);
+INSERT INTO "Transaction" VALUES('3hyc-u6gg-m766','2024-01-01',null,25.5,'2024 Starting Balance','5g8m-98nh-t5tf','Admin',1705532452635,'Admin',1705532452635);
+INSERT INTO "Transaction" VALUES('m3ag-vcxw-cfdf','2024-01-01',48.0,null,'2024 Starting Balance','bqfr-vm6r-9kq5','Admin',1705532452689,'Admin',1705532452689);
+INSERT INTO "Transaction" VALUES('rex9-z9fn-9z82','2024-01-01',null,36.0,'2024 Starting Balance','rrty-vezg-avrz','Admin',1705532452796,'Admin',1705532452796);
+INSERT INTO "Transaction" VALUES('d66m-crps-xtxt','2024-01-01',null,18.0,'2024 Starting Balance','p8cc-pbvy-9xq2','Admin',1705532453013,'Admin',1705532453013);
+INSERT INTO "Transaction" VALUES('53x4-rtb2-yrc8','2024-01-01',null,12.0,'2024 Starting Balance','wrxd-h54f-wtas','Admin',1705532453067,'Admin',1705532453067);
+INSERT INTO "Transaction" VALUES('d3ad-ppsp-vxq3','2024-01-01',null,29.5,'2024 Starting Balance','rxwe-t345-pxpp','Admin',1705532453121,'Admin',1705532453121);
+INSERT INTO "Transaction" VALUES('53zq-pvev-ryeu','2024-01-01',null,75.0,'2024 Starting Balance','5h4h-58h6-sukb','Admin',1705532453175,'Admin',1705532453175);
+INSERT INTO "Transaction" VALUES('42w8-nxey-2v3z','2024-01-01',null,1.0,'2024 Starting Balance','9beg-k39x-crgb','Admin',1705532453230,'Admin',1705532453230);
+INSERT INTO "Transaction" VALUES('qybr-mqv8-w2hf','2024-01-01',9.0,null,'2024 Starting Balance','uhtq-ahu5-efww','Admin',1705532453283,'Admin',1705532453283);
+INSERT INTO "Transaction" VALUES('pxsb-vwrw-r8yc','2024-01-01',27.5,null,'2024 Starting Balance','cbrw-2kpx-83qc','Admin',1705532453337,'Admin',1705532453337);
 CREATE TABLE IF NOT EXISTS "Schedule" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "date" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "deadline" DATETIME NOT NULL,
+    "date" TEXT NOT NULL,
+    "deadline" TEXT NOT NULL,
     "source" TEXT NOT NULL,
     "costPerHour" INTEGER NOT NULL,
+    "open" BOOLEAN NOT NULL DEFAULT false,
+    "closed" BOOLEAN NOT NULL DEFAULT false,
     "createdBy" TEXT NOT NULL DEFAULT 'Admin',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedBy" TEXT NOT NULL DEFAULT 'Admin',
     "updatedAt" DATETIME NOT NULL
 );
-INSERT INTO Schedule VALUES('zqng-yrhw-gybe',1705042800000,1704697200000,'Well water',10,'Admin',1705532438206,'Admin',1705532438206);
+INSERT INTO Schedule VALUES('zqng-yrhw-gybe','2024-01-12','2024-01-08','Well water',10,false,false,'Admin',1705532438206,'Admin',1705532438206);
 CREATE TABLE IF NOT EXISTS "UserSchedule" (
     "userId" TEXT NOT NULL,
     "ditch" INTEGER NOT NULL,
     "scheduleId" TEXT NOT NULL,
-    "hours" DECIMAL NOT NULL,
+    "hours" REAL NOT NULL,
     "createdBy" TEXT NOT NULL DEFAULT 'Admin',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedBy" TEXT NOT NULL DEFAULT 'Admin',
@@ -2027,7 +2032,7 @@ CREATE TABLE IF NOT EXISTS "UserSchedule" (
 );
 INSERT INTO UserSchedule VALUES('z5a9-da4r-sa4h',1,'zqng-yrhw-gybe',1,'Admin',1705532438269,'Admin',1705532438269);
 INSERT INTO UserSchedule VALUES('z5a9-da4r-sa4h',9,'zqng-yrhw-gybe',1,'Admin',1705532438269,'Admin',1705532438269);
-INSERT INTO UserSchedule VALUES('rw9p-p5rb-5kzs',1,'zqng-yrhw-gybe',2,'Admin',1705532439223,'Admin',1705532439223);
+INSERT INTO UserSchedule VALUES('e67q-b44d-mmk8',1,'zqng-yrhw-gybe',2,'Admin',1705532439223,'Admin',1705532439223);
 INSERT INTO UserSchedule VALUES('bsn5-m4fb-f8n6',2,'zqng-yrhw-gybe',3.5,'Admin',1705532440322,'Admin',1705532440322);
 INSERT INTO UserSchedule VALUES('dk25-uy2d-wd2m',2,'zqng-yrhw-gybe',2,'Admin',1705532440718,'Admin',1705532440718);
 INSERT INTO UserSchedule VALUES('ave2-xgpq-qkbh',2,'zqng-yrhw-gybe',6,'Admin',1705532440774,'Admin',1705532440774);

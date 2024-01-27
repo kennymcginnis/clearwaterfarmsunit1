@@ -55,7 +55,7 @@ export async function requireUserWithRole(request: Request, name: string) {
 }
 
 type Action = 'create' | 'read' | 'update' | 'delete'
-type Entity = 'user' | 'meeting' | 'document'
+type Entity = 'user' | 'meeting' | 'document' | 'schedule'
 type Access = 'own' | 'any' | 'own,any' | 'any,own'
 type PermissionString = `${Action}:${Entity}` | `${Action}:${Entity}:${Access}`
 function parsePermissionString(permissionString: PermissionString) {
@@ -81,7 +81,7 @@ export function userHasPermission(
 	)
 }
 
-export function userHasRole(user: Pick<ReturnType<typeof useUser>, 'roles'> | null | undefined, role: string) {
+export function userHasRole(user: Pick<ReturnType<typeof useUser>, 'roles'> | null, role: string) {
 	if (!user) return false
 	return user.roles.some(r => r.name === role)
 }
