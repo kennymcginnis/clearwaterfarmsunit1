@@ -1,11 +1,13 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
-import { json, type ActionFunctionArgs } from '@remix-run/node'
+import { json, type ActionFunctionArgs, MetaFunction } from '@remix-run/node'
 import { Form } from '@remix-run/react'
+import * as React from 'react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { ErrorList, Field } from '#app/components/forms.tsx'
+import { HeadCombobox } from '#app/components/head-combobox'
 import { Button } from '#app/components/ui/button'
 import { Card, CardHeader, CardFooter, CardContent, CardTitle, CardDescription } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
@@ -21,7 +23,7 @@ const UserScheduleEditorSchema = z.object({
 	userId: z.string(),
 	scheduleId: z.string(),
 	ditch: z.number(),
-	hours: z.number(),
+	hours: z.number().min(0.5).max(12),
 	head: z.number(),
 })
 
@@ -91,6 +93,7 @@ export function UserDitchSchedule({
 	// const actionData = useActionData<typeof action>()
 
 	const userSchedule = data.userSchedule.find(us => us.ditch === port.ditch)
+	const [headValue, setHeadValue] = React.useState((userSchedule?.head ?? data.user.defaultHead ?? 70).toString())
 
 	const [form, fields] = useForm({
 		id: `userschedule-form-ditch-${port.ditch}`,
@@ -101,7 +104,6 @@ export function UserDitchSchedule({
 		},
 		defaultValue: {
 			hours: userSchedule?.hours ?? data.user.defaultHours ?? '',
-			head: userSchedule?.head ?? data.user.defaultHead ?? 70,
 		},
 		shouldRevalidate: 'onBlur',
 	})
@@ -136,14 +138,9 @@ export function UserDitchSchedule({
 							}}
 							errors={fields.hours.errors}
 						/>
-						<Field
-							className="w-[250px]"
-							labelProps={{ children: 'Head' }}
-							inputProps={{
-								...conform.input(fields.head, { ariaAttributes: true }),
-							}}
-							errors={fields.head.errors}
-						/>
+						
+						<input type="hidden" name="head" value={headValue} />
+						<HeadCombobox value={headValue} setValue={setHeadValue} />
 					</div>
 					<ErrorList id={form.errorId} errors={form.errors} />
 				</CardContent>

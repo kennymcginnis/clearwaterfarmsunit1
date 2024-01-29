@@ -1,4 +1,4 @@
-import { json, redirect, type LoaderFunctionArgs } from '@remix-run/node'
+import { json, redirect, type LoaderFunctionArgs, MetaFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
 import { format } from 'date-fns'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
@@ -91,6 +91,16 @@ export default function UserScheduleEditor() {
 			</div>
 		)
 	}
+}
+
+export const meta: MetaFunction<null, { 'routes/schedule+/$date_': typeof loader }> = ({ params }) => {
+	return [
+		{ title: `Irrigation ${params.date} | Clearwater Farms 1` },
+		{
+			name: 'description',
+			content: `Irrigation for ${params.date} Clearwater Farms 1`,
+		},
+	]
 }
 
 export function ErrorBoundary() {

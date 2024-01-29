@@ -1,5 +1,5 @@
 import { invariantResponse } from '@epic-web/invariant'
-import { json } from '@remix-run/node'
+import { type MetaFunction, json } from '@remix-run/node'
 import { NavLink, Outlet, useLoaderData } from '@remix-run/react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
@@ -64,6 +64,16 @@ export default function MeetingsRoute() {
 			</div>
 		</main>
 	)
+}
+
+export const meta: MetaFunction<null, { 'routes/meetings+/$date_+/meeting': typeof loader }> = ({ params }) => {
+	return [
+		{ title: `Meeting ${params.date} | Clearwater Farms 1` },
+		{
+			name: 'description',
+			content: `Clearwater Farms 1 Board Meeting: ${params.date}`,
+		},
+	]
 }
 
 export function ErrorBoundary() {

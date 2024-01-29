@@ -11,7 +11,7 @@ export default function MeetingIndexRoute() {
 
 export const meta: MetaFunction<null, { 'routes/meetings+/$date_+/meeting': typeof meetingLoader }> = ({ params }) => {
 	return [
-		{ title: `${params.date}'s Meeting | Clearwater Farms 1` },
+		{ title: `Meeting ${params.date} | Clearwater Farms 1` },
 		{
 			name: 'description',
 			content: `Clearwater Farms 1 Board Meeting: ${params.date}`,

@@ -21,6 +21,26 @@ export function ErrorList({ id, errors }: { errors?: ListOfErrors; id?: string }
 	)
 }
 
+export function DisplayField({
+	labelProps,
+	inputProps,
+	className,
+}: {
+	labelProps: React.LabelHTMLAttributes<HTMLLabelElement>
+	inputProps: React.InputHTMLAttributes<HTMLInputElement>
+	errors?: ListOfErrors
+	className?: string
+}) {
+	const fallbackId = useId()
+	const id = inputProps.id ?? fallbackId
+	return (
+		<div className={className}>
+			<Label htmlFor={id} {...labelProps} />
+			<Input id={id} readOnly={true} {...inputProps} />
+		</div>
+	)
+}
+
 export function Field({
 	labelProps,
 	inputProps,

@@ -2935,7 +2935,7 @@ export const users = [
 		username: 'enriquez',
 		address: [
 			{
-				address: '7319 N 185th Ave',
+				address: 'enriquez',
 				parcelAndLot: [
 					{
 						parcel: '502-21-067A',

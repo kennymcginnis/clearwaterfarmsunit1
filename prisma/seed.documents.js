@@ -713,6 +713,16 @@ Deputy Recorder
 `,
 	},
 	{
+		type: 'rules-and-regulations',
+		title: 'Rules and Regulations',
+		content: `Rules and Regulations`,
+	},
+	{
+		type: 'irrigation-information',
+		title: 'Irrigation Information',
+		content: `Irrigation Information`,
+	},
+	{
 		type: 'contact-us',
 		title: 'Contact Us',
 		content: `If you have any questions please e-mail us at: clearwat@clearwaterfarmsunit1.com`,
@@ -801,77 +811,6 @@ Location of August Meeting 7230 N. 181st Ave.
 Minutes submitted by:
 Bealy mild
 C.F.P.O.A. Unit 1 Secretary`,
-	},
-	{
-		type: 'profit-loss',
-		title: 'Profit & Loss June 2023',
-		content: `# Clearwater Farms P.OA. Unit 1
-## Profit & Loss 
-### June 2023
-
-  |                            |Jun 23  |         |
-  |----------------------------|--------|---------|
-  |Ordinary Income/Expense     |        |         |
-  |  Income                    |        |         |
-  |    Irrigation Payment      |        |15,601.50|
-  |    Membership Dues         |        | 1,440.00|
-  |  Total Income              |        |17,041.50|
-  |                            |        |         |
-  |  Expense                   |        |         |
-  |    941 Tax Deposit         |        |1,019.13 |
-  |    Irrigation Supplies     |        |   30.54 |
-  |    Irrigation Truck Fuel   |        |  105.02 |
-  |    Irrigation Water        |        |10,000.00|
-  |    Operations              |        |         |
-  |      Office Supplies       |   47.34|         |
-  |      Printing and Copying  |  261.72|         |
-  |    Total Operations        |        |309.06   |
-  |    Wages                   |        |         |
-  |      Bookkeeping           |1,774.23|         |
-  |      Irrigation Maintenance|  613.84|         |
-  |      Water Master          |3,145.47|         |
-  |    Total Wages             |        | 5,533.54|
-  |    Web Site                |        |    37.56|
-  |  Total Expense             |        |17,034.85|
-  |                            |        |         |
-  |Net Ordinary Income         |        |     6.65|
-  |                            |        |         |
-  |Other Income/Expense        |        |         |
-  |  Other Income              |        |         |
-  |    Fees Assessed           |        |         |
-  |      Late Fee              |   50.00|         |
-  |      Lien Fees             |   60.00|         |
-  |    Total Fees Assessed     |        |   110.00|
-  |  Total Other Income        |        |   110.00|
-  |Net Other Income            |        |   110.00|
-  |                            |        |         |
-  |Net Income                  |        |   116.65|
-  `,
-	},
-	{
-		type: 'balance-sheet',
-		title: 'Clearwater Farms P.OA. Unit 1 Balance Sheet As of June 30, 2023',
-		content: `# Clearwater Farms POA. Unit 1 
-## Balance Sheet
-### As of June 30, 2023
-
-|ASSETS                        |Jun 30, 23|
-|------------------------------|----------|
-|  Current Assets              |          |
-|    Checking/Savings          |          |
-|      Irrigation Water Account| 81,672.31|
-|      Operating Account       |118,366.29|
-|    Total Checking/Savings    |200,038.60|
-|  Total Current Assets        |200,038.60|
-|TOTAL ASSETS                  |200,038.60|
-|LIABILITIES & EQUITY          |          |
-|  Equity                      |          |
-|    Opening Balance Equity    | 70,534.74|
-|    Unrestricted Net Assets   | 50,682.64|
-|    Net Income                | 78,821.22|
-|  Total Equity                |200,038.60|
-|TOTAL LIABILITIES & EQUITY    |200,038.60|
-`,
 	},
 	{
 		type: 'trade-list',

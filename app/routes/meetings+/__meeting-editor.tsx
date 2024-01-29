@@ -68,11 +68,23 @@ export async function action({ request }: ActionFunctionArgs) {
 	const updatedMeeting = await prisma.meeting.upsert({
 		select: { id: true, date: true },
 		where: { id: meetingId ?? '__new_meeting__' },
-		create: { id: generatePublicId(), date, createdBy: userId, updatedBy: userId },
+		create: {
+			id: generatePublicId(),
+			date,
+			documents: {
+				create: ['agenda', 'minutes'].map(doc => ({
+					id: generatePublicId(),
+					type: doc,
+					title: doc,
+					content: Buffer.from(`# Meeting ${doc} ${date}`),
+				})),
+			},
+			createdBy: userId,
+		},
 		update: { date, updatedBy: userId },
 	})
 
-	return redirect(`/meeting/${updatedMeeting.date}/agenda`)
+	return redirect(`/meetings/${updatedMeeting.date}/agenda`)
 }
 
 export function MeetingEditor({ meeting }: { meeting?: SerializeFrom<Pick<Meeting, 'id' | 'date'>> }) {

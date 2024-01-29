@@ -19,17 +19,17 @@ async function seed() {
 	console.log('🌱 Seeding...')
 	console.time(`🌱 Database has been seeded`)
 
-	// await cleanupDb(prisma)
+	await cleanupDb(prisma)
 
-	// const meetingId = await seedMeetings()
-	// await seedDocuments(meetingId)
+	const meetingId = await seedMeetings()
+	await seedDocuments(meetingId)
 
-	// await seedPermissions()
-	// await seedRoles()
-	// const scheduleId = await seedSchedules()
-	// await seedUsers(scheduleId)
+	await seedPermissions()
+	await seedRoles()
+	const scheduleId = await seedSchedules()
+	await seedUsers(scheduleId)
 	await seedTimeline()
-	// await seedAdminUsers(scheduleId)
+	await seedAdminUsers(scheduleId)
 
 	console.timeEnd(`🌱 Database has been seeded`)
 }
@@ -69,7 +69,7 @@ async function seedDocuments(meetingId: string) {
 	const totalDocuments = documents.length
 	console.time(`👤 Created ${totalDocuments} documents...`)
 
-	const meetingTypes = ['agenda', 'minutes', 'balance-sheet', 'profit-loss']
+	const meetingTypes = ['agenda', 'minutes']
 	for (let index = 0; index < totalDocuments; index++) {
 		const { content, ...documentData } = documents[index]
 		await prisma.document
@@ -140,8 +140,8 @@ async function seedUsers(scheduleId: string) {
 						create: (userData.deposits || []).map(({ amount, ...deposit }) => ({
 							id: generatePublicId(),
 							...deposit,
-							credit: amount > 0 ? amount : null,
-							debit: amount < 0 ? amount : null,
+							credit: amount < 0 ? amount : null,
+							debit: amount > 0 ? amount : null,
 							date: '2024-01-01',
 						})),
 					},
@@ -152,6 +152,7 @@ async function seedUsers(scheduleId: string) {
 							...schedule,
 						})),
 					},
+					restricted: userData.restricted
 				},
 			})
 			.catch(e => {

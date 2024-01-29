@@ -1,5 +1,5 @@
 import { invariantResponse } from '@epic-web/invariant'
-import { json, redirect, type LoaderFunctionArgs } from '@remix-run/node'
+import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { prisma } from '#app/utils/db.server.ts'
@@ -33,8 +33,17 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 export default function ScheduleEdit() {
 	const { schedule } = useLoaderData<typeof loader>()
-
 	return <ScheduleEditor schedule={schedule} />
+}
+
+export const meta: MetaFunction<null, { 'routes/schedules+/$date': typeof loader }> = ({ params }) => {
+	return [
+		{ title: `Irrigation Schedules | ${params.date}` },
+		{
+			name: 'description',
+			content: `Clearwater Farms 1 Irrigation Schedules`,
+		},
+	]
 }
 
 export function ErrorBoundary() {

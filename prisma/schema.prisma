@@ -33,7 +33,8 @@ model User {
   defaultHours Int @default(0)
   defaultHead  Int @default(70)
 
-  restricted Boolean @default(false)
+  restricted      Boolean @default(false)
+  restrictionNote String?
 
   image    UserImage?
   password Password?
@@ -164,11 +165,11 @@ model UserSchedule {
   schedule   Schedule @relation(fields: [scheduleId], references: [id])
   scheduleId String
 
-  start DateTime?
-  stop  DateTime?
-
   hours Float
   head  Int   @default(70)
+
+  start DateTime?
+  stop  DateTime?
 
   createdBy String   @default("Admin")
   createdAt DateTime @default(now())

@@ -32,7 +32,7 @@ const UserSearchResultsSchema = z.array(UserSearchResultSchema)
 export async function loader({ request }: LoaderFunctionArgs) {
 	const searchTerm = new URL(request.url).searchParams.get('search')
 	if (searchTerm === '') {
-		return redirect('/users')
+		return redirect('/members')
 	}
 
 	const like = `%${searchTerm ?? ''}%`
@@ -75,7 +75,7 @@ export default function UsersRoute() {
 	const data = useLoaderData<typeof loader>()
 	const isPending = useDelayedIsPending({
 		formMethod: 'GET',
-		formAction: '/users',
+		formAction: '/user',
 	})
 
 	if (data.status === 'error') {
@@ -83,8 +83,8 @@ export default function UsersRoute() {
 	}
 
 	return (
-		<div className="container mb-48 mt-36 flex flex-col items-center justify-center gap-6">
-			<h1 className="text-h1">Clearwater Farms 1 Users</h1>
+		<div className="mb-48 mt-36 flex flex-col items-center justify-center gap-6">
+			<h1 className="text-h1">Clearwater Farms Unit 1 Members</h1>
 			<div className="w-full max-w-[700px] ">
 				<SearchBar status={data.status} autoFocus autoSubmit />
 			</div>
@@ -103,13 +103,13 @@ export default function UsersRoute() {
 									</div>
 								))}
 							</div>
-							<div className="grid max-h-[700px] w-full grid-cols-9 gap-4 overflow-auto delay-200">
+							<div className="grid w-full grid-cols-9 gap-4 overflow-auto delay-200">
 								{Object.entries(data.users).map(([d, ditch]) => (
 									<div key={`ditch-${d}`}>
 										{Object.entries(ditch).map(([p, user]) => (
 											<div key={`position-${p}`}>
 												<Link
-													to={user.username}
+													to={`/member/${user.username}`}
 													className="mb-2 flex h-36 w-44 flex-col items-center justify-center rounded-lg bg-muted px-5 py-3"
 												>
 													<img

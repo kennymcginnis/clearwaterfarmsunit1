@@ -30,6 +30,11 @@ const nav = {
 			href: '/documents/by-laws',
 			description: 'By-Laws of Clearwater Farms Property Owners Association',
 		},
+		{
+			title: 'Rules and Regulations',
+			href: '/documents/rules-and-regulations',
+			description: 'Rules and Regulations of Clearwater Farms Property Owners Association',
+		},
 	],
 	other: [
 		{
@@ -39,6 +44,10 @@ const nav = {
 		{
 			title: 'Trade List',
 			href: '/trade-list',
+		},
+		{
+			title: 'Members',
+			href: '/members',
 		},
 		{
 			title: 'Contact Us',
@@ -82,6 +91,11 @@ export function MainNavigationMenu({
 									</Link>
 								</NavigationMenuLink>
 							</li>
+							<Link to="/irrigation-information">
+								<ListItem key="irrigation-information" title="Irrigation Info">
+									<div className="mb-2 mt-4 text-sm font-medium">Basic Irrigation Information</div>
+								</ListItem>
+							</Link>
 							<Link to={`/schedule/${open?.date}/sign-up`} className={open ? '' : 'pointer-events-none'}>
 								<ListItem key="sign-up" title="Sign Up">
 									<div className="mb-2 mt-4 text-sm font-medium">

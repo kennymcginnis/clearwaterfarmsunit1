@@ -11,8 +11,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const meetingTypes = [
 		{ type: 'agenda', descrption: 'Agenda' },
 		{ type: 'minutes', descrption: 'Minutes' },
-		{ type: 'balance-sheet', descrption: 'Balance Sheet' },
-		{ type: 'profit-loss', descrption: 'Profit Loss' },
 	]
 	return json({ meetingTypes, date: params.date })
 }

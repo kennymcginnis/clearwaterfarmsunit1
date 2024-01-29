@@ -121,7 +121,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 						where: { id: userId },
 					}),
 				{ timings, type: 'find user', desc: 'find user in root' },
-		  )
+			)
 		: null
 	if (userId && !user) {
 		console.info('something weird happened')
@@ -320,7 +320,7 @@ function UserDropdown() {
 			<DropdownMenuTrigger asChild>
 				<Button asChild variant="secondary">
 					<Link
-						to={`/users/${user.username}`}
+						to={`/member/${user.username}`}
 						// this is for progressive enhancement
 						onClick={e => e.preventDefault()}
 						className="flex items-center gap-2"
@@ -337,16 +337,16 @@ function UserDropdown() {
 			<DropdownMenuPortal>
 				<DropdownMenuContent sideOffset={8} align="start">
 					<DropdownMenuItem asChild>
-						<Link prefetch="intent" to={`/users/${user.username}`}>
+						<Link prefetch="intent" to={`/member/${user.username}`}>
 							<Icon className="text-body-md" name="avatar">
 								Profile
 							</Icon>
 						</Link>
 					</DropdownMenuItem>
 					<DropdownMenuItem asChild>
-						<Link prefetch="intent" to={`/users/${user.username}/notes`}>
+						<Link prefetch="intent" to={`/member/${user.username}/schedules`}>
 							<Icon className="text-body-md" name="pencil-2">
-								Notes
+								Schedules
 							</Icon>
 						</Link>
 					</DropdownMenuItem>
