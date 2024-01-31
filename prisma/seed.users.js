@@ -7298,12 +7298,6 @@ export const users = [
 				note: '2024 Starting Balance',
 			},
 		],
-		schedules: [
-			{
-				ditch: 7,
-				hours: 2,
-			},
-		],
 	},
 	{
 		username: 'burkhart',
