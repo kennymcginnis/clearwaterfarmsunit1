@@ -14,21 +14,25 @@ seed()
 		// await prisma.$disconnect()
 	})
 
+const preSeeded = true
+
 async function seed() {
 	console.log('🌱 Seeding...')
 	console.time(`🌱 Database has been seeded`)
 
-	await cleanupDb(prisma)
+	if (!preSeeded) {
+		await cleanupDb(prisma)
 
-	const meetingId = await seedMeetings()
-	await seedDocuments(meetingId)
+		const meetingId = await seedMeetings()
+		await seedDocuments(meetingId)
 
-	await seedPermissions()
-	await seedRoles()
-	const scheduleId = await seedSchedules()
-	await seedUsers(scheduleId)
-	await seedTimeline()
-	await seedAdminUsers(scheduleId)
+		await seedPermissions()
+		await seedRoles()
+		const scheduleId = await seedSchedules()
+		await seedUsers(scheduleId)
+		await seedTimeline()
+		await seedAdminUsers(scheduleId)
+	}
 
 	console.timeEnd(`🌱 Database has been seeded`)
 }
