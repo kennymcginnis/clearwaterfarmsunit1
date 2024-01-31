@@ -116,69 +116,64 @@ export default function UsersRoute() {
 	const pretty = (hours: number | null) =>
 		!hours ? '' : hours === 1 ? '(1-hour)' : hours % 1 === 0 ? `(${hours}-hours)` : `(${hours}-hrs)`
 
-	return (
-		<>
-			<Button variant="outline" onClick={toggleShowAll} className="pb-2">
-				Display {showAll ? 'Scheduled' : 'All'}
-			</Button>
-			{currentUser ? (
-				<Button asChild variant="secondary" className="ml-2">
-					<Link to={`/schedule/${data.scheduleDate}/${currentUser.username}`}>Jump to Self</Link>
+	return data.status === 'idle' ? (
+		data.ditches ? (
+			<>
+				<Button variant="outline" onClick={toggleShowAll} className="pb-2">
+					Display {showAll ? 'Scheduled' : 'All'}
 				</Button>
-			) : null}
-			<Spacer size="4xs" />
-
-			{data.status === 'idle' ? (
-				data.ditches ? (
-					<>
-						<div
-							className={cn('grid w-full grid-cols-9 gap-4 delay-200', {
-								'opacity-50': isPending,
-							})}
-						>
-							{Object.keys(data.ditches).map(d => (
-								<div key={`ditch-${d}`}>
-									<p className="mb-2 w-full text-center text-body-lg">
-										Ditch {d} ({data.totals[+d - 1]._sum.hours})
-									</p>
-								</div>
-							))}
+				{currentUser && data?.scheduleDate ? (
+					<Button asChild variant="secondary" className="ml-2">
+						<Link to={`/schedule/${data.scheduleDate}/${currentUser.username}`}>Jump to Self</Link>
+					</Button>
+				) : null}
+				<Spacer size="4xs" />
+				<div
+					className={cn('grid w-full grid-cols-9 gap-4 delay-200', {
+						'opacity-50': isPending,
+					})}
+				>
+					{Object.keys(data.ditches).map(d => (
+						<div key={`ditch-${d}`}>
+							<p className="mb-2 w-full text-center text-body-lg">
+								Ditch {d} ({data.totals[+d - 1]._sum.hours})
+							</p>
 						</div>
-						<div className="grid max-h-[700px] w-full grid-cols-9 gap-4 overflow-auto delay-200">
-							{Object.entries(data.ditches).map(([d, ditch]) => (
-								<div key={`ditch-${d}`}>
-									{Object.entries(ditch)
-										.filter(([p, user]) => user.start || showAll)
-										.map(([p, user]) => (
-											<div key={`position-${p}`}>
-												<Link
-													to={`/schedule/${data.scheduleDate}/${user.username}`}
-													className="mb-2 grid grid-rows-3 items-center justify-end rounded-lg bg-muted px-5 py-3"
-												>
-													<span className="overflow-hidden text-ellipsis text-nowrap border-b-2 text-right text-body-sm text-muted-foreground">
-														{user.username} {pretty(user.hours)}
-													</span>
-													<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
-														{user.starting}
-													</span>
-													<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
-														{user.stoping}
-													</span>
-												</Link>
-											</div>
-										))}
-								</div>
-							))}
+					))}
+				</div>
+				<div className="grid max-h-[700px] w-full grid-cols-9 gap-4 overflow-auto delay-200">
+					{Object.entries(data.ditches).map(([d, ditch]) => (
+						<div key={`ditch-${d}`}>
+							{Object.entries(ditch)
+								.filter(([p, user]) => user.start || showAll)
+								.map(([p, user]) => (
+									<div key={`position-${p}`}>
+										<Link
+											to={`/schedule/${data.scheduleDate}/${user.username}`}
+											className="mb-2 grid grid-rows-3 items-center justify-end rounded-lg bg-muted px-5 py-3"
+										>
+											<span className="overflow-hidden text-ellipsis text-nowrap border-b-2 text-right text-body-sm text-muted-foreground">
+												{user.username} {pretty(user.hours)}
+											</span>
+											<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
+												{user.starting}
+											</span>
+											<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
+												{user.stoping}
+											</span>
+										</Link>
+									</div>
+								))}
 						</div>
-					</>
-				) : (
-					<p>No schedule found</p>
-				)
-			) : data.status === 'error' ? (
-				<ErrorList errors={['There was an error parsing the results']} />
-			) : null}
-		</>
-	)
+					))}
+				</div>
+			</>
+		) : (
+			<p>No schedule found</p>
+		)
+	) : data.status === 'error' ? (
+		<ErrorList errors={['There was an error parsing the results']} />
+	) : null
 }
 
 export function ErrorBoundary() {

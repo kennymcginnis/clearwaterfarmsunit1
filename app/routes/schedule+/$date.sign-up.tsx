@@ -8,7 +8,7 @@ import {
 	unstable_composeUploadHandlers as composeUploadHandlers,
 	unstable_createMemoryUploadHandler as createMemoryUploadHandler,
 	unstable_parseMultipartFormData as parseMultipartFormData,
-	MetaFunction,
+	type MetaFunction,
 } from '@remix-run/node'
 import { Form, Link, useLoaderData } from '@remix-run/react'
 import { ChevronDown, ChevronUp } from 'lucide-react'

@@ -1,4 +1,4 @@
-import { json, redirect, type LoaderFunctionArgs, MetaFunction } from '@remix-run/node'
+import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { useLoaderData, Outlet } from '@remix-run/react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { prisma } from '#app/utils/db.server.ts'

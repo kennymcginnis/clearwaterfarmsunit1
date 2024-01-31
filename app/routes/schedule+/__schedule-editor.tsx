@@ -1,6 +1,6 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
-import { json, type ActionFunctionArgs, MetaFunction } from '@remix-run/node'
+import { json, type ActionFunctionArgs } from '@remix-run/node'
 import { Form } from '@remix-run/react'
 import * as React from 'react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'

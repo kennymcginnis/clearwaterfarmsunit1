@@ -62,8 +62,8 @@ export function MainNavigationMenu({
 	closed,
 }: {
 	isAdminUser: boolean
-	open: { date: string }
-	closed: { date: string }
+	open: { date: string } | null
+	closed: { date: string } | null
 }) {
 	return (
 		<NavigationMenu>

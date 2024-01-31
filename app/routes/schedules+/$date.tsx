@@ -90,7 +90,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				where: { open: true },
 			})
 			if (alreadyOpen) {
-				return json({ status: 'error', schedule } as const, { status: 406 })
+				return json({ status: 'error', submission } as const, { status: 406 })
 			}
 			const updated = await prisma.schedule.update({
 				select: { id: true, date: true },

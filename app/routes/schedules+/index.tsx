@@ -1,5 +1,5 @@
 import { type MetaFunction } from '@remix-run/react'
-import { type loader as scheduleLoader } from '#app/routes/_schedule+/schedules._layout.tsx'
+import { type loader as scheduleLoader } from './_layout.tsx'
 
 export default function ScheduleIndexRoute() {
 	return (

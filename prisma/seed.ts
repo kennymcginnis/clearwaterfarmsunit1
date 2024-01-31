@@ -1,4 +1,3 @@
-import { parse } from 'date-fns'
 import { prisma } from '#app/utils/db.server.ts'
 import { generatePublicId } from '#app/utils/public-id'
 import { cleanupDb, createPassword } from '#tests/db-utils.ts'
@@ -45,7 +44,7 @@ async function seedTimeline() {
 				where: {
 					user: { username: t.username },
 					ditch: t.ditch,
-					schedule: { date: '2024-01-12' }
+					schedule: { date: '2024-01-12' },
 				},
 			})
 		}
@@ -152,7 +151,7 @@ async function seedUsers(scheduleId: string) {
 							...schedule,
 						})),
 					},
-					restricted: userData.restricted
+					restricted: userData.restricted,
 				},
 			})
 			.catch(e => {

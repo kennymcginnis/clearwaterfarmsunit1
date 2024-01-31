@@ -63,6 +63,7 @@
     "@react-email/components": "0.0.11",
     "@remark-embedder/core": "^3.0.2",
     "@remark-embedder/transformer-oembed": "^3.0.0",
+    "@remix-run/css-bundle": "^2.5.1",
     "@remix-run/express": "^2.5.0",
     "@remix-run/node": "^2.5.0",
     "@remix-run/react": "^2.5.0",

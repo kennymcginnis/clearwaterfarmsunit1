@@ -1,4 +1,4 @@
-import { json, redirect, type LoaderFunctionArgs, MetaFunction } from '@remix-run/node'
+import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
 import { format } from 'date-fns'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
