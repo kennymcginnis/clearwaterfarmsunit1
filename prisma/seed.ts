@@ -5,6 +5,8 @@ import documents from './seed.documents'
 import { timeline } from './seed.timeline'
 import { users } from './seed.users'
 
+const preSeeded = true
+
 seed()
 	.catch(e => {
 		console.error(e)
@@ -13,8 +15,6 @@ seed()
 	.finally(async () => {
 		// await prisma.$disconnect()
 	})
-
-const preSeeded = true
 
 async function seed() {
 	console.log('🌱 Seeding...')
