@@ -10,7 +10,11 @@ export const UsernameSchema = z
 	// users can type the username in any case, but we store it in lowercase
 	.transform(value => value.toLowerCase())
 
-export const PasswordSchema = z
+	export const PasswordSchema = z
+	.string({ required_error: 'Password is required' })
+	.min(3, { message: 'Password is too short' })
+	.max(100, { message: 'Password is too long' })
+export const NewPasswordSchema = z
 	.string({ required_error: 'Password is required' })
 	.min(6, { message: 'Password is too short' })
 	.max(100, { message: 'Password is too long' })

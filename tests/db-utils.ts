@@ -34,6 +34,7 @@ export function createUser() {
 }
 
 export function createPassword(password: string = faker.internet.password()) {
+	if (password.length < 6) password = `${password}123456`.substring(0,6)
 	return {
 		hash: bcrypt.hashSync(password, 10),
 	}

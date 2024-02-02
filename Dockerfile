@@ -1,76 +1,78 @@
-# syntax = docker/dockerfile:1
+# This file is moved to the root directory before building the image
 
-# Adjust NODE_VERSION as desired
-ARG NODE_VERSION=20.11.0
-FROM node:${NODE_VERSION}-slim as base
+# base node image
+FROM node:20-bookworm-slim as base
 
-LABEL fly_launch_runtime="Remix/Prisma"
+# set for base and all layer that inherit from it
+ENV NODE_ENV production
 
-# Remix/Prisma app lives here
-WORKDIR /app
+# Install openssl for Prisma
+RUN apt-get update && apt-get install -y fuse3 openssl sqlite3 ca-certificates
 
-# Set production environment
-ENV NODE_ENV="production"
+# Install all node_modules, including dev dependencies
+FROM base as deps
 
+WORKDIR /myapp
 
-# Throw-away build stage to reduce size of final image
-FROM base as build
+ADD package.json package-lock.json .npmrc ./
+RUN npm install --include=dev
 
-# Install packages needed to build node modules
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential node-gyp openssl pkg-config python-is-python3
+# Setup production node_modules
+FROM base as production-deps
 
-# Install node modules
-COPY --link .npmrc package-lock.json package.json ./
-RUN npm ci --include=dev
+WORKDIR /myapp
 
-# Generate Prisma Client
-COPY --link prisma .
-RUN npx prisma generate \
-    && prisma db seed
-
-# Copy application code
-COPY --link . .
-
-# Build application
-RUN npm run build
-
-# Remove development dependencies
+COPY --from=deps /myapp/node_modules /myapp/node_modules
+ADD package.json package-lock.json .npmrc ./
 RUN npm prune --omit=dev
 
+# Build the app
+FROM base as build
 
-# Final stage for app image
+WORKDIR /myapp
+
+COPY --from=deps /myapp/node_modules /myapp/node_modules
+
+ADD prisma .
+RUN npx prisma generate
+
+ADD . .
+RUN npm run build
+
+# Finally, build the production image with minimal footprint
 FROM base
 
-# Install, configure litefs
-COPY --from=flyio/litefs:0.4.0 /usr/local/bin/litefs /usr/local/bin/litefs
-COPY --link other/litefs.yml /etc/litefs.yml
-
-# Install packages needed for deployment
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y ca-certificates fuse3 openssl sqlite3 && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
-
-# Copy built application
-COPY --from=build /app /app
-
-# Setup sqlite3 on a separate volume
-RUN mkdir -p /data /litefs 
-VOLUME /data
+ENV FLY="true"
+ENV LITEFS_DIR="/litefs/data"
+ENV DATABASE_FILENAME="sqlite.db"
+ENV DATABASE_PATH="$LITEFS_DIR/$DATABASE_FILENAME"
+ENV DATABASE_URL="file:$DATABASE_PATH"
+ENV CACHE_DATABASE_FILENAME="cache.db"
+ENV CACHE_DATABASE_PATH="/$LITEFS_DIR/$CACHE_DATABASE_FILENAME"
+ENV INTERNAL_PORT="8080"
+ENV PORT="8081"
+ENV NODE_ENV="production"
 
 # add shortcut for connecting to database CLI
 RUN echo "#!/bin/sh\nset -x\nsqlite3 \$DATABASE_URL" > /usr/local/bin/database-cli && chmod +x /usr/local/bin/database-cli
 
-# Entrypoint prepares the database.
-ENTRYPOINT [ "litefs", "mount", "--", "/app/other/docker-entrypoint.js" ]
+WORKDIR /myapp
 
-# Start the server by default, this can be overwritten at runtime
-EXPOSE 3000
-ENV DATABASE_FILENAME="sqlite.db"
-ENV LITEFS_DIR="/litefs"
-ENV DATABASE_PATH="$LITEFS_DIR/$DATABASE_FILENAME"
-ENV DATABASE_URL="file://$DATABASE_PATH"
-ENV CACHE_DATABASE_FILENAME="cache.db"
-ENV CACHE_DATABASE_PATH="$LITEFS_DIR/$CACHE_DATABASE_FILENAME"
-ENV PORT=3001
-CMD [ "npm", "run", "start" ]
+COPY --from=production-deps /myapp/node_modules /myapp/node_modules
+COPY --from=build /myapp/node_modules/.prisma /myapp/node_modules/.prisma
+
+COPY --from=build /myapp/server-build /myapp/server-build
+COPY --from=build /myapp/build /myapp/build
+COPY --from=build /myapp/public /myapp/public
+COPY --from=build /myapp/package.json /myapp/package.json
+COPY --from=build /myapp/prisma /myapp/prisma
+COPY --from=build /myapp/app/components/ui/icons /myapp/app/components/ui/icons
+
+# prepare for litefs
+COPY --from=flyio/litefs:0.5.11 /usr/local/bin/litefs /usr/local/bin/litefs
+ADD other/litefs.yml /etc/litefs.yml
+RUN mkdir -p /data ${LITEFS_DIR}
+
+ADD . .
+
+CMD ["litefs", "mount"]
