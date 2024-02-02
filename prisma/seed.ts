@@ -5,7 +5,7 @@ import documents from './seed.documents'
 import { timeline } from './seed.timeline'
 import { users } from './seed.users'
 
-const preSeeded = true
+const preSeeded = false
 
 seed()
 	.catch(e => {
