@@ -3,7 +3,7 @@ import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { invariant } from '@epic-web/invariant'
 import { type SEOHandle } from '@nasa-gcn/remix-seo'
 import * as E from '@react-email/components'
-import { json, redirect, type DataFunctionArgs } from '@remix-run/node'
+import { json, redirect, type LoaderFunctionArgs } from '@remix-run/node'
 import { Form, useActionData, useLoaderData } from '@remix-run/react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
@@ -54,7 +54,7 @@ export async function handleVerification({ request, submission }: VerifyFunction
 			react: <EmailChangeNoticeEmail userId={user.id} />,
 		})
 	}
-	
+
 	return redirectWithToast(
 		'/settings/profile',
 		{
@@ -74,7 +74,7 @@ const ChangeEmailSchema = z.object({
 	email: EmailSchema,
 })
 
-export async function loader({ request }: DataFunctionArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request)
 	const user = await prisma.user.findUnique({
 		where: { id: userId },
@@ -87,7 +87,7 @@ export async function loader({ request }: DataFunctionArgs) {
 	return json({ user })
 }
 
-export async function action({ request }: DataFunctionArgs) {
+export async function action({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request)
 	const formData = await request.formData()
 	await validateCSRF(formData, request.headers)
@@ -169,7 +169,9 @@ export function EmailChangeNoticeEmail({ userId }: { userId: string }) {
 					<E.Text>Your Clearwater Farms Unit 1 primary email has been changed</E.Text>
 				</h1>
 				<p>
-					<E.Text>We're writing to let you know that your Clearwater Farms Unit 1 primary email has been changed.</E.Text>
+					<E.Text>
+						We're writing to let you know that your Clearwater Farms Unit 1 primary email has been changed.
+					</E.Text>
 				</p>
 				<p>
 					<E.Text>

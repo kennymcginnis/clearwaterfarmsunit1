@@ -28,7 +28,6 @@ import { useRef } from 'react'
 import { AuthenticityTokenProvider } from 'remix-utils/csrf/react'
 import { HoneypotProvider } from 'remix-utils/honeypot/react'
 import { z } from 'zod'
-import { userHasRole } from '#app/utils/permissions.ts'
 import { GeneralErrorBoundary } from './components/error-boundary.tsx'
 import { ErrorList } from './components/forms.tsx'
 import { MainNavigationMenu } from './components/main-nav.tsx'
@@ -133,9 +132,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const honeyProps = honeypot.getInputProps()
 	const [csrfToken, csrfCookieHeader] = await csrf.commitToken()
 
-	let isAdminUser: boolean = false
-	if (user) isAdminUser = userHasRole(user, 'admin')
-
 	const open = await time(() => prisma.schedule.findFirst({ select: { date: true }, where: { open: true } }), {
 		timings,
 		type: 'find open schedule',
@@ -158,7 +154,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	return json(
 		{
 			user,
-			isAdminUser,
 			open,
 			closed,
 			requestInfo: {
@@ -261,13 +256,12 @@ function App() {
 
 	return (
 		<Document nonce={nonce} theme={theme} env={data.ENV}>
-			<div className="flex h-screen flex-col justify-between">
-				<header className="container py-6">
+			<div className="flex h-screen flex-col">
+				<header className="container sticky top-0 bg-background py-6 text-foreground hover:z-10">
 					<nav className="flex flex-wrap items-center justify-between gap-4 sm:flex-nowrap md:gap-8">
 						<Logo />
-						<MainNavigationMenu isAdminUser={data.isAdminUser} open={data.open} closed={data.closed} />
+						<MainNavigationMenu open={data.open} closed={data.closed} />
 						<div className="flex items-center gap-5">
-							<ThemeSwitch userPreference={data.requestInfo.userPrefs.theme} />
 							{user ? (
 								<UserDropdown />
 							) : (
@@ -275,13 +269,12 @@ function App() {
 									<Link to="/login">Log In</Link>
 								</Button>
 							)}
+							<ThemeSwitch userPreference={data.requestInfo.userPrefs.theme} />
 						</div>
 					</nav>
 				</header>
 
-				<div className="flex-1">
-					<Outlet />
-				</div>
+				<Outlet />
 			</div>
 			<EpicToaster closeButton position="top-center" theme={theme} />
 			<EpicProgress />
@@ -291,9 +284,10 @@ function App() {
 
 function Logo() {
 	return (
-		<Link to="/" className="group grid leading-snug">
-			<span className="text-lg font-bold transition group-hover:translate-x-1	">Clearwater Farms</span>
-			<span className="text-md font-light transition group-hover:-translate-x-1	">Unit 1</span>
+		<Link to="/announcements" className="group grid leading-snug">
+			<span className="hidden text-lg font-bold transition group-hover:translate-x-1 lg:flex">Clearwater Farms</span>
+			<span className="flex text-lg font-bold transition group-hover:translate-x-1 lg:hidden">CWF</span>
+			<span className="text-md font-light transition group-hover:-translate-x-1">Unit 1</span>
 		</Link>
 	)
 }
@@ -330,23 +324,25 @@ function UserDropdown() {
 							alt={user.member ?? user.username}
 							src={getUserImgSrc(user.image?.id, user.id)}
 						/>
-						<span className="text-body-sm font-bold">{user.member ?? user.username}</span>
+						<span className="flex overflow-hidden text-ellipsis text-nowrap text-body-sm font-bold sm:max-md:hidden">
+							{user.member ?? user.username}
+						</span>
 					</Link>
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuPortal>
 				<DropdownMenuContent sideOffset={8} align="start">
 					<DropdownMenuItem asChild>
-						<Link prefetch="intent" to={`/member/${user.username}`}>
-							<Icon className="text-body-md" name="avatar">
+						<Link prefetch="intent" to={`/member/${user.username}/contact`}>
+							<Icon className="m-2 text-body-md" name="avatar">
 								Profile
 							</Icon>
 						</Link>
 					</DropdownMenuItem>
 					<DropdownMenuItem asChild>
-						<Link prefetch="intent" to={`/member/${user.username}/schedules`}>
-							<Icon className="text-body-md" name="pencil-2">
-								Schedules
+						<Link prefetch="intent" to={`/member/${user.username}/irrigation`}>
+							<Icon className="m-2 text-body-md" name="pencil-2">
+								Irrigation
 							</Icon>
 						</Link>
 					</DropdownMenuItem>
@@ -359,7 +355,7 @@ function UserDropdown() {
 						}}
 					>
 						<Form action="/logout" method="POST" ref={formRef}>
-							<Icon className="text-body-md" name="exit">
+							<Icon className="m-2 text-body-md" name="exit">
 								<button type="submit">Logout</button>
 							</Icon>
 						</Form>

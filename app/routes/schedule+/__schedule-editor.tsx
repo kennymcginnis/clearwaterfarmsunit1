@@ -5,7 +5,6 @@ import { Form } from '@remix-run/react'
 import * as React from 'react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
-import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { ErrorList, Field } from '#app/components/forms.tsx'
 import { HeadCombobox } from '#app/components/head-combobox'
 import { Button } from '#app/components/ui/button'
@@ -15,9 +14,8 @@ import { requireUserId } from '#app/utils/auth.server.ts'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { useIsPending } from '#app/utils/misc.tsx'
-import { userHasRole } from '#app/utils/permissions.ts'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { useOptionalUser } from '#app/utils/user.ts'
+import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
 
 const UserScheduleEditorSchema = z.object({
 	userId: z.string(),
@@ -70,62 +68,52 @@ export async function action({ request }: ActionFunctionArgs) {
 	}
 }
 
-export function UserDitchSchedule({
-	port,
-	data,
+export function UserScheduleEditor({
+	user,
+	scheduleId,
+	userSchedule,
 }: {
-	port: any
-	data: {
-		user: {
-			id: string
-			username: string
-			defaultHours: number
-			defaultHead: number
-		}
-		schedule: { id: string; open: boolean; closed: boolean }
-		userSchedule: { ditch: number; hours: number; head: number }[]
+	scheduleId: string
+	user: {
+		id: string
+		username: string
+	}
+	userSchedule: {
+		ditch: number
+		hours: number
+		head: number
 	}
 }) {
 	const isPending = useIsPending()
-	const user = useOptionalUser()
-	const canEdit = user?.id === data.user.id || userHasRole(user, 'admin')
+	const currentUser = useOptionalUser()
+	const userIsAdmin = useOptionalAdminUser()
+	const canEdit = currentUser?.id === user.id || userIsAdmin
 
-	// const actionData = useActionData<typeof action>()
-
-	const userSchedule = data.userSchedule.find(us => us.ditch === port.ditch)
-	const [headValue, setHeadValue] = React.useState((userSchedule?.head ?? data.user.defaultHead ?? 70).toString())
+	const [headValue, setHeadValue] = React.useState((userSchedule.head ?? 70).toString())
 
 	const [form, fields] = useForm({
-		id: `userschedule-form-ditch-${port.ditch}`,
+		id: `userschedule-form-ditch-${userSchedule.ditch}`,
 		constraint: getFieldsetConstraint(UserScheduleEditorSchema),
 		// lastSubmission: actionData?.submission,
 		onValidate({ formData }) {
 			return parse(formData, { schema: UserScheduleEditorSchema })
 		},
 		defaultValue: {
-			hours: userSchedule?.hours ?? data.user.defaultHours ?? '',
+			hours: userSchedule?.hours ?? '',
 		},
 		shouldRevalidate: 'onBlur',
 	})
 
 	return (
-		<Card key={port.ditch}>
+		<Card key={userSchedule.ditch} className="bg-muted">
 			<Form method="POST" {...form.props}>
 				<AuthenticityTokenInput />
-				{/*
-            This hidden submit button is here to ensure that when the user hits
-            "enter" on an input field, the primary form function is submitted
-            rather than the first button in the form (which is delete/add image).
-        */}
-				<button type="submit" className="hidden" />
-				<input type="hidden" name="userId" value={data.user.id} />
-				<input type="hidden" name="scheduleId" value={data.schedule.id} />
-				<input type="hidden" name="ditch" value={port.ditch} />
+				<input type="hidden" name="userId" value={user.id} />
+				<input type="hidden" name="scheduleId" value={scheduleId} />
+				<input type="hidden" name="ditch" value={userSchedule.ditch} />
 				<CardHeader>
-					<CardTitle>
-						Ditch {port.ditch} {port.entry ? `(${port.entry})` : ''}
-					</CardTitle>
-					<CardDescription>{data.user.username}</CardDescription>
+					<CardTitle>Ditch {userSchedule.ditch}</CardTitle>
+					<CardDescription>{user.username}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="flex flex-col gap-2">
@@ -138,14 +126,13 @@ export function UserDitchSchedule({
 							}}
 							errors={fields.hours.errors}
 						/>
-						
 						<input type="hidden" name="head" value={headValue} />
 						<HeadCombobox value={headValue} setValue={setHeadValue} />
 					</div>
 					<ErrorList id={form.errorId} errors={form.errors} />
 				</CardContent>
 				{canEdit ? (
-					<CardFooter className="flex items-center justify-end gap-2 rounded-b-lg bg-muted p-4 pl-5 shadow-xl shadow-accent backdrop-blur-sm md:gap-4 md:pl-7">
+					<CardFooter className="flex items-center justify-end gap-2 pr-2 pb-2">
 						<Button form={form.id} variant="destructive" type="reset">
 							Reset
 						</Button>
@@ -156,15 +143,5 @@ export function UserDitchSchedule({
 				) : null}
 			</Form>
 		</Card>
-	)
-}
-
-export function ErrorBoundary() {
-	return (
-		<GeneralErrorBoundary
-			statusHandlers={{
-				404: ({ params }) => <p>No schedule with the id "{params.scheduleId}" exists</p>,
-			}}
-		/>
 	)
 }

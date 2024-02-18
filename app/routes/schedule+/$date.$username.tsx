@@ -1,11 +1,12 @@
 import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
-import { format } from 'date-fns'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { prisma } from '#app/utils/db.server.ts'
-import { UserDitchSchedule, action } from './__schedule-editor'
-export { action }
+import { FormatDates } from '#app/utils/misc'
+import { UserScheduleEditor, action } from './__schedule-editor'
+import { UserScheduleTimeline } from './__schedule-timeline'
 
+export { action }
 export async function loader({ params }: LoaderFunctionArgs) {
 	if (!params?.date) {
 		return redirect('/schedules')
@@ -48,49 +49,54 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			start: true,
 			stop: true,
 		},
-		where: { user: { username: params.username }, scheduleId: schedule.id },
+		where: {
+			user: { username: params.username },
+			scheduleId: schedule.id,
+		},
 	})
 
-	return json({ user, schedule, userSchedule })
+	const userSchedules = userSchedule.map(us => ({ ...us, schedule: FormatDates({ start: us.start, stop: us.stop }) }))
+
+	for (const port of user.ports) {
+		const found = userSchedules.some(us => us.ditch === port.ditch)
+		if (!found) {
+			userSchedules.push({
+				ditch: port.ditch,
+				hours: user.defaultHours,
+				head: user.defaultHead,
+				start: null,
+				stop: null,
+				schedule: [],
+			})
+		}
+	}
+
+	return json({ user, schedule, userSchedules })
 }
 
-export default function UserScheduleEditor() {
-	const data = useLoaderData<typeof loader>()
+export default function UserSchedule() {
+	const { user, schedule, userSchedules } = useLoaderData<typeof loader>()
 
-	if (data.schedule.open) {
-		return (
-			<div className="flex h-full w-full flex-row gap-x-16 overflow-y-auto overflow-x-hidden px-10 pt-12">
-				{data.user.ports.map(port => (
-					<UserDitchSchedule key={port.ditch} port={port} data={data} />
-				))}
-			</div>
-		)
-	}
-	if (data.schedule.closed) {
-		const pretty = (hours: number | null) =>
-			!hours ? '' : hours === 1 ? '(1-hour)' : hours % 1 === 0 ? `(${hours}-hours)` : `(${hours}-hrs)`
-
-		const starting = (start: string | null) => (start ? format(new Date(start), 'MMM do h:mmaaa') : '')
-		const stoping = (stop: string | null) => (stop ? format(new Date(stop), 'MMM do h:mmaaa') : '')
-
-		return (
-			<div className="flex h-full w-full flex-row gap-x-16 overflow-y-auto overflow-x-hidden px-10 pt-12">
-				{data.userSchedule.map(us => (
-					<div key={us.ditch} className="flex flex-col">
-						<span className="overflow-hidden text-ellipsis text-nowrap border-b-2 text-right text-body-sm text-muted-foreground">
-							{data.user.username} {pretty(us.hours)}
-						</span>
-						<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
-							{starting(us.start)}
-						</span>
-						<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
-							{stoping(us.stop)}
-						</span>
-					</div>
-				))}
-			</div>
-		)
-	}
+	return (
+		<div className="flex h-full flex-col content-between gap-4 p-4">
+			{userSchedules.map(userSchedule => {
+				if (schedule.open) {
+					return (
+						<UserScheduleEditor
+							key={`schedule-${userSchedule.ditch}`}
+							user={user}
+							scheduleId={schedule.id}
+							userSchedule={userSchedule}
+						/>
+					)
+				}
+				if (schedule.closed) {
+					return <UserScheduleTimeline key={`timeline-${userSchedule.ditch}`} user={user} userSchedule={userSchedule} />
+				}
+				return <div key={`locked-${userSchedule.ditch}`}>Locked</div>
+			})}
+		</div>
+	)
 }
 
 export const meta: MetaFunction<null, { 'routes/schedule+/$date_': typeof loader }> = ({ params }) => {

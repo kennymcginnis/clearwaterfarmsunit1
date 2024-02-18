@@ -31,6 +31,10 @@ export function useOptionalUser(): User | null | undefined {
 	return data.user
 }
 
+export function useOptionalAdminUser() {	
+	return useOptionalUser()?.roles.some(r => r.name === 'admin')
+}
+
 export function useUser(): User {
 	const maybeUser = useOptionalUser()
 	if (!maybeUser) {

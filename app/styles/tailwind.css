@@ -77,4 +77,39 @@
 
 		--ring: 217.2 32.6% 60%;
 	}
+    
+	.fixed-table-wrap {
+		display: block;
+		width: 100vw;
+		overflow-x: auto;
+		overflow-y: auto;
+		height: 70vh;
+		-ms-overflow-style: -ms-autohiding-scrollbar;
+	}
+	
+	.fixed-table-wrap table th,
+	.fixed-table-wrap table td {
+		padding: 2px;
+	}
+	
+	.fixed-table-wrap table th {
+		position: sticky;
+		position: -webkit-sticky;
+		top: 0px;
+		z-index: 99;
+	}
+	
+	.fixed-table-wrap table th::after {
+		content: "";
+		display: inline-block;
+		width: 1px;
+		position: absolute;
+		right: -1px;
+		height: 40px;
+		top: 0px;
+	}
+	
+	.text-align-webkit-center {	text-align: -webkit-center;}
+	.bg-muted-40 { background-color: hsl(var(--muted) / 0.4);}
+
 }

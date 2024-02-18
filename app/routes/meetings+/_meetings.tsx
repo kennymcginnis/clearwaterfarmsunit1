@@ -6,8 +6,7 @@ import { Icon } from '#app/components/ui/icon.tsx'
 import { Separator } from '#app/components/ui/separator'
 import { prisma } from '#app/utils/db.server.ts'
 import { cn } from '#app/utils/misc.tsx'
-import { userHasRole } from '#app/utils/permissions'
-import { useOptionalUser } from '#app/utils/user.ts'
+import { useOptionalAdminUser } from '#app/utils/user.ts'
 
 export async function loader() {
 	const meetings = await prisma.meeting.findMany({
@@ -25,8 +24,7 @@ export async function loader() {
 
 export default function MeetingsRoute() {
 	const meetings = useLoaderData<typeof loader>()
-	const user = useOptionalUser()
-	const canCreate = userHasRole(user, 'admin')
+	const canCreate = useOptionalAdminUser()
 	const navLinkDefaultClassName = 'line-clamp-2 block rounded-l-full py-2 pl-8 pr-6 text-base lg:text-xl'
 	return (
 		<main className="container flex h-full min-h-[400px] px-0 pb-12 md:px-8">

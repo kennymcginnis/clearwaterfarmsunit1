@@ -59,7 +59,11 @@ export function Field({
 		<div className={className}>
 			<Label htmlFor={id} {...labelProps} />
 			<Input id={id} aria-invalid={errorId ? true : undefined} aria-describedby={errorId} {...inputProps} />
-			<div className="min-h-[32px] px-4 pb-3 pt-1">{errorId ? <ErrorList id={errorId} errors={errors} /> : null}</div>
+			{errorId ? (
+				<div className="min-h-[32px] px-4 pb-3 pt-1">
+					<ErrorList id={errorId} errors={errors} />
+				</div>
+			) : null}
 		</div>
 	)
 }

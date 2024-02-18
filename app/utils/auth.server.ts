@@ -104,14 +104,13 @@ export async function logout(
 }
 
 export async function getPasswordHash(password: string) {
-	const hash = await bcrypt.hash(password, 10)
-	return hash
+	return await bcrypt.hash(password, 10)
 }
 
 export async function verifyUserPassword(where: Pick<User, 'username'> | Pick<User, 'id'>, password: Password['hash']) {
 	const userWithPassword = await prisma.user.findUnique({
-		where,
 		select: { id: true, password: { select: { hash: true } } },
+		where,
 	})
 
 	if (!userWithPassword || !userWithPassword.password) {
@@ -125,4 +124,15 @@ export async function verifyUserPassword(where: Pick<User, 'username'> | Pick<Us
 	}
 
 	return { id: userWithPassword.id }
+}
+
+export async function shouldCreatePassword(userId: string) {
+	const userWithPassword = await prisma.user.findUnique({
+		select: { id: true, username: true, password: { select: { hash: true } } },
+		where: { id: userId },
+	})
+	if (!userWithPassword || !userWithPassword.password) return true
+	let { username } = userWithPassword
+	if (username.length < 6) username = `${username}123456`.substring(0, 6)
+	return await bcrypt.compare(username, userWithPassword.password.hash)
 }

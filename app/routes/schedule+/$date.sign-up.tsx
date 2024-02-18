@@ -12,22 +12,21 @@ import {
 } from '@remix-run/node'
 import { Form, Link, useLoaderData } from '@remix-run/react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { ErrorList } from '#app/components/forms.tsx'
-import { Spacer } from '#app/components/spacer.tsx'
 import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon'
+import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper.ts'
 import { prisma } from '#app/utils/db.server.ts'
-import { cn, useDelayedIsPending } from '#app/utils/misc.tsx'
 import { requireUserWithRole } from '#app/utils/permissions.ts'
+import useScrollSync from '#app/utils/scroll-sync'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { useOptionalUser } from '#app/utils/user.ts'
+import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
 
 type TotalType = { [key: number]: number }
-type DitchType = { [key: number]: PositionType }
-type PositionType = { [key: number]: UserType }
+type DitchType = { [key: number]: UserType[] }
 type UserType = {
 	id: string
 	username: string
@@ -48,36 +47,8 @@ const UserSearchResultSchema = z.object({
 
 const UserSearchResultsSchema = z.array(UserSearchResultSchema)
 
-const csvFileToArray = (string: string | undefined) => {
-	if (!string) throw 'Empty CSV file'
-	const csvHeader = string.slice(0, string.indexOf('\n')).split(',')
-	const csvRows = string.slice(string.indexOf('\n') + 1).split('\n')
-
-	const rows = csvRows.map((csvRow: string) => {
-		const values = csvRow.split(',')
-		const obj = csvHeader.reduce((agg: { [name: string]: string }, header: string, index: number) => {
-			agg[header] = values[index]
-			return agg
-		}, {})
-		return obj
-	})
-	return rows
-}
-
 export async function action({ request, params }: ActionFunctionArgs) {
 	const userId = await requireUserWithRole(request, 'admin')
-
-	const csvUploadHandler: UploadHandler = async ({ name, filename, data, contentType }) => {
-		if (name !== 'selected_csv') {
-			return undefined
-		}
-		let chunks = []
-		for await (let chunk of data) {
-			chunks.push(chunk)
-		}
-
-		return await new Blob(chunks, { type: contentType }).text()
-	}
 
 	const uploadHandler: UploadHandler = composeUploadHandlers(csvUploadHandler, createMemoryUploadHandler())
 	const formData = await parseMultipartFormData(request, uploadHandler)
@@ -148,18 +119,32 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	const result = UserSearchResultsSchema.safeParse(rawUsers)
 	if (!result.success) {
 		return json(
-			{ status: 'error', error: result.error.message, ditches: null, totals: null, scheduleDate: null } as const,
 			{
-				status: 400,
-			},
+				status: 'error',
+				error: result.error.message,
+				users: null,
+				totals: null,
+				rows: null,
+				cols: null,
+				scheduleDate: null,
+			} as const,
+			{ status: 400 },
 		)
 	}
 
-	// initializing all ditches so they all appear in position after searches
-	const ditches: DitchType = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {}, 7: {}, 8: {}, 9: {} }
+	let maxPos = 0,
+		minDitch = 9,
+		maxDitch = 1
+	const ditches: DitchType = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] }
 	for (let user of result.data) {
-		ditches[user.ditch][user.position] = { ...user }
+		ditches[user.ditch].push(user)
+		if (ditches[user.ditch].length > maxPos) maxPos = ditches[user.ditch].length
+		if (user.ditch < minDitch) minDitch = user.ditch
+		if (user.ditch > maxDitch) maxDitch = user.ditch
 	}
+
+	let rows = Array.from({ length: maxPos }, (_, i) => i)
+	let cols = Array.from({ length: maxDitch - minDitch + 1 }, (_, i) => i + minDitch)
 
 	const aggregate = await prisma.userSchedule.groupBy({
 		by: ['ditch'],
@@ -167,7 +152,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		where: { schedule: { date: params.date } },
 	})
 
-	// initializing all ditches so they all appear in position after searches
 	const totals: TotalType = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 }
 	for (let ditch of aggregate) {
 		totals[ditch.ditch] += ditch?._sum?.hours ?? 0
@@ -175,21 +159,42 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 	const scheduleDate: string = params.date
 
-	return json({ status: 'idle', ditches, totals, scheduleDate, error: null } as const)
+	return json({ status: 'idle', users: ditches, rows, cols, totals, scheduleDate, error: null } as const)
 }
 
-export default function UsersRoute() {
-	const data = useLoaderData<typeof loader>()
+export default function ScheduleSignupRoute() {
 	const currentUser = useOptionalUser()
+	const userIsAdmin = useOptionalAdminUser()
+	const { status, users, rows, cols, totals, scheduleDate, error } = useLoaderData<typeof loader>()
 
-	const isPending = useDelayedIsPending({
-		formMethod: 'GET',
-		formAction: '/schedules',
+	const nodeRefA = useRef(null)
+	const nodeRefB = useRef(null)
+
+	const nodeRefs = useMemo(() => [nodeRefA, nodeRefB], [nodeRefA, nodeRefB])
+
+	const { registerPane, unregisterPane } = useScrollSync({
+		onSync: undefined,
+		proportional: true,
+		vertical: false,
+		horizontal: true,
+		enabled: true,
 	})
 
-	if (data.status === 'error') {
-		console.error(data.error)
-	}
+	useEffect(() => {
+		nodeRefs.forEach(nodeRef => {
+			if (nodeRef?.current) {
+				registerPane(nodeRef.current)
+			}
+		})
+		return () =>
+			nodeRefs.forEach(nodeRef => {
+				if (nodeRef?.current) {
+					unregisterPane(nodeRef.current)
+				}
+			})
+	}, [nodeRefs, registerPane, unregisterPane])
+
+	if (status === 'error') console.error(error)
 
 	const [showAll, setShowAll] = useState(false)
 	const toggleShowAll = () => setShowAll(!showAll)
@@ -197,42 +202,46 @@ export default function UsersRoute() {
 	const toggleShowUpload = () => setShowUpload(!showUpload)
 
 	return (
-		<>
-			<div className="flex flex-row justify-between">
+		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
+			<div className="flex w-[90%] flex-row justify-between p-0.5">
 				<div className="flex flex-row space-x-2">
-					<Button variant="outline" onClick={toggleShowAll}>
+					<Button variant="outline" onClick={toggleShowAll} className="pb-2">
 						Display {showAll ? 'Scheduled' : 'All'}
 					</Button>
-					{currentUser ? (
-						<Button asChild variant="secondary">
-							<Link to={`/schedule/${data.scheduleDate}/${currentUser.username}`}>Jump to Self</Link>
+					{currentUser && scheduleDate ? (
+						<Button asChild variant="secondary" className="ml-2">
+							<Link to={`/schedule/${scheduleDate}/${currentUser.username}`}>Jump to Self</Link>
 						</Button>
 					) : null}
 				</div>
 				<div className="flex flex-row space-x-2">
-					<Button>
-						<Link reloadDocument to={`/resources/download-signup/${data.scheduleDate}`}>
-							<Icon name="download">Download</Icon>
-						</Link>
-					</Button>
-					<Button onClick={toggleShowUpload}>
-						<Icon name="upload">Upload</Icon>
-						{showUpload ? (
-							<ChevronDown
-								className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
-								aria-hidden="true"
-							/>
-						) : (
-							<ChevronUp
-								className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
-								aria-hidden="true"
-							/>
-						)}
-					</Button>
+					{userIsAdmin ? (
+						<>
+							<Button>
+								<Link reloadDocument to={`/resources/download-signup/${scheduleDate}`}>
+									<Icon name="download">Download</Icon>
+								</Link>
+							</Button>
+							<Button onClick={toggleShowUpload}>
+								<Icon name="upload">Upload</Icon>
+								{showUpload ? (
+									<ChevronDown
+										className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
+										aria-hidden="true"
+									/>
+								) : (
+									<ChevronUp
+										className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
+										aria-hidden="true"
+									/>
+								)}
+							</Button>
+						</>
+					) : null}
 				</div>
 			</div>
 			{showUpload ? (
-				<div className="mt-2 flex flex-row justify-end space-x-2">
+				<div className="mt-2 flex w-[90%] flex-row justify-end space-x-2">
 					<Form method="post" encType="multipart/form-data">
 						<input aria-label="File" type="file" accept=".csv" name="selected_csv" />
 						<Button type="submit" className="btn btn-sm">
@@ -241,54 +250,69 @@ export default function UsersRoute() {
 					</Form>
 				</div>
 			) : null}
-			<Spacer size="4xs" />
+			<header className="sticky top-0 m-auto flex w-full flex-col items-center gap-6 bg-background text-foreground">
+				<div className="m-auto block w-[90%] overflow-x-auto bg-background text-foreground" ref={nodeRefA}>
+					<table>
+						<thead>
+							<tr>
+								{(cols || []).map(c => (
+									<th className="sticky top-0 p-0.5" key={`ditch-${c}`}>
+										<p className="mb-1 flex w-44 flex-col rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
+											Ditch {c}
+											<p className="mb-2 w-full text-center text-body-md">{totals?.[+c]} hours</p>
+										</p>
+									</th>
+								))}
+							</tr>
+						</thead>
+					</table>
+				</div>
+			</header>
 
-			{data.status === 'idle' ? (
-				data.ditches ? (
-					<>
-						<div
-							className={cn('grid w-full grid-cols-9 gap-4 delay-200', {
-								'opacity-50': isPending,
-							})}
-						>
-							{Object.keys(data.ditches).map(d => (
-								<div key={`ditch-${d}`}>
-									<p className="mb-2 w-full text-center text-body-lg">Ditch {d}</p>
-									<p className="mb-2 w-full text-center text-body-md">{data.totals[+d]} hours</p>
-								</div>
-							))}
+			<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
+				{status === 'idle' ? (
+					users ? (
+						<div className="m-auto block w-full overflow-x-auto overflow-y-auto" ref={nodeRefB}>
+							<table>
+								<tbody>
+									{rows.map(r => (
+										<tr key={`${r}`}>
+											{cols.map(c => (
+												<td className="p-0.5" key={`${r}${c}`}>
+													{users[c][r] && ((users[c][r].hours || 0) > 0 || showAll) ? (
+														<UserCard scheduleDate={scheduleDate} user={users[c][r] as UserType} />
+													) : null}
+												</td>
+											))}
+										</tr>
+									))}
+								</tbody>
+							</table>
 						</div>
-						<div className="grid max-h-[700px] w-full grid-cols-9 gap-4 overflow-auto delay-200">
-							{Object.entries(data.ditches).map(([d, ditch]) => (
-								<div key={`ditch-${d}`}>
-									{Object.entries(ditch)
-										.filter(([p, user]) => (user.hours || 0) > 0 || showAll)
-										.map(([p, user]) => (
-											<div key={`position-${p}`}>
-												<Link
-													to={`/schedule/${data.scheduleDate}/${user.username}`}
-													className="mb-2 grid grid-cols-2 items-center justify-end rounded-lg bg-muted px-5 py-3"
-												>
-													<span className="overflow-hidden text-ellipsis text-nowrap text-body-sm text-muted-foreground">
-														{user.username}
-													</span>
-													<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
-														{Number(user.hours)}
-													</span>
-												</Link>
-											</div>
-										))}
-								</div>
-							))}
-						</div>
-					</>
-				) : (
-					<p>No schedule found</p>
-				)
-			) : data.status === 'error' ? (
-				<ErrorList errors={['There was an error parsing the results']} />
-			) : null}
-		</>
+					) : (
+						<p>No members found</p>
+					)
+				) : status === 'error' ? (
+					<ErrorList errors={['There was an error parsing the results']} />
+				) : null}
+			</main>
+		</div>
+	)
+}
+
+function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType }) {
+	return (
+		<Link
+			to={`/schedule/${scheduleDate}/${user.username}`}
+			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg  ${user.hours ? 'bg-muted' : 'bg-muted-40'} px-5 py-3`}
+		>
+			<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-body-sm text-muted-foreground">
+				{user.position}: {user.username}
+			</span>
+			<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
+				{Number(user.hours)}
+			</span>
+		</Link>
 	)
 }
 
@@ -297,7 +321,7 @@ export const meta: MetaFunction<null, { 'routes/schedule+/$date/sign-up': typeof
 		{ title: `Irrigation Sign-Up | ${params.date}` },
 		{
 			name: 'description',
-			content: `Clearwater Farms 1 Irrigation Schedule Sign-Up`,
+			content: `Clearwater Farms 1 Irrigation Sign-Up`,
 		},
 	]
 }

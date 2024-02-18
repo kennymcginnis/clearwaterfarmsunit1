@@ -1,5 +1,6 @@
 import { useFormAction, useNavigation, Link, type LinkProps } from '@remix-run/react'
 import { clsx, type ClassValue } from 'clsx'
+import { format } from 'date-fns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as React from 'react'
 import { useSpinDelay } from 'spin-delay'
@@ -327,4 +328,13 @@ export function getRequiredEnvVar(key: string, env = process.env): string {
 	}
 
 	throw new Error(`Environment variable ${key} is not defined`)
+}
+
+export function FormatDates({ start, stop }: { start: Date | null; stop: Date | null }): string[] {
+	if (!start || !stop) return ['', '']
+	if (start.getDay() === stop.getDay()) {
+		return [format(start, 'MMM do'), `${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}`]
+	} else {
+		return [format(start, 'MMM do h:mmaaa'), format(stop, 'MMM do h:mmaaa')]
+	}
 }

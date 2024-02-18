@@ -7,7 +7,7 @@ import { ErrorList, Field } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
-import { getPasswordHash, requireUserId } from '#app/utils/auth.server.ts'
+import { getPasswordHash, shouldCreatePassword, requireUserId } from '#app/utils/auth.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { useIsPending } from '#app/utils/misc.tsx'
 import { PasswordAndConfirmPasswordSchema } from '#app/utils/user-validation.ts'
@@ -21,11 +21,7 @@ export const handle: BreadcrumbHandle & SEOHandle = {
 const CreatePasswordForm = PasswordAndConfirmPasswordSchema
 
 async function requireNoPassword(userId: string) {
-	const password = await prisma.password.findUnique({
-		select: { userId: true },
-		where: { userId },
-	})
-	if (password) {
+	if (!await shouldCreatePassword(userId)) {
 		throw redirect('/settings/profile/password')
 	}
 }
@@ -62,7 +58,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		where: { id: userId },
 		data: {
 			password: {
-				create: {
+				update: {
 					hash: await getPasswordHash(password),
 				},
 			},

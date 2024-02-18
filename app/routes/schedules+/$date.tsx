@@ -11,11 +11,11 @@ import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
-import { requireUserWithRole, userHasRole } from '#app/utils/permissions.ts'
+import { requireUserWithRole } from '#app/utils/permissions.ts'
 import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { useOptionalUser } from '#app/utils/user.ts'
-import { DialogCloseSchedule } from './DialogCloseSchedule'
+import { useOptionalAdminUser } from '#app/utils/user.ts'
+import { DialogCloseSchedule } from './__close-schedule-dialog'
 
 export async function loader({ params }: ActionFunctionArgs) {
 	const schedule = await prisma.schedule.findFirst({
@@ -143,8 +143,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function ScheduleRoute() {
 	const data = useLoaderData<typeof loader>()
-	const user = useOptionalUser()
-	const adminUser = userHasRole(user, 'admin')
+	const adminUser = useOptionalAdminUser()
 
 	const canDelete = !data.schedule.open && !data.schedule.closed
 	const canOpen = !data.schedule.open && !data.schedule.closed
@@ -182,7 +181,7 @@ export default function ScheduleRoute() {
 								id={data.schedule.id}
 								icon="lock-open-1"
 								value="open-schedule"
-								text="Open for Sign-up"
+								text="Open Sign-up"
 								variant="default"
 							/>
 						) : null}

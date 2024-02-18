@@ -10,6 +10,8 @@ const UserSearchResultSchema = z.object({
 	position: z.number(),
 	hours: z.bigint().or(z.number()).nullable(),
 	head: z.number().nullable(),
+	start: z.date().nullable(),
+	stop: z.date().nullable(),
 })
 
 const UserSearchResultsSchema = z.array(UserSearchResultSchema)
@@ -20,11 +22,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	}
 
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.head
+		SELECT User.id, User.username, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.head, UserSchedule.start, UserSchedule.stop
 		FROM User
 		INNER JOIN Port ON User.id = Port.userId
     LEFT JOIN (
-      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.head
+      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.head, UserSchedule.start, UserSchedule.stop
       FROM Schedule 
       INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
       WHERE Schedule.date = ${params.date}
@@ -44,15 +46,26 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	const file = createReadableStreamFromReadable(
 		Readable.from(
 			[
-				['id', 'username', 'ditch', 'position', 'hours', 'head'].join(','),
-				...result.data.map(raw => [raw.id, raw.username, raw.ditch, raw.position, raw.hours, raw.head].join(',')),
+				['id', 'username', 'ditch', 'position', 'hours', 'head', 'start', 'stop'].join(','),
+				...result.data.map(raw =>
+					[
+						raw.id,
+						raw.username,
+						raw.ditch,
+						raw.position,
+						raw.hours,
+						raw.head,
+						raw.start?.toISOString(),
+						raw.stop?.toISOString(),
+					].join(','),
+				),
 			].join('\n'),
 		),
 	)
 
 	return new Response(file, {
 		headers: {
-			'Content-Disposition': `attachment; filename="signup-${params.date}.csv"`,
+			'Content-Disposition': `attachment; filename="timeline-${params.date}.csv"`,
 			'Content-Type': 'application/csv',
 		},
 	})

@@ -12,6 +12,7 @@ import {
 	navigationMenuTriggerStyle,
 } from '#app/components/ui/navigation-menu'
 import { cn } from '#app/utils/misc.tsx'
+import { useOptionalAdminUser } from '#app/utils/user'
 
 const nav = {
 	documents: [
@@ -37,38 +38,25 @@ const nav = {
 		},
 	],
 	other: [
-		{
-			title: 'Meetings',
-			href: '/meetings',
-		},
-		{
-			title: 'Trade List',
-			href: '/trade-list',
-		},
-		{
-			title: 'Members',
-			href: '/members',
-		},
-		{
-			title: 'Contact Us',
-			href: '/contact-us',
-		},
+		{ title: 'Meetings', href: '/meetings', description: 'Meetings Agenda and Minutes' },
+		{ title: 'Trade List', href: '/trade-list', description: 'Contact list for neighborhood trades and services' },
+		{ title: 'Members', href: '/members', description: 'List of POA Members' },
+		{ title: 'Contact Us', href: '/contact-us', description: 'Contact Us' },
 	],
 }
 
 export function MainNavigationMenu({
-	isAdminUser,
 	open,
 	closed,
 }: {
-	isAdminUser: boolean
 	open: { date: string } | null
 	closed: { date: string } | null
 }) {
+	const userIsAdmin = useOptionalAdminUser()
 	return (
 		<NavigationMenu>
 			<NavigationMenuList>
-				<NavigationMenuItem>
+				<NavigationMenuItem className="hidden lg:flex">
 					<Link to="/announcements">
 						<NavigationMenuLink className={navigationMenuTriggerStyle()}>Home</NavigationMenuLink>
 					</Link>
@@ -76,11 +64,11 @@ export function MainNavigationMenu({
 				<NavigationMenuItem>
 					<NavigationMenuTrigger>Irrigation</NavigationMenuTrigger>
 					<NavigationMenuContent>
-						<ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+						<ul className="grid grid-cols-1 gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
 							<li className="row-span-3">
 								<NavigationMenuLink asChild>
-									<Link to="/schedules" className={isAdminUser ? '' : 'pointer-events-none'}>
-										<div className="flex h-full w-full select-none flex-col items-center justify-center rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md">
+									<Link to="/schedules" className={userIsAdmin ? '' : 'pointer-events-none'}>
+										<div className="z-1 flex h-full w-full select-none flex-col items-center justify-center rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md">
 											<div className="flex flex-row">
 												<Icon name="droplet" className="h-8 w-8" aria-hidden="true" />
 												<Icon name="droplets" className="h-8 w-8" aria-hidden="true" />
@@ -114,6 +102,17 @@ export function MainNavigationMenu({
 					</NavigationMenuContent>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
+					<POADocuments />
+					<ConsolidatedDocuments />
+				</NavigationMenuItem>
+			</NavigationMenuList>
+		</NavigationMenu>
+	)
+
+	function POADocuments() {
+		return (
+			<div className="hidden lg:flex">
+				<NavigationMenuItem>
 					<NavigationMenuTrigger>POA Documents</NavigationMenuTrigger>
 					<NavigationMenuContent>
 						<ul className="grid w-[400px] gap-3 p-4">
@@ -125,7 +124,6 @@ export function MainNavigationMenu({
 						</ul>
 					</NavigationMenuContent>
 				</NavigationMenuItem>
-
 				{nav.other.map(link => (
 					<NavigationMenuItem key={link.href}>
 						<Link to={link.href}>
@@ -133,9 +131,33 @@ export function MainNavigationMenu({
 						</Link>
 					</NavigationMenuItem>
 				))}
-			</NavigationMenuList>
-		</NavigationMenu>
-	)
+			</div>
+		)
+	}
+
+	function ConsolidatedDocuments() {
+		return (
+			<div className="flex lg:hidden">
+				<NavigationMenuItem>
+					<NavigationMenuTrigger>Documents</NavigationMenuTrigger>
+					<NavigationMenuContent>
+						<ul className="grid w-[400px] gap-3 p-4">
+							{nav.documents.map(doc => (
+								<ListItem key={doc.title} title={doc.title} href={doc.href}>
+									{doc.description}
+								</ListItem>
+							))}
+							{nav.other.map(doc => (
+								<ListItem key={doc.title} title={doc.title} href={doc.href}>
+									{doc.description}
+								</ListItem>
+							))}
+						</ul>
+					</NavigationMenuContent>
+				</NavigationMenuItem>
+			</div>
+		)
+	}
 }
 
 const ListItem = React.forwardRef<React.ElementRef<'a'>, React.ComponentPropsWithoutRef<'a'>>(

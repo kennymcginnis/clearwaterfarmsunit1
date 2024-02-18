@@ -10,7 +10,7 @@ import { ErrorList, Field } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
-import { requireUserId, sessionKey } from '#app/utils/auth.server.ts'
+import { getPasswordHash, requireUserId, sessionKey } from '#app/utils/auth.server.ts'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { getUserImgSrc, useDoubleCheck } from '#app/utils/misc.tsx'
@@ -27,6 +27,11 @@ const ProfileFormSchema = z.object({
 	username: UsernameSchema,
 	secondaryEmail: EmailSchema.optional(),
 })
+
+export async function isDefaultPassword(username: string, password?: string) {
+	const encrypted = await getPasswordHash(`${username}123456`.substring(0, 6))
+	return password === encrypted
+}
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request)
@@ -52,13 +57,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	})
 
 	const password = await prisma.password.findUnique({
-		select: { userId: true },
+		select: { userId: true, hash: true },
 		where: { userId },
 	})
 
+	const hasPassword = Boolean(password) && !isDefaultPassword(user.username, password?.hash)
+
 	return json({
 		user,
-		hasPassword: Boolean(password),
+		hasPassword,
 	})
 }
 
@@ -177,7 +184,6 @@ async function profileUpdateAction({ userId, formData }: ProfileActionArgs) {
 
 function UpdateProfile() {
 	const data = useLoaderData<typeof loader>()
-
 	const fetcher = useFetcher<typeof profileUpdateAction>()
 
 	const [form, fields] = useForm({

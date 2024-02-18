@@ -7,8 +7,7 @@ import { Spacer } from '#app/components/spacer.tsx'
 import { prisma } from '#app/utils/db.server.ts'
 import { parseMdx } from '#app/utils/mdx-bundler.server'
 import { getDocumentImgSrc } from '#app/utils/misc.tsx'
-import { userHasRole } from '#app/utils/permissions.ts'
-import { useOptionalUser } from '#app/utils/user.ts'
+import { useOptionalAdminUser } from '#app/utils/user.ts'
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	const document = await prisma.document.findFirst({
@@ -46,10 +45,7 @@ export default function ProfileRoute() {
 	const { document, content } = useLoaderData<typeof loader>()
 	const { code } = content
 	const Component = React.useMemo(() => getMDXComponent(code), [code])
-
-	const user = useOptionalUser()
-	const displayBar = userHasRole(user, 'admin')
-
+	const displayBar = useOptionalAdminUser()
 	return (
 		<div className="container mb-48 mt-36">
 			<Component />

@@ -28,25 +28,13 @@ export async function sendEmail({
 	to: string
 	subject: string
 } & ({ html: string; text: string; react?: never } | { react: ReactElement; html?: never; text?: never })) {
-	const from = 'hello@epicstack.dev'
+	const from = 'clearwat@clearwaterfarmsunit1.com'
 
 	const email = {
 		from,
 		...options,
 		...(react ? await renderReactEmail(react) : null),
 	}
-
-	// feel free to remove this condition once you've set up resend
-	if (!process.env.RESEND_API_KEY && !process.env.MOCKS) {
-		console.error(`RESEND_API_KEY not set and we're not in mocks mode.`)
-		console.error(`To send emails, set the RESEND_API_KEY environment variable.`)
-		console.error(`Would have sent the following email:`, JSON.stringify(email))
-		return {
-			status: 'success',
-			data: { id: 'mocked' },
-		} as const
-	}
-
 	const response = await fetch('https://api.resend.com/emails', {
 		method: 'POST',
 		body: JSON.stringify(email),
