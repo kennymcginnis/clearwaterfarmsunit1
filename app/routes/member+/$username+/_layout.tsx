@@ -16,11 +16,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			id: true,
 			member: true,
 			username: true,
-			image: {
-				select: {
-					id: true,
-				},
-			},
+			image: { select: { id: true } },
 			createdAt: true,
 		},
 		where: {
@@ -32,12 +28,13 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	return json({ user, userJoinedDisplay: user.createdAt.toLocaleDateString() })
 }
 
-export default function ProfileRoute() {
+export default function MemberProfileRoute() {
 	const { user, userJoinedDisplay } = useLoaderData<typeof loader>()
 
 	const location = useLocation()
-	const active = location.pathname.split('/').pop()
-	console.log({ active })
+	const path = location.pathname.split('/')
+	const paths = ['contact', 'property', 'irrigation', 'transactions']
+	let active = path.reverse().find(p => paths.includes(p))
 
 	const userDisplayName = user.member ?? user.username
 	const loggedInUser = useOptionalUser()

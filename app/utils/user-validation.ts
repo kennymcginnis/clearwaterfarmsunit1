@@ -9,12 +9,12 @@ export const UsernameSchema = z
 	})
 	// users can type the username in any case, but we store it in lowercase
 	.transform(value => value.toLowerCase())
-
-	export const PasswordSchema = z
-	.string({ required_error: 'Password is required' })
-	.min(3, { message: 'Password is too short' })
-	.max(100, { message: 'Password is too long' })
-export const NewPasswordSchema = z
+export const PhoneSchema = z
+	.string({ required_error: 'Phone number required' })
+	.regex(/^((\+1|1)?( |-)?)?(\([2-9][0-9]{2}\)|[2-9][0-9]{2})( |-)?([2-9][0-9]{2}( |-)?[0-9]{4})$/, {
+		message: 'Invalid phone number',
+	})
+export const PasswordSchema = z
 	.string({ required_error: 'Password is required' })
 	.min(6, { message: 'Password is too short' })
 	.max(100, { message: 'Password is too long' })
@@ -27,7 +27,6 @@ export const EmailSchema = z
 	.email({ message: 'Email is invalid' })
 	.min(3, { message: 'Email is too short' })
 	.max(100, { message: 'Email is too long' })
-	// users can type the email in any case, but we store it in lowercase
 	.transform(value => value.toLowerCase())
 
 export const PasswordAndConfirmPasswordSchema = z

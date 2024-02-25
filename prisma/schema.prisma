@@ -26,11 +26,11 @@ model User {
   transactions Transaction[]
   schedules    UserSchedule[]
 
-  defaultHours Int @default(0)
-  defaultHead  Int @default(70)
+  defaultHours Float @default(0)
+  defaultHead  Int   @default(70)
 
-  restricted      Boolean @default(false)
-  restrictionNote String?
+  restricted  Boolean @default(false)
+  restriction String?
 
   image    UserImage?
   password Password?
@@ -90,9 +90,10 @@ model ParcelAndLot {
 }
 
 model UserPhone {
-  id     String @id
-  number String
-  type   String
+  id      String  @id
+  type    String
+  number  String
+  primary Boolean @default(false)
 
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
@@ -138,13 +139,15 @@ model Transaction {
 }
 
 model Schedule {
-  id          String  @id
+  id          String @id
   date        String
   deadline    String
   source      String
   costPerHour Int
-  open        Boolean @default(false)
-  closed      Boolean @default(false)
+  state       String @default("pending")
+
+  start DateTime?
+  stop  DateTime?
 
   userSchedules UserSchedule[]
 

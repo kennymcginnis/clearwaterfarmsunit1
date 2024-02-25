@@ -218,7 +218,7 @@ export function useDoubleCheck() {
 			: e => {
 					e.preventDefault()
 					setDoubleCheck(true)
-			  }
+				}
 
 		const onKeyUp: React.ButtonHTMLAttributes<HTMLButtonElement>['onKeyUp'] = e => {
 			if (e.key === 'Escape') {
@@ -330,7 +330,80 @@ export function getRequiredEnvVar(key: string, env = process.env): string {
 	throw new Error(`Environment variable ${key} is not defined`)
 }
 
-export function FormatDates({ start, stop }: { start: Date | null; stop: Date | null }): string[] {
+export type UserSchedule = {
+	ditch: number
+	hours: number | null
+	head: number | null
+	start: Date | null
+	stop: Date | null
+	previous: {
+		hours: number | null
+		head: number | null
+	}
+	schedule: string[]
+}
+export type UserSchedules = UserSchedule[]
+
+export function formatSchedule(
+	schedule: {
+		id: string
+		date: string
+		deadline: string
+		source: string
+		costPerHour: number
+		state: string
+		start: Date | null
+		stop: Date | null
+		userSchedules?: { ditch: number; start: Date | null; stop: Date | null; hours: number; head: number }[]
+	} | null,
+) {
+	return schedule && schedule.start && schedule.stop
+		? { ...schedule, schedule: formatDates({ start: schedule.start, stop: schedule.stop }) }
+		: null
+}
+
+export function formatUserSchedule(
+	user: {
+		ports: { ditch: number }[]
+	},
+	userSchedules:
+		| {
+				ditch: number
+				start: Date | null
+				stop: Date | null
+				hours: number
+				head: number
+		  }[]
+		| undefined,
+	previousUserSchedules?:
+		| {
+				ditch: number
+				start: Date | null
+				stop: Date | null
+				hours: number
+				head: number
+		  }[]
+		| undefined,
+): UserSchedules {
+	return user.ports.map(port => {
+		const empty = {
+			ditch: port.ditch,
+			hours: null,
+			head: null,
+			start: null,
+			stop: null,
+		}
+		const found = userSchedules?.find(us => us.ditch === port.ditch) ?? empty
+		const { hours, head } = previousUserSchedules?.find(us => us.ditch === port.ditch) ?? empty
+		return {
+			...found,
+			previous: { hours, head },
+			schedule: formatDates({ start: found?.start, stop: found?.stop }),
+		}
+	})
+}
+
+export function formatDates({ start, stop }: { start: Date | null; stop: Date | null }): string[] {
 	if (!start || !stop) return ['', '']
 	if (start.getDay() === stop.getDay()) {
 		return [format(start, 'MMM do'), `${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}`]
@@ -338,3 +411,21 @@ export function FormatDates({ start, stop }: { start: Date | null; stop: Date | 
 		return [format(start, 'MMM do h:mmaaa'), format(stop, 'MMM do h:mmaaa')]
 	}
 }
+
+export function getVariantForState(
+	state: string,
+): 'open' | 'default' | 'destructive' | 'outline' | 'secondary' | null | undefined {
+	switch (state) {
+		case 'pending':
+			return 'outline'
+		case 'open':
+			return 'default'
+		case 'locked':
+			return 'secondary'
+		case 'closed':
+			return 'destructive'
+	}
+}
+
+export const formatHours = (hours: number | null) =>
+	!hours ? '' : hours === 1 ? '1-hour' : hours % 1 === 0 ? `${hours}-hours` : `${hours}-hrs`

@@ -1,7 +1,6 @@
-'use client'
 import { Link } from '@remix-run/react'
-import React from 'react'
-import { Icon } from '#app/components/ui/icon.tsx'
+import { useOptionalAdminUser } from '#app/utils/user'
+import { Icon, ToolTipIcon } from './ui/icon'
 import {
 	NavigationMenu,
 	NavigationMenuContent,
@@ -9,13 +8,79 @@ import {
 	NavigationMenuLink,
 	NavigationMenuList,
 	NavigationMenuTrigger,
+	NavigationSubMenuItem,
 	navigationMenuTriggerStyle,
-} from '#app/components/ui/navigation-menu'
-import { cn } from '#app/utils/misc.tsx'
-import { useOptionalAdminUser } from '#app/utils/user'
+} from './ui/navigation-menu'
 
-const nav = {
-	documents: [
+const iconStyle = 'mr-1 mt-0.5 w-5 h-5 md:max-2xl:hidden max-md:w-6 max-md:h-6'
+
+export function MainNavigationMenu({
+	open,
+	closed,
+}: {
+	open: { date: string } | null
+	closed: { date: string } | null
+}) {
+	const userIsAdmin = useOptionalAdminUser()
+	return (
+		<NavigationMenu>
+			<NavigationMenuList>
+				<NavigationMenuItem>
+					<Link to="/">
+						<NavigationMenuLink className={navigationMenuTriggerStyle()}>
+							<ToolTipIcon className={iconStyle} name="home" tooltip="Home" aria-hidden="true" />
+							<p className="max-md:hidden">Home</p>
+						</NavigationMenuLink>
+					</Link>
+				</NavigationMenuItem>
+				<NavigationMenuItem>
+					<Link to="/announcements">
+						<NavigationMenuLink className={navigationMenuTriggerStyle()}>
+							<ToolTipIcon
+								className={iconStyle}
+								name="exclamation-triangle"
+								tooltip="Announcements"
+								aria-hidden="true"
+							/>
+							<p className="max-md:hidden">Announcements</p>
+						</NavigationMenuLink>
+					</Link>
+				</NavigationMenuItem>
+				<IrrigationNavigationMenu open={open} closed={closed} />
+				<DocumentsNavigationMenu />
+				{userIsAdmin ? (
+					<NavigationMenuItem>
+						<Link to="/members">
+							<NavigationMenuLink className={navigationMenuTriggerStyle()}>
+								<ToolTipIcon className={iconStyle} name="person" tooltip="Members" aria-hidden="true" />
+								<p className="max-md:hidden">Members</p>
+							</NavigationMenuLink>
+						</Link>
+					</NavigationMenuItem>
+				) : null}
+				<NavigationMenuItem>
+					<Link to="/trade-list">
+						<NavigationMenuLink className={navigationMenuTriggerStyle()}>
+							<ToolTipIcon className={iconStyle} name="id-card" tooltip="Trade List" aria-hidden="true" />
+							<p className="text-ellipsis text-nowrap max-md:hidden">Trade List</p>
+						</NavigationMenuLink>
+					</Link>
+				</NavigationMenuItem>
+				<NavigationMenuItem>
+					<Link to="/contact-us">
+						<NavigationMenuLink className={navigationMenuTriggerStyle()}>
+							<ToolTipIcon className={iconStyle} name="envelope-closed" tooltip="Contact Us" aria-hidden="true" />
+							<p className="text-ellipsis text-nowrap max-md:hidden">Contact Us</p>
+						</NavigationMenuLink>
+					</Link>
+				</NavigationMenuItem>
+			</NavigationMenuList>
+		</NavigationMenu>
+	)
+}
+
+export function DocumentsNavigationMenu() {
+	const documents = [
 		{
 			title: 'Articles of Incorporation',
 			href: '/documents/articles-of-incorporation',
@@ -36,16 +101,31 @@ const nav = {
 			href: '/documents/rules-and-regulations',
 			description: 'Rules and Regulations of Clearwater Farms Property Owners Association',
 		},
-	],
-	other: [
-		{ title: 'Meetings', href: '/meetings', description: 'Meetings Agenda and Minutes' },
-		{ title: 'Trade List', href: '/trade-list', description: 'Contact list for neighborhood trades and services' },
-		{ title: 'Members', href: '/members', description: 'List of POA Members' },
-		{ title: 'Contact Us', href: '/contact-us', description: 'Contact Us' },
-	],
+	]
+	return (
+		<NavigationMenu>
+			<NavigationMenuList>
+				<NavigationMenuItem>
+					<NavigationMenuTrigger>
+						<Icon className={iconStyle} name="file-text" aria-hidden="true" />
+						<p className="max-md:hidden">Documents</p>
+					</NavigationMenuTrigger>
+					<NavigationMenuContent>
+						<ul className="grid w-[300px] gap-3 p-4 md:w-[400px]">
+							{documents.map(doc => (
+								<NavigationSubMenuItem key={doc.title} title={doc.title} href={doc.href}>
+									{doc.description}
+								</NavigationSubMenuItem>
+							))}
+						</ul>
+					</NavigationMenuContent>
+				</NavigationMenuItem>
+			</NavigationMenuList>
+		</NavigationMenu>
+	)
 }
 
-export function MainNavigationMenu({
+export function IrrigationNavigationMenu({
 	open,
 	closed,
 }: {
@@ -56,15 +136,13 @@ export function MainNavigationMenu({
 	return (
 		<NavigationMenu>
 			<NavigationMenuList>
-				<NavigationMenuItem className="hidden lg:flex">
-					<Link to="/announcements">
-						<NavigationMenuLink className={navigationMenuTriggerStyle()}>Home</NavigationMenuLink>
-					</Link>
-				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<NavigationMenuTrigger>Irrigation</NavigationMenuTrigger>
-					<NavigationMenuContent>
-						<ul className="grid grid-cols-1 gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+					<NavigationMenuTrigger>
+						<Icon className={iconStyle} name="droplets" aria-hidden="true" />
+						<p className="max-md:hidden">Irrigation</p>
+					</NavigationMenuTrigger>
+					<NavigationMenuContent className="hover:z-10">
+						<ul className="grid w-[300px] grid-cols-1 gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
 							<li className="row-span-3">
 								<NavigationMenuLink asChild>
 									<Link to="/schedules" className={userIsAdmin ? '' : 'pointer-events-none'}>
@@ -80,105 +158,28 @@ export function MainNavigationMenu({
 								</NavigationMenuLink>
 							</li>
 							<Link to="/irrigation-information">
-								<ListItem key="irrigation-information" title="Irrigation Info">
+								<NavigationSubMenuItem key="irrigation-information" title="Irrigation Info">
 									<div className="mb-2 mt-4 text-sm font-medium">Basic Irrigation Information</div>
-								</ListItem>
+								</NavigationSubMenuItem>
 							</Link>
 							<Link to={`/schedule/${open?.date}/sign-up`} className={open ? '' : 'pointer-events-none'}>
-								<ListItem key="sign-up" title="Sign Up">
+								<NavigationSubMenuItem key="sign-up" title="Sign Up">
 									<div className="mb-2 mt-4 text-sm font-medium">
 										Sign Up or modify schedule {open ? `for ${open.date}` : ''}
 									</div>
-								</ListItem>
+								</NavigationSubMenuItem>
 							</Link>
 							<Link to={`/schedule/${closed?.date}/timeline`} className={closed ? '' : 'pointer-events-none'}>
-								<ListItem key="schedule" title="Schedule">
+								<NavigationSubMenuItem key="schedule" title="Schedule">
 									<div className="mb-2 mt-4 text-sm font-medium">
 										View the current schedule {closed ? `for ${closed.date}` : ''}
 									</div>
-								</ListItem>
+								</NavigationSubMenuItem>
 							</Link>
 						</ul>
 					</NavigationMenuContent>
-				</NavigationMenuItem>
-				<NavigationMenuItem>
-					<POADocuments />
-					<ConsolidatedDocuments />
 				</NavigationMenuItem>
 			</NavigationMenuList>
 		</NavigationMenu>
 	)
-
-	function POADocuments() {
-		return (
-			<div className="hidden lg:flex">
-				<NavigationMenuItem>
-					<NavigationMenuTrigger>POA Documents</NavigationMenuTrigger>
-					<NavigationMenuContent>
-						<ul className="grid w-[400px] gap-3 p-4">
-							{nav.documents.map(doc => (
-								<ListItem key={doc.title} title={doc.title} href={doc.href}>
-									{doc.description}
-								</ListItem>
-							))}
-						</ul>
-					</NavigationMenuContent>
-				</NavigationMenuItem>
-				{nav.other.map(link => (
-					<NavigationMenuItem key={link.href}>
-						<Link to={link.href}>
-							<NavigationMenuLink className={navigationMenuTriggerStyle()}>{link.title}</NavigationMenuLink>
-						</Link>
-					</NavigationMenuItem>
-				))}
-			</div>
-		)
-	}
-
-	function ConsolidatedDocuments() {
-		return (
-			<div className="flex lg:hidden">
-				<NavigationMenuItem>
-					<NavigationMenuTrigger>Documents</NavigationMenuTrigger>
-					<NavigationMenuContent>
-						<ul className="grid w-[400px] gap-3 p-4">
-							{nav.documents.map(doc => (
-								<ListItem key={doc.title} title={doc.title} href={doc.href}>
-									{doc.description}
-								</ListItem>
-							))}
-							{nav.other.map(doc => (
-								<ListItem key={doc.title} title={doc.title} href={doc.href}>
-									{doc.description}
-								</ListItem>
-							))}
-						</ul>
-					</NavigationMenuContent>
-				</NavigationMenuItem>
-			</div>
-		)
-	}
 }
-
-const ListItem = React.forwardRef<React.ElementRef<'a'>, React.ComponentPropsWithoutRef<'a'>>(
-	({ className, title, children, ...props }, ref) => {
-		return (
-			<li>
-				<NavigationMenuLink asChild>
-					<a
-						ref={ref}
-						className={cn(
-							'block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground',
-							className,
-						)}
-						{...props}
-					>
-						<div className="text-lg font-medium leading-none">{title}</div>
-						<p className="text-l line-clamp-2 leading-snug text-muted-foreground">{children}</p>
-					</a>
-				</NavigationMenuLink>
-			</li>
-		)
-	},
-)
-ListItem.displayName = 'ListItem'

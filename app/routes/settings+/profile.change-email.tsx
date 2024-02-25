@@ -218,7 +218,7 @@ export default function ChangeEmailIndex() {
 						errors={fields.email.errors}
 					/>
 					<ErrorList id={form.errorId} errors={form.errors} />
-					<div>
+					<div className="mt-3">
 						<StatusButton status={isPending ? 'pending' : actionData?.status ?? 'idle'}>Send Confirmation</StatusButton>
 					</div>
 				</Form>

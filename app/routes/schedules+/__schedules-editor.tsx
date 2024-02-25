@@ -10,11 +10,13 @@ import {
 	type SerializeFrom,
 } from '@remix-run/node'
 import { Form, useActionData } from '@remix-run/react'
+import { useState } from 'react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { floatingToolbarClassName } from '#app/components/floating-toolbar.tsx'
 import { ErrorList, Field } from '#app/components/forms.tsx'
+import { SourceCombobox } from '#app/components/source-combobox'
 import { Button } from '#app/components/ui/button'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
 import { requireUserId } from '#app/utils/auth.server.ts'
@@ -22,9 +24,6 @@ import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { useIsPending } from '#app/utils/misc.tsx'
 import { generatePublicId } from '#app/utils/public-id'
-
-// const dateMinLength = 1
-// const dateMaxLength = 10
 
 const stringRegex = /^\d{4}-[01]\d-[0-3]\d$/
 
@@ -45,8 +44,8 @@ export async function action({ request }: ActionFunctionArgs) {
 	const submission = await parse(formData, {
 		schema: ScheduleEditorSchema.superRefine(async (data, ctx) => {
 			const existingSchedule = await prisma.schedule.findFirst({
-				where: { date: data.date },
 				select: { id: true },
+				where: { date: data.date, NOT: { id: data.id } },
 			})
 			if (existingSchedule) {
 				ctx.addIssue({
@@ -94,7 +93,6 @@ export async function action({ request }: ActionFunctionArgs) {
 			source,
 			costPerHour,
 			createdBy: userId,
-			updatedBy: userId,
 		},
 		update: {
 			date,
@@ -115,6 +113,8 @@ export function ScheduleEditor({
 }) {
 	const actionData = useActionData<typeof action>()
 	const isPending = useIsPending()
+
+	const [sourceValue, setSourceValue] = useState((schedule?.source ?? 'surface').toString())
 
 	const [form, fields] = useForm({
 		id: 'schedule-editor',
@@ -146,7 +146,7 @@ export function ScheduleEditor({
 					rather than the first button in the form (which is delete/add image).
 				*/}
 				<button type="submit" className="hidden" />
-				{schedule ? <input type="hidden" name="id" value={schedule.id} /> : null}
+				<input type="hidden" name="id" value={schedule?.id} />
 				<div className="flex flex-col gap-1">
 					<Field
 						className="w-[250px]"
@@ -166,14 +166,8 @@ export function ScheduleEditor({
 						}}
 						errors={fields.deadline.errors}
 					/>
-					<Field
-						className="w-[250px]"
-						labelProps={{ children: 'Source' }}
-						inputProps={{
-							...conform.input(fields.source, { ariaAttributes: true }),
-						}}
-						errors={fields.source.errors}
-					/>
+					<input type="hidden" name="source" value={sourceValue} />
+					<SourceCombobox value={sourceValue} setValue={setSourceValue} />
 					<Field
 						className="w-[250px]"
 						labelProps={{ children: 'Cost Per Hour' }}

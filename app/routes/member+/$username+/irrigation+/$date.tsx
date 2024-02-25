@@ -1,4 +1,4 @@
-import UserScheduleEditor, { loader } from '#app/routes/schedule+/$date.$username'
+import UserScheduleEditor, { loader, action } from '#app/routes/schedule+/$date.$username'
 
-export { loader }
+export { loader, action }
 export default UserScheduleEditor

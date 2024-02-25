@@ -1,13 +1,13 @@
 import { invariantResponse } from '@epic-web/invariant'
 import {
+	type ActionFunctionArgs,
+	type UploadHandler,
 	json,
 	redirect,
 	type LoaderFunctionArgs,
 	unstable_composeUploadHandlers as composeUploadHandlers,
 	unstable_createMemoryUploadHandler as createMemoryUploadHandler,
 	unstable_parseMultipartFormData as parseMultipartFormData,
-	type UploadHandler,
-	type ActionFunctionArgs,
 	type MetaFunction,
 } from '@remix-run/node'
 import { Form, Link, useLoaderData } from '@remix-run/react'
@@ -16,26 +16,33 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { ErrorList } from '#app/components/forms.tsx'
+import { SearchBar } from '#app/components/search-bar'
 import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon'
 import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper.ts'
 import { prisma } from '#app/utils/db.server.ts'
-import { FormatDates } from '#app/utils/misc'
+import { formatDates, formatHours } from '#app/utils/misc'
 import { requireUserWithRole } from '#app/utils/permissions.ts'
 import useScrollSync from '#app/utils/scroll-sync'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
 
 type TotalType = { [key: number]: number }
-type DitchType = { [key: number]: UserType[] }
+type PositionDitchType = {
+	// position - for <tr>
+	[key: number]: {
+		// ditch - for <td>
+		[key: number]: UserType
+	}
+}
 type UserType = {
 	id: string
 	username: string
 	ditch: number
 	position: number
 	hours: number | bigint | null
-	start: Date | null
-	stop: Date | null
+	start: Date | string | null
+	stop: Date | string | null
 	schedule: string[]
 }
 
@@ -105,11 +112,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	})
 }
 
-export async function loader({ params }: LoaderFunctionArgs) {
-	if (!params?.date) {
-		return redirect('/schedules')
-	}
+export async function loader({ request, params }: LoaderFunctionArgs) {
+	const searchTerm = new URL(request.url).searchParams.get('search')
+	if (searchTerm === '') return redirect(`/schedule/${params.date}/timeline`)
+	if (!params?.date) return redirect('/schedules')
 
+	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
 		SELECT User.id, User.username, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.head, UserSchedule.start, UserSchedule.stop
 		FROM User
@@ -122,6 +130,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
     ) UserSchedule
 		ON User.id = UserSchedule.userId
 		AND Port.ditch = UserSchedule.ditch
+		WHERE User.username LIKE ${like}
+		OR User.member LIKE ${like}
 		ORDER BY Port.ditch, Port.position
 	`
 
@@ -131,8 +141,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			{
 				status: 'error',
 				error: result.error.message,
-				totals: null,
 				users: null,
+				totals: null,
 				rows: null,
 				cols: null,
 				scheduleDate: null,
@@ -141,40 +151,24 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		)
 	}
 
-	let maxPos = 0,
-		minDitch = 9,
-		maxDitch = 1
-	const ditches: DitchType = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] }
+	const totals: TotalType = {}
+	const users: PositionDitchType = {}
 	for (let user of result.data) {
 		const { start, stop } = user
-		ditches[user.ditch].push({ ...user, schedule: FormatDates({ start, stop }) })
-		if (ditches[user.ditch].length > maxPos) maxPos = ditches[user.ditch].length
-		if (user.ditch < minDitch) minDitch = user.ditch
-		if (user.ditch > maxDitch) maxDitch = user.ditch
+		const userType = { ...user, schedule: formatDates({ start, stop }) }
+		if (users[user.position]) users[user.position][user.ditch] = userType
+		else users[user.position] = { [user.ditch]: userType }
+
+		if (totals[user.ditch]) totals[user.ditch] += user.hours
+		else totals[user.ditch] = user.hours
 	}
-
-	let rows = Array.from({ length: maxPos }, (_, i) => i)
-	let cols = Array.from({ length: maxDitch - minDitch + 1 }, (_, i) => i + minDitch)
-
-	const aggregate = await prisma.userSchedule.groupBy({
-		by: ['ditch'],
-		_sum: { hours: true },
-		where: { schedule: { date: params.date } },
-	})
-
-	const totals: TotalType = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 }
-	for (let ditch of aggregate) {
-		totals[ditch.ditch] += ditch?._sum?.hours ?? 0
-	}
-
-	const scheduleDate: string = params.date
-	return json({ status: 'idle', users: ditches, rows, cols, totals, scheduleDate, error: null } as const)
+	return json({ status: 'idle', users, totals, scheduleDate: params.date, error: null } as const)
 }
 
-export default function UsersRoute() {
+export default function ScheduleTimelineRoute() {
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
-	const { status, users, rows, cols, totals, scheduleDate, error } = useLoaderData<typeof loader>()
+	const { status, users, totals, scheduleDate, error } = useLoaderData<typeof loader>()
 
 	const nodeRefA = useRef(null)
 	const nodeRefB = useRef(null)
@@ -210,20 +204,24 @@ export default function UsersRoute() {
 	const [showUpload, setShowUpload] = useState(false)
 	const toggleShowUpload = () => setShowUpload(!showUpload)
 
+	if (!users || !Object.keys(users).length) return null
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
-			<div className="flex p-0.5 w-[90%] flex-row justify-between">
-				<div className="flex flex-row space-x-2">
+			<div className="flex w-[90%] flex-row flex-wrap gap-2 p-0.5">
+				<div className="my-1 flex flex-row space-x-2">
 					<Button variant="outline" onClick={toggleShowAll} className="pb-2">
 						Display {showAll ? 'Scheduled' : 'All'}
 					</Button>
 					{currentUser && scheduleDate ? (
-						<Button asChild variant="secondary" className="ml-2">
+						<Button asChild variant="secondary" className="ml-2 pb-2">
 							<Link to={`/timeline/${scheduleDate}/${currentUser.username}`}>Jump to Self</Link>
 						</Button>
 					) : null}
 				</div>
-				<div className="flex flex-row space-x-2">
+				<div className="my-1 flex-grow">
+					<SearchBar action={`/schedule/${scheduleDate}/timeline`} status={status} autoFocus autoSubmit />
+				</div>
+				<div className="my-1 flex flex-row space-x-2">
 					{userIsAdmin ? (
 						<>
 							<Button>
@@ -250,7 +248,7 @@ export default function UsersRoute() {
 				</div>
 			</div>
 			{showUpload ? (
-				<div className="mt-2 flex flex-row justify-end space-x-2">
+				<div className="mt-2 flex w-[90%] flex-row justify-end space-x-2">
 					<Form method="post" encType="multipart/form-data">
 						<input aria-label="File" type="file" accept=".csv" name="selected_csv" />
 						<Button type="submit" className="btn btn-sm">
@@ -264,12 +262,14 @@ export default function UsersRoute() {
 					<table>
 						<thead>
 							<tr>
-								{(cols || []).map(c => (
-									<th className="sticky top-0 p-0.5" key={`ditch-${c}`}>
-										<p className="mb-1 flex w-44 flex-col rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
-											Ditch {c}
-											<p className="mb-2 w-full text-center text-body-md">{totals?.[+c]} hours</p>
-										</p>
+								{Object.entries(totals).map(([ditch, hours]) => (
+									<th className="sticky top-0 p-0.5" key={`ditch-${ditch}`}>
+										{hours > 0 || showAll ? (
+											<p className="mb-1 flex w-44 flex-col rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
+												Ditch {ditch}
+												<p className="mb-2 w-full text-center text-body-md">{hours} hours</p>
+											</p>
+										) : null}
 									</th>
 								))}
 							</tr>
@@ -284,15 +284,18 @@ export default function UsersRoute() {
 						<div className="m-auto block w-full overflow-x-auto overflow-y-auto" ref={nodeRefB}>
 							<table>
 								<tbody>
-									{rows.map(r => (
-										<tr key={`${r}`}>
-											{cols.map(c => (
-												<td className="p-0.5" key={`${r}${c}`}>
-													{users[c][r] && ((users[c][r].start && users[c][r].stop) || showAll) ? (
-														<UserCard scheduleDate={scheduleDate} user={users[c][r] as UserType} />
-													) : null}
-												</td>
-											))}
+									{Object.keys(users).map(position => (
+										<tr key={`${position}`}>
+											{Object.keys(totals).map(ditch => {
+												const user = users[Number(position)][Number(ditch)]
+												return (
+													<td className="p-0.5" key={`${ditch}${position}`}>
+														{user && (user.hours || showAll) ? (
+															<UserCard scheduleDate={scheduleDate} user={user} />
+														) : null}
+													</td>
+												)
+											})}
 										</tr>
 									))}
 								</tbody>
@@ -310,9 +313,6 @@ export default function UsersRoute() {
 }
 
 function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType }) {
-	const pretty = (hours: number | null) =>
-		!hours ? '' : hours === 1 ? '1-hour' : hours % 1 === 0 ? `${hours}-hours` : `${hours}-hrs`
-
 	return (
 		<Link
 			to={`/timeline/${scheduleDate}/${user.username}`}
@@ -323,7 +323,7 @@ function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType
 					{user.position}: {user.username}
 				</span>
 				<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">
-					{pretty(Number(user.hours))}
+					{formatHours(Number(user.hours))}
 				</span>
 			</div>
 			{user.schedule.map((row, r) => (

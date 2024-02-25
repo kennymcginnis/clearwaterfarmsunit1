@@ -5,7 +5,7 @@ CREATE TABLE "User" (
     "member" TEXT,
     "primaryEmail" TEXT,
     "secondaryEmail" TEXT,
-    "defaultHours" INTEGER NOT NULL DEFAULT 0,
+    "defaultHours" REAL NOT NULL DEFAULT 0,
     "defaultHead" INTEGER NOT NULL DEFAULT 70,
     "restricted" BOOLEAN NOT NULL DEFAULT false,
     "restrictionNote" TEXT,

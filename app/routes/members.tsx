@@ -110,7 +110,7 @@ export default function MembersRoute() {
 				<div className="flex text-nowrap text-h2 max-md:hidden lg:text-h1">Clearwater Farms Unit 1 Members</div>
 				<div className="flex text-nowrap text-h3 md:hidden">CWF Unit 1 Members</div>
 				<div className="w-[70%]">
-					<SearchBar status={status} autoFocus autoSubmit />
+					<SearchBar action="/members" status={status} autoFocus autoSubmit />
 				</div>
 				<div className="m-auto block w-[90%] overflow-x-auto bg-background text-foreground" ref={nodeRefA}>
 					<table>
@@ -170,7 +170,7 @@ function UserCard({ user }: { user: UserType }) {
 			/>
 			{user.member ? (
 				<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md">
-					{user.member}
+					{user.username}
 				</span>
 			) : null}
 			<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">

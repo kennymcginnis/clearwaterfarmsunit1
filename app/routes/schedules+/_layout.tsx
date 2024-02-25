@@ -6,7 +6,7 @@ import { Badge } from '#app/components/ui/badge'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { Separator } from '#app/components/ui/separator'
 import { prisma } from '#app/utils/db.server.ts'
-import { cn } from '#app/utils/misc.tsx'
+import { cn, getVariantForState } from '#app/utils/misc.tsx'
 import { useOptionalAdminUser } from '#app/utils/user.ts'
 
 export async function loader() {
@@ -17,8 +17,7 @@ export async function loader() {
 			deadline: true,
 			source: true,
 			costPerHour: true,
-			open: true,
-			closed: true,
+			state: true,
 		},
 		orderBy: { date: 'desc' },
 	})
@@ -56,16 +55,9 @@ export default function NotesRoute() {
 										className={({ isActive }) => cn(navLinkDefaultClassName, isActive && 'bg-accent')}
 									>
 										{schedule.date}
-										{schedule.open && (
-											<Badge className="ml-2" variant="default">
-												Open
-											</Badge>
-										)}
-										{schedule.closed && (
-											<Badge className="ml-2" variant="destructive">
-												Closed
-											</Badge>
-										)}
+										<Badge className="ml-2 capitalize" variant={getVariantForState(schedule.state)}>
+											{schedule.state}
+										</Badge>
 									</NavLink>
 								</li>
 							))}

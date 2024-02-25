@@ -41,7 +41,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	return json({ document, content })
 }
 
-export default function ProfileRoute() {
+export default function ProfileTypeRoute() {
 	const { document, content } = useLoaderData<typeof loader>()
 	const { code } = content
 	const Component = React.useMemo(() => getMDXComponent(code), [code])

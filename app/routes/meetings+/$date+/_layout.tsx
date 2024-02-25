@@ -15,7 +15,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	return json({ meetingTypes, date: params.date })
 }
 
-export default function ProfileRoute() {
+export default function MeetingDateRoute() {
 	const { meetingTypes, date } = useLoaderData<typeof loader>()
 
 	return (

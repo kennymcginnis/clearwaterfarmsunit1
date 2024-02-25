@@ -41,7 +41,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	return json({ user, currentBalance })
 }
 
-export default function ProfileRoute() {
+export default function TransactionsRoute() {
 	const { user, currentBalance } = useLoaderData<typeof loader>()
 	const { transactions } = user
 

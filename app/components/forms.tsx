@@ -116,7 +116,7 @@ export function CheckboxField({
 	const errorId = errors?.length ? `${id}-error` : undefined
 	return (
 		<div className={className}>
-			<div className="flex gap-2">
+			<div className="flex items-center gap-2">
 				<Checkbox
 					id={id}
 					ref={buttonRef}

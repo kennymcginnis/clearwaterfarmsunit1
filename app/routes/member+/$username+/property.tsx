@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/car
 import { Icon } from '#app/components/ui/icon.tsx'
 import { Separator } from '#app/components/ui/separator'
 import { prisma } from '#app/utils/db.server.ts'
+import { useOptionalUser, useOptionalAdminUser } from '#app/utils/user'
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	const user = await prisma.user.findFirst({
@@ -15,8 +16,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			id: true,
 			member: true,
 			username: true,
-			defaultHours: true,
-			defaultHead: true,
 			restricted: true,
 			ports: {
 				select: {
@@ -52,8 +51,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	return json({ user })
 }
 
-export default function ProfileRoute() {
+export default function PropertyRoute() {
 	const { user } = useLoaderData<typeof loader>()
+	const currentUser = useOptionalUser()
+	const userIsAdmin = useOptionalAdminUser()
+	const canEdit = currentUser?.id === user.id || userIsAdmin
 
 	const [editProfile, setEditProfile] = useState('')
 	const toggleEditProfile = (profile: string) => {
@@ -65,11 +67,13 @@ export default function ProfileRoute() {
 		<Card>
 			<CardHeader>
 				<CardTitle>Property</CardTitle>
-				<Button variant="outline" onClick={() => toggleEditProfile('property')} className="pb-2">
-					<Icon name="pencil-1" className="scale-125 max-md:scale-150">
-						Edit Property
-					</Icon>
-				</Button>
+				{canEdit && (
+					<Button variant="outline" onClick={() => toggleEditProfile('property')} className="pb-2">
+						<Icon name="pencil-1" className="scale-125 max-md:scale-150">
+							Edit Property
+						</Icon>
+					</Button>
+				)}
 			</CardHeader>
 			<CardContent className="space-y-2">
 				{user.userAddress.map((userAddress, i) => (
@@ -126,17 +130,6 @@ export default function ProfileRoute() {
 								) : null}
 							</>
 						))}
-						<Separator className="col-span-6 mb-1 mt-1" />
-						<DisplayField
-							className="col-span-3"
-							labelProps={{ htmlFor: (user.defaultHours || 0).toString(), children: 'Default Hours' }}
-							inputProps={{ defaultValue: user.defaultHours }}
-						/>
-						<DisplayField
-							className="col-span-3"
-							labelProps={{ htmlFor: (user.defaultHead || 70).toString(), children: 'Default Head' }}
-							inputProps={{ defaultValue: user.defaultHead }}
-						/>
 					</div>
 				))}
 			</CardContent>

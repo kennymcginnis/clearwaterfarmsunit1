@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '#app/components/ui/card'
+import { formatHours } from '#app/utils/misc'
 
 export function UserScheduleTimeline({
 	user,
@@ -10,25 +11,25 @@ export function UserScheduleTimeline({
 	}
 	userSchedule: {
 		ditch: number
-		hours: number
-		head: number
+		hours: number | null
+		head: number | null
 		schedule: string[]
 	}
 }) {
-	const pretty = (hours: number | null) =>
-		!hours ? '' : hours === 1 ? '(1-hour)' : hours % 1 === 0 ? `(${hours}-hours)` : `(${hours}-hrs)`
-
+	const schedule = userSchedule.hours
+		? userSchedule.schedule
+		: ['You did not sign up for Irrigation', 'on this schedule.']
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>Ditch {userSchedule.ditch}</CardTitle>
 				<CardDescription>
-					{user.username} {pretty(userSchedule.hours)}
+					{user.username} {formatHours(userSchedule.hours)}
 				</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-2">
+			<CardContent className="flex flex-col gap-2">
 				<div key={userSchedule.ditch} className="flex flex-col">
-					{userSchedule.schedule.map((row, r) => (
+					{schedule.map((row, r) => (
 						<span
 							key={`row-${r}`}
 							className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground"

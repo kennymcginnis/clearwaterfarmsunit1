@@ -18,7 +18,7 @@ export function ScheduleActionButton({
 	icon: 'trash' | 'lock-open-1' | 'lock-closed'
 	value: string
 	text: string
-	variant: 'default' | 'destructive'
+	variant: 'default' | 'destructive' | 'secondary'
 }) {
 	const actionData = useActionData<typeof action>()
 	const isPending = useIsPending()
@@ -41,7 +41,7 @@ export function ScheduleActionButton({
 				className="w-full max-md:aspect-square max-md:px-0"
 			>
 				<Icon name={icon} className="scale-125 max-md:scale-150">
-					<span className="max-md:hidden">{text}</span>
+					<span className="text-nowrap overflow-ellipsis max-md:hidden">{text}</span>
 				</Icon>
 			</StatusButton>
 			<ErrorList errors={form.errors} id={form.errorId} />

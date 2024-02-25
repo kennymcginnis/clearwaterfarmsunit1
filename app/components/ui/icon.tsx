@@ -1,4 +1,5 @@
 import { type SVGProps } from 'react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#app/components/ui/tooltip'
 import { cn } from '#app/utils/misc.tsx'
 import { type IconName } from '@/icon-name'
 import href from './icons/sprite.svg'
@@ -56,5 +57,48 @@ export function Icon({
 		<svg {...props} className={cn(sizeClassName[size], 'inline self-center', className)}>
 			<use href={`${href}#${name}`} />
 		</svg>
+	)
+}
+
+/**
+ * Renders an SVG icon. The icon defaults to the size of the font. To make it
+ * align vertically with neighboring text, you can pass the text as a child of
+ * the icon and it will be automatically aligned.
+ * Alternatively, if you're not ok with the icon being to the left of the text,
+ * you need to wrap the icon and text in a common parent and set the parent to
+ * display "flex" (or "inline-flex") with "items-center" and a reasonable gap.
+ */
+export function ToolTipIcon({
+	name,
+	tooltip,
+	size = 'font',
+	className,
+	children,
+	...props
+}: SVGProps<SVGSVGElement> & {
+	name: IconName
+	tooltip: string
+	size?: Size
+}) {
+	return (
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					{children ? (
+						<span className={`inline-flex items-center ${childrenSizeClassName[size]}`}>
+							<Icon name={name} size={size} className={className} {...props} />
+							{children}
+						</span>
+					) : (
+						<svg {...props} className={cn(sizeClassName[size], 'inline self-center', className)}>
+							<use href={`${href}#${name}`} />
+						</svg>
+					)}
+				</TooltipTrigger>
+				<TooltipContent>
+					{tooltip}
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
 	)
 }

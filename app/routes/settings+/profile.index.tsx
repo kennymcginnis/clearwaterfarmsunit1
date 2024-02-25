@@ -10,7 +10,7 @@ import { ErrorList, Field } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
-import { getPasswordHash, requireUserId, sessionKey } from '#app/utils/auth.server.ts'
+import { requireUserId, sessionKey } from '#app/utils/auth.server.ts'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { getUserImgSrc, useDoubleCheck } from '#app/utils/misc.tsx'
@@ -27,11 +27,6 @@ const ProfileFormSchema = z.object({
 	username: UsernameSchema,
 	secondaryEmail: EmailSchema.optional(),
 })
-
-export async function isDefaultPassword(username: string, password?: string) {
-	const encrypted = await getPasswordHash(`${username}123456`.substring(0, 6))
-	return password === encrypted
-}
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request)
@@ -56,17 +51,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		},
 	})
 
-	const password = await prisma.password.findUnique({
-		select: { userId: true, hash: true },
-		where: { userId },
-	})
-
-	const hasPassword = Boolean(password) && !isDefaultPassword(user.username, password?.hash)
-
-	return json({
-		user,
-		hasPassword,
-	})
+	return json({ user })
 }
 
 type ProfileActionArgs = {
@@ -127,8 +112,8 @@ export default function EditUserProfile() {
 			<div className="col-span-6 my-4 h-1 border-b-[1.5px] border-foreground" />
 			<div className="col-span-full flex flex-col gap-6">
 				<div>
-					<Link to={data.hasPassword ? 'password' : 'password/create'}>
-						<Icon name="dots-horizontal">{data.hasPassword ? 'Change Password' : 'Create a Password'}</Icon>
+					<Link to={'password'}>
+						<Icon name="dots-horizontal">Change Password</Icon>
 					</Link>
 				</div>
 				<div>
@@ -137,7 +122,7 @@ export default function EditUserProfile() {
 					</Link>
 				</div>
 				<SignOutOfSessions />
-				<DeleteData />
+				{/* <DeleteData /> */}
 			</div>
 		</div>
 	)
@@ -168,15 +153,10 @@ async function profileUpdateAction({ userId, formData }: ProfileActionArgs) {
 	}
 
 	const data = submission.value
-
 	await prisma.user.update({
 		select: { username: true },
 		where: { id: userId },
-		data: {
-			member: data.member,
-			username: data.username,
-			secondaryEmail: data.secondaryEmail,
-		},
+		data,
 	})
 
 	return json({ status: 'success', submission } as const)
@@ -207,10 +187,7 @@ function UpdateProfile() {
 			<div className="grid grid-cols-6 gap-x-10">
 				<Field
 					className="col-span-3"
-					labelProps={{
-						htmlFor: fields.username.id,
-						children: 'Username',
-					}}
+					labelProps={{ htmlFor: fields.username.id, children: 'Username' }}
 					inputProps={conform.input(fields.username)}
 					errors={fields.username.errors}
 				/>
@@ -279,29 +256,25 @@ function SignOutOfSessions() {
 
 	const fetcher = useFetcher<typeof signOutOfSessionsAction>()
 	const otherSessionsCount = data.user._count.sessions - 1
-	return (
-		<div>
-			{otherSessionsCount ? (
-				<fetcher.Form method="POST">
-					<AuthenticityTokenInput />
-					<StatusButton
-						{...dc.getButtonProps({
-							type: 'submit',
-							name: 'intent',
-							value: signOutOfSessionsActionIntent,
-						})}
-						variant={dc.doubleCheck ? 'destructive' : 'default'}
-						status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
-					>
-						<Icon name="avatar">
-							{dc.doubleCheck ? `Are you sure?` : `Sign out of ${otherSessionsCount} other sessions`}
-						</Icon>
-					</StatusButton>
-				</fetcher.Form>
-			) : (
-				<Icon name="avatar">This is your only session</Icon>
-			)}
-		</div>
+	return otherSessionsCount ? (
+		<fetcher.Form method="POST">
+			<AuthenticityTokenInput />
+			<StatusButton
+				{...dc.getButtonProps({
+					type: 'submit',
+					name: 'intent',
+					value: signOutOfSessionsActionIntent,
+				})}
+				variant={dc.doubleCheck ? 'destructive' : 'default'}
+				status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
+			>
+				<Icon name="avatar">
+					{dc.doubleCheck ? `Are you sure?` : `Sign out of ${otherSessionsCount} other sessions`}
+				</Icon>
+			</StatusButton>
+		</fetcher.Form>
+	) : (
+		<Icon name="avatar">This is your only session</Icon>
 	)
 }
 
@@ -314,26 +287,26 @@ async function deleteDataAction({ userId }: ProfileActionArgs) {
 	})
 }
 
+/*
 function DeleteData() {
 	const dc = useDoubleCheck()
 
 	const fetcher = useFetcher<typeof deleteDataAction>()
 	return (
-		<div>
-			<fetcher.Form method="POST">
-				<AuthenticityTokenInput />
-				<StatusButton
-					{...dc.getButtonProps({
-						type: 'submit',
-						name: 'intent',
-						value: deleteDataActionIntent,
-					})}
-					variant={dc.doubleCheck ? 'destructive' : 'default'}
-					status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
-				>
-					<Icon name="trash">{dc.doubleCheck ? `Are you sure?` : `Delete all your data`}</Icon>
-				</StatusButton>
-			</fetcher.Form>
-		</div>
+		<fetcher.Form method="POST">
+			<AuthenticityTokenInput />
+			<StatusButton
+				{...dc.getButtonProps({
+					type: 'submit',
+					name: 'intent',
+					value: deleteDataActionIntent,
+				})}
+				variant={dc.doubleCheck ? 'destructive' : 'default'}
+				status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
+			>
+				<Icon name="trash">{dc.doubleCheck ? `Are you sure?` : `Delete all your data`}</Icon>
+			</StatusButton>
+		</fetcher.Form>
 	)
 }
+*/

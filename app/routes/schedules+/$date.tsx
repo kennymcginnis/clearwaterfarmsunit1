@@ -1,12 +1,11 @@
 import { parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type ActionFunctionArgs } from '@remix-run/node'
-import { type MetaFunction, Link, useLoaderData, NavLink } from '@remix-run/react'
+import { type MetaFunction, Link, useLoaderData } from '@remix-run/react'
 import { formatDistanceToNow } from 'date-fns'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { floatingToolbarClassName } from '#app/components/floating-toolbar.tsx'
-import { ScheduleActionButton } from '#app/components/ScheduleActionButton'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
@@ -16,6 +15,7 @@ import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { useOptionalAdminUser } from '#app/utils/user.ts'
 import { DialogCloseSchedule } from './__close-schedule-dialog'
+import { ScheduleActionButton } from './__schedule-action-button'
 
 export async function loader({ params }: ActionFunctionArgs) {
 	const schedule = await prisma.schedule.findFirst({
@@ -25,11 +25,15 @@ export async function loader({ params }: ActionFunctionArgs) {
 			deadline: true,
 			source: true,
 			costPerHour: true,
-			open: true,
-			closed: true,
+			state: true,
 			updatedAt: true,
 		},
 		where: { date: params.date },
+	})
+
+	const anythingOpen = await prisma.schedule.findFirst({
+		select: { id: true },
+		where: { state: 'open' },
 	})
 
 	invariantResponse(schedule, `Schedule not found for ${params.date}`, {
@@ -42,6 +46,7 @@ export async function loader({ params }: ActionFunctionArgs) {
 	return json({
 		schedule,
 		timeAgo,
+		canOpen: !['open', 'closed'].includes(schedule.state) && !anythingOpen,
 	})
 }
 
@@ -78,7 +83,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	switch (submission.payload.intent) {
 		case 'delete-schedule':
 			await prisma.schedule.delete({ where: { id: schedule.id } })
-			return redirectWithToast(`/schedules`, {
+			return redirectWithToast('', {
 				type: 'success',
 				title: 'Success',
 				description: 'Your schedule has been deleted.',
@@ -87,23 +92,39 @@ export async function action({ request }: ActionFunctionArgs) {
 		case 'open-schedule':
 			const alreadyOpen = await prisma.schedule.findFirst({
 				select: { id: true, date: true },
-				where: { open: true },
+				where: { state: 'open' },
+				orderBy: { date: 'desc' },
 			})
 			if (alreadyOpen) {
 				return json({ status: 'error', submission } as const, { status: 406 })
 			}
-			const updated = await prisma.schedule.update({
+			const opened = await prisma.schedule.update({
 				select: { id: true, date: true },
 				where: { id: schedule.id },
 				data: {
-					open: true,
+					state: 'open',
 					updatedBy: userId,
 				},
 			})
-			return redirectWithToast(`/schedules/${updated.date}`, {
+			return redirectWithToast('', {
 				type: 'success',
 				title: 'Success',
-				description: 'Your schedule has been deleted.',
+				description: `Schedule ${opened.date} has been opened.`,
+			})
+
+		case 'lock-schedule':
+			const locked = await prisma.schedule.update({
+				select: { id: true, date: true },
+				where: { id: schedule.id },
+				data: {
+					state: 'locked',
+					updatedBy: userId,
+				},
+			})
+			return redirectWithToast('', {
+				type: 'success',
+				title: 'Success',
+				description: `Schedule ${locked.date} has been locked.`,
 			})
 
 		case 'close-schedule':
@@ -128,8 +149,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			await prisma.schedule.update({
 				where: { id: schedule.id },
 				data: {
-					open: false,
-					closed: true,
+					state: 'closed',
 					updatedBy: userId,
 				},
 			})
@@ -142,58 +162,59 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function ScheduleRoute() {
-	const data = useLoaderData<typeof loader>()
+	const { schedule, timeAgo, canOpen } = useLoaderData<typeof loader>()
 	const adminUser = useOptionalAdminUser()
 
-	const canDelete = !data.schedule.open && !data.schedule.closed
-	const canOpen = !data.schedule.open && !data.schedule.closed
-	const canClose = data.schedule.open && !data.schedule.closed
-	const canEdit = !data.schedule.closed
+	const state = schedule.state.toLowerCase()
+	const canEdit = state !== 'closed'
+	const canDelete = state === 'pending'
+	const canLock = state === 'open'
+	const canClose = state === 'locked'
 
 	return (
 		<div className="absolute inset-0 flex flex-col px-10">
-			<h2 className="mb-2 pt-12 text-h2 lg:mb-6">Irrigation Schedule beginning: {data.schedule.date}</h2>
+			<h2 className="mb-2 pt-12 text-h2 lg:mb-6">Irrigation Schedule Beginning: {schedule.date}</h2>
 			<div className={`${adminUser ? 'pb-24' : 'pb-12'} overflow-y-auto`}>
-				<p className="whitespace-break-spaces text-sm md:text-lg">Deadline for signing up: {data.schedule.deadline}</p>
-				<p className="whitespace-break-spaces text-sm md:text-lg">Water source: {data.schedule.source}</p>
-				<p className="whitespace-break-spaces text-sm md:text-lg">Cost per hour: {data.schedule.costPerHour}</p>
+				<p className="whitespace-break-spaces text-sm md:text-lg">Deadline for Sign-Up: {schedule.deadline}</p>
+				<p className="whitespace-break-spaces text-sm capitalize md:text-lg">Water source: {schedule.source} Water</p>
+				<p className="whitespace-break-spaces text-sm md:text-lg">Cost Per Hour: {schedule.costPerHour}</p>
 			</div>
 
 			{adminUser ? (
 				<div className={floatingToolbarClassName}>
 					<span className="text-sm text-foreground/90 max-[524px]:hidden">
 						<Icon name="clock" className="scale-125">
-							{data.timeAgo} ago
+							<span className="overflow-ellipsis text-nowrap">{timeAgo} ago</span>
 						</Icon>
 					</span>
-					<div className="grid flex-1 grid-cols-2 justify-end gap-2 min-[525px]:flex md:gap-4">
+					<div className="grid flex-1 grid-cols-2 justify-end gap-1 min-[525px]:flex md:gap-2">
 						{canDelete ? (
 							<ScheduleActionButton
-								id={data.schedule.id}
+								id={schedule.id}
 								icon="trash"
 								value="delete-schedule"
 								text="Delete"
 								variant="destructive"
 							/>
 						) : null}
+						{canClose ? <DialogCloseSchedule id={schedule.id} /> : null}
 						{canOpen ? (
 							<ScheduleActionButton
-								id={data.schedule.id}
+								id={schedule.id}
 								icon="lock-open-1"
 								value="open-schedule"
 								text="Open Sign-up"
-								variant="default"
+								variant="secondary"
 							/>
 						) : null}
-						{canClose ? <DialogCloseSchedule id={data.schedule.id} /> : null}
-						{canClose ? (
-							<Button asChild variant="default">
-								<NavLink to={`/schedule/${data.schedule.date}/sign-up`}>
-									<Icon name="magnifying-glass" className="scale-125 max-md:scale-150">
-										<span className="max-md:hidden">Sign-up</span>
-									</Icon>
-								</NavLink>
-							</Button>
+						{canLock ? (
+							<ScheduleActionButton
+								id={schedule.id}
+								icon="lock-closed"
+								value="lock-schedule"
+								text="Lock Scheduling"
+								variant="secondary"
+							/>
 						) : null}
 						{canEdit ? (
 							<Button asChild className="min-[525px]:max-md:aspect-square min-[525px]:max-md:px-0">

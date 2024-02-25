@@ -219,7 +219,7 @@ INSERT INTO User VALUES('zdpu-ny3a-xnnz','gaffney','Gaffney?',NULL,NULL,0,70,0,N
 INSERT INTO User VALUES('56ds-xb7a-8q4g','sperry','Sperry, John & Nicholette',NULL,NULL,0,70,0,NULL,'Admin',1706915761112,'Admin',1706915761112);
 INSERT INTO User VALUES('8z7t-7n5h-w7h5','gutierrez','Gutierrez, Jose & Maria',NULL,NULL,0,70,0,NULL,'Admin',1706915761166,'Admin',1706915761166);
 INSERT INTO User VALUES('sek4-wen6-vtd8','kittelson','Kittelson-Smith, Tracie','traciesmith472@gmail.com',NULL,0,70,0,NULL,'Admin',1706915761220,'Admin',1706915761220);
-INSERT INTO User VALUES('ws9g-ngss-pqaz','mcginnis','McGinnis, Kenneth & Emily','kenneth.j.mcginnis@gmail.com',NULL,0,70,0,NULL,'Admin',1706915761274,'Admin',1706915761274);
+INSERT INTO User VALUES('ws9g-ngss-pqaz','mcginnis','McGinnis, Kenneth & Emily','kenneth.j.mcginnis@gmail.com',NULL,1.5,140,0,NULL,'Admin',1706915761274,'Admin',1706915761274);
 INSERT INTO User VALUES('aqp3-ghk8-pby3','burkhart','Burkhart, Craig (Karen)','ckburkhart@aol.com',NULL,0,70,0,NULL,'Admin',1706915761328,'Admin',1706915761328);
 INSERT INTO User VALUES('z8de-np7s-p3hg','vannort','Vannort, Gregory & Sheila',NULL,NULL,0,70,0,NULL,'Admin',1706915761383,'Admin',1706915761383);
 INSERT INTO User VALUES('2at5-ufd4-6qbv','kowacz','Kowacz, Thomas & Anna',NULL,NULL,0,70,0,NULL,'Admin',1706915761436,'Admin',1706915761436);
@@ -1912,7 +1912,7 @@ INSERT INTO "Transaction" VALUES('248t-kx3z-r2vc','2024-01-01',75.0,NULL,'2024 S
 INSERT INTO "Transaction" VALUES('zkmp-pa7t-xuf8','2024-01-01',1.0,NULL,'2024 Starting Balance','p3m2-ddpg-cks6','Admin',1706915764098,'Admin',1706915764098);
 INSERT INTO "Transaction" VALUES('efsn-n6qv-b5sf','2024-01-01',NULL,-9.0,'2024 Starting Balance','7sfd-b2kf-kzbd','Admin',1706915764152,'Admin',1706915764152);
 INSERT INTO "Transaction" VALUES('zwd9-sg9z-me78','2024-01-01',NULL,-27.5,'2024 Starting Balance','ykfs-2g7k-y36u','Admin',1706915764206,'Admin',1706915764206);
-INSERT INTO Schedule VALUES('hh3c-bkh4-venp','2024-01-12','2024-01-08','Well water',10,0,0,'Admin',1706915749252,'Admin',1706915749252);
+INSERT INTO Schedule VALUES('hh3c-bkh4-venp','2024-01-12','2024-01-08','well',10,0,0,'Admin',1706915749252,'Admin',1706915749252);
 INSERT INTO UserSchedule VALUES('edpc-et4r-229b',1,'hh3c-bkh4-venp',1.0,70,1705023000000,1705026600000,'Admin',1706915749313,'Admin',1706915764327);
 INSERT INTO UserSchedule VALUES('edpc-et4r-229b',9,'hh3c-bkh4-venp',1.0,70,1705321800000,1705325400000,'Admin',1706915749313,'Admin',1706915764572);
 INSERT INTO UserSchedule VALUES('8s33-mdw5-b8zb',1,'hh3c-bkh4-venp',2.0,70,1705026600000,1705033800000,'Admin',1706915750182,'Admin',1706915764336);

@@ -21,8 +21,8 @@ export const handle: BreadcrumbHandle & SEOHandle = {
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request)
 	const user = await prisma.user.findUnique({
-		where: { id: userId },
 		select: { username: true },
+		where: { id: userId },
 	})
 	invariantResponse(user, 'User not found', { status: 404 })
 	return json({})

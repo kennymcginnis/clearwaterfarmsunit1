@@ -11,7 +11,7 @@ const NavigationMenu = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
 	<NavigationMenuPrimitive.Root
 		ref={ref}
-		className={cn('relative flex max-w-max flex-1 items-center justify-center', className)}
+		className={cn('full-w relative m-auto flex max-w-max flex-1 items-center justify-center', className)}
 		{...props}
 	>
 		{children}
@@ -35,7 +35,7 @@ NavigationMenuList.displayName = NavigationMenuPrimitive.List.displayName
 const NavigationMenuItem = NavigationMenuPrimitive.Item
 
 const navigationMenuTriggerStyle = cva(
-	'group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50',
+	'group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-lg font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50',
 )
 
 const NavigationMenuTrigger = React.forwardRef<
@@ -97,7 +97,7 @@ const NavigationMenuIndicator = React.forwardRef<
 	<NavigationMenuPrimitive.Indicator
 		ref={ref}
 		className={cn(
-			'top-full flex h-1.5 items-end justify-center overflow-hidden data-[state=visible]:animate-in data-[state=hidden]:animate-out data-[state=hidden]:fade-out data-[state=visible]:fade-in',
+			'top-full z-[1] flex h-1.5 items-end justify-center overflow-hidden data-[state=visible]:animate-in data-[state=hidden]:animate-out data-[state=hidden]:fade-out data-[state=visible]:fade-in',
 			className,
 		)}
 		{...props}
@@ -107,11 +107,35 @@ const NavigationMenuIndicator = React.forwardRef<
 ))
 NavigationMenuIndicator.displayName = NavigationMenuPrimitive.Indicator.displayName
 
+const NavigationSubMenuItem = React.forwardRef<React.ElementRef<'a'>, React.ComponentPropsWithoutRef<'a'>>(
+	({ className, title, children, ...props }, ref) => {
+		return (
+			<li>
+				<NavigationMenuLink asChild>
+					<a
+						ref={ref}
+						className={cn(
+							'block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground',
+							className,
+						)}
+						{...props}
+					>
+						<div className="text-lg font-medium leading-none">{title}</div>
+						<p className="text-l line-clamp-2 leading-snug text-muted-foreground">{children}</p>
+					</a>
+				</NavigationMenuLink>
+			</li>
+		)
+	},
+)
+NavigationSubMenuItem.displayName = 'NavigationSubMenuItem'
+
 export {
 	navigationMenuTriggerStyle,
 	NavigationMenu,
 	NavigationMenuList,
 	NavigationMenuItem,
+	NavigationSubMenuItem,
 	NavigationMenuContent,
 	NavigationMenuTrigger,
 	NavigationMenuLink,

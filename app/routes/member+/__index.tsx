@@ -80,7 +80,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	return json({ user, currentBalance, userJoinedDisplay: user.createdAt.toLocaleDateString() })
 }
 
-export default function ProfileRoute() {
+export default function MemberRoute() {
 	const { user, currentBalance, userJoinedDisplay } = useLoaderData<typeof loader>()
 	const { transactions } = user
 

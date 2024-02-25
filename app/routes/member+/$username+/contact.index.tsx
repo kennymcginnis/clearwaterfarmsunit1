@@ -6,6 +6,7 @@ import { Button } from '#app/components/ui/button.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { prisma } from '#app/utils/db.server.ts'
+import { useOptionalUser, useOptionalAdminUser } from '#app/utils/user'
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	const user = await prisma.user.findFirst({
@@ -31,23 +32,33 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	return json({ user })
 }
 
-export default function ProfileRoute() {
+export default function ContactRoute() {
 	const { user } = useLoaderData<typeof loader>()
-	// const userIsAdmin = useOptionalAdminUser()
+	const currentUser = useOptionalUser()
+	const userIsAdmin = useOptionalAdminUser()
+	const viewingSelf = currentUser?.id === user.id
 
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>Contact Information</CardTitle>
-				{
+				{viewingSelf ? (
 					<Button variant="outline" className="pb-2">
 						<Link className="button" to="/settings/profile" prefetch="intent">
+							<Icon name="pencil-1" className="scale-125 max-md:scale-150">
+								Edit Profile
+							</Icon>
+						</Link>
+					</Button>
+				) : userIsAdmin ? (
+					<Button variant="outline" className="pb-2">
+						<Link className="button" to="edit" prefetch="intent">
 							<Icon name="pencil-1" className="scale-125 max-md:scale-150">
 								Edit Contact
 							</Icon>
 						</Link>
 					</Button>
-				}
+				) : null}
 			</CardHeader>
 			<CardContent className="space-y-2">
 				<div className="grid grid-cols-6 gap-x-10 gap-y-3">

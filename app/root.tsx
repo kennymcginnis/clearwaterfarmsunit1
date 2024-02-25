@@ -29,7 +29,7 @@ import { AuthenticityTokenProvider } from 'remix-utils/csrf/react'
 import { HoneypotProvider } from 'remix-utils/honeypot/react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from './components/error-boundary.tsx'
-import { ErrorList } from './components/forms.tsx'
+// import { ErrorList } from './components/forms.tsx'
 import { MainNavigationMenu } from './components/main-nav.tsx'
 import { EpicProgress } from './components/progress-bar.tsx'
 import { useToast } from './components/toaster.tsx'
@@ -56,7 +56,7 @@ import { useRequestInfo } from './utils/request-info.ts'
 import { type Theme, setTheme, getTheme } from './utils/theme.server.ts'
 import { makeTimings, time } from './utils/timing.server.ts'
 import { getToast } from './utils/toast.server.ts'
-import { useOptionalUser, useUser } from './utils/user.ts'
+import { useOptionalUser } from './utils/user.ts'
 
 export const links: LinksFunction = () => {
 	return [
@@ -132,16 +132,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const honeyProps = honeypot.getInputProps()
 	const [csrfToken, csrfCookieHeader] = await csrf.commitToken()
 
-	const open = await time(() => prisma.schedule.findFirst({ select: { date: true }, where: { open: true } }), {
-		timings,
-		type: 'find open schedule',
-		desc: 'find open schedule in root',
-	})
+	const open = await time(
+		() =>
+			prisma.schedule.findFirst({
+				select: { date: true },
+				where: { state: 'open' },
+				orderBy: { date: 'desc' },
+			}),
+		{
+			timings,
+			type: 'find open schedule',
+			desc: 'find open schedule in root',
+		},
+	)
 	const closed = await time(
 		() =>
 			prisma.schedule.findFirst({
 				select: { date: true },
-				where: { closed: true },
+				where: { state: 'closed' },
 				orderBy: { date: 'desc' },
 			}),
 		{
@@ -250,28 +258,31 @@ function Document({
 function App() {
 	const data = useLoaderData<typeof loader>()
 	const nonce = useNonce()
-	const user = useOptionalUser()
 	const theme = useTheme()
 	useToast(data.toast)
 
 	return (
 		<Document nonce={nonce} theme={theme} env={data.ENV}>
 			<div className="flex h-screen flex-col">
-				<header className="container sticky top-0 bg-background py-6 text-foreground hover:z-10">
-					<nav className="flex flex-wrap items-center justify-between gap-4 sm:flex-nowrap md:gap-8">
-						<Logo />
-						<MainNavigationMenu open={data.open} closed={data.closed} />
-						<div className="flex items-center gap-5">
-							{user ? (
-								<UserDropdown />
-							) : (
-								<Button asChild variant="default" size="lg">
-									<Link to="/login">Log In</Link>
-								</Button>
-							)}
-							<ThemeSwitch userPreference={data.requestInfo.userPrefs.theme} />
+				<header className="sticky top-0 mx-6 flex flex-col bg-background py-6 text-foreground hover:z-10">
+					<div className="flex items-center justify-between gap-4 md:gap-8">
+						<Link to="/" className="group grid leading-snug">
+							<span className="text-lg font-bold transition group-hover:translate-x-1">Clearwater Farms</span>
+							<span className="text-md font-light transition group-hover:-translate-x-1">Unit 1</span>
+						</Link>
+						<div className="flex max-md:hidden">
+							<MainNavigationMenu open={data.open} closed={data.closed} />
 						</div>
-					</nav>
+						<div className="flex md:max-lg:hidden">
+							<UserProfile theme={data.requestInfo.userPrefs.theme} />
+						</div>
+					</div>
+					<div className="flex md:hidden">
+						<MainNavigationMenu open={data.open} closed={data.closed} />
+					</div>
+					<div className="hidden self-end md:max-lg:flex">
+						<UserProfile theme={data.requestInfo.userPrefs.theme} />
+					</div>
 				</header>
 
 				<Outlet />
@@ -282,13 +293,109 @@ function App() {
 	)
 }
 
-function Logo() {
+function UserProfile({ theme }: { theme: Theme | null }) {
+	const user = useOptionalUser()
+	const submit = useSubmit()
+	const formRef = useRef<HTMLFormElement>(null)
+
+	const fetcher = useFetcher<typeof action>()
+
+	const [form] = useForm({
+		id: 'theme-switch',
+		lastSubmission: fetcher.data?.submission,
+	})
+
+	const optimisticMode = useOptimisticThemeMode()
+	const mode = optimisticMode ?? theme ?? 'system'
+	const nextMode = mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system'
+	const modeLabel = {
+		light: (
+			<Icon className="m-2 text-body-md" name="sun">
+				Theme: Light
+			</Icon>
+		),
+		dark: (
+			<Icon className="m-2 text-body-md" name="moon">
+				Theme: Dark
+			</Icon>
+		),
+		system: (
+			<Icon className="m-2 text-body-md" name="laptop">
+				Theme: System
+			</Icon>
+		),
+	}
+
 	return (
-		<Link to="/announcements" className="group grid leading-snug">
-			<span className="hidden text-lg font-bold transition group-hover:translate-x-1 lg:flex">Clearwater Farms</span>
-			<span className="flex text-lg font-bold transition group-hover:translate-x-1 lg:hidden">CWF</span>
-			<span className="text-md font-light transition group-hover:-translate-x-1">Unit 1</span>
-		</Link>
+		<div className="flex items-center gap-5">
+			{user ? (
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button asChild variant="secondary">
+							<Link
+								to={`/member/${user.username}`}
+								// this is for progressive enhancement
+								onClick={e => e.preventDefault()}
+								className="flex items-center gap-2"
+							>
+								<img
+									className="h-8 w-8 rounded-full object-cover"
+									alt={user.member ?? user.username}
+									src={getUserImgSrc(user.image?.id, user.id)}
+								/>
+								<span className="flex overflow-hidden text-ellipsis text-nowrap text-body-sm font-bold">
+									{user.member ?? user.username}
+								</span>
+							</Link>
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuPortal>
+						<DropdownMenuContent sideOffset={8} align="start">
+							<DropdownMenuItem asChild>
+								<Link prefetch="intent" to={`/member/${user.username}/contact`}>
+									<Icon className="m-2 text-body-md" name="avatar">
+										Profile
+									</Icon>
+								</Link>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild>
+								<Link prefetch="intent" to={`/member/${user.username}/irrigation`}>
+									<Icon className="m-2 text-body-md" name="pencil-2">
+										Irrigation
+									</Icon>
+								</Link>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild>
+								<fetcher.Form method="POST" {...form.props} role="menuitem">
+									<input type="hidden" name="theme" value={nextMode} />
+									<button type="submit">{modeLabel[nextMode]}</button>
+								</fetcher.Form>
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								asChild
+								// this prevents the menu from closing before the form submission is completed
+								onSelect={event => {
+									event.preventDefault()
+									submit(formRef.current)
+								}}
+							>
+								<Form action="/logout" method="POST" ref={formRef}>
+									<Icon className="m-2 text-body-md" name="exit">
+										<button type="submit">Logout</button>
+									</Icon>
+								</Form>
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenuPortal>
+				</DropdownMenu>
+			) : (
+				<Button asChild variant="default" size="lg">
+					<Link to="/login" className="text-nowrap">
+						Log In
+					</Link>
+				</Button>
+			)}
+		</div>
 	)
 }
 
@@ -304,67 +411,6 @@ function AppWithProviders() {
 }
 
 export default withSentry(AppWithProviders)
-
-function UserDropdown() {
-	const user = useUser()
-	const submit = useSubmit()
-	const formRef = useRef<HTMLFormElement>(null)
-	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button asChild variant="secondary">
-					<Link
-						to={`/member/${user.username}`}
-						// this is for progressive enhancement
-						onClick={e => e.preventDefault()}
-						className="flex items-center gap-2"
-					>
-						<img
-							className="h-8 w-8 rounded-full object-cover"
-							alt={user.member ?? user.username}
-							src={getUserImgSrc(user.image?.id, user.id)}
-						/>
-						<span className="flex overflow-hidden text-ellipsis text-nowrap text-body-sm font-bold sm:max-md:hidden">
-							{user.member ?? user.username}
-						</span>
-					</Link>
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuPortal>
-				<DropdownMenuContent sideOffset={8} align="start">
-					<DropdownMenuItem asChild>
-						<Link prefetch="intent" to={`/member/${user.username}/contact`}>
-							<Icon className="m-2 text-body-md" name="avatar">
-								Profile
-							</Icon>
-						</Link>
-					</DropdownMenuItem>
-					<DropdownMenuItem asChild>
-						<Link prefetch="intent" to={`/member/${user.username}/irrigation`}>
-							<Icon className="m-2 text-body-md" name="pencil-2">
-								Irrigation
-							</Icon>
-						</Link>
-					</DropdownMenuItem>
-					<DropdownMenuItem
-						asChild
-						// this prevents the menu from closing before the form submission is completed
-						onSelect={event => {
-							event.preventDefault()
-							submit(formRef.current)
-						}}
-					>
-						<Form action="/logout" method="POST" ref={formRef}>
-							<Icon className="m-2 text-body-md" name="exit">
-								<button type="submit">Logout</button>
-							</Icon>
-						</Form>
-					</DropdownMenuItem>
-				</DropdownMenuContent>
-			</DropdownMenuPortal>
-		</DropdownMenu>
-	)
-}
 
 /**
  * @returns the user's theme preference, or the client hint theme if the user
@@ -396,6 +442,7 @@ export function useOptimisticThemeMode() {
 	}
 }
 
+/*
 function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
 	const fetcher = useFetcher<typeof action>()
 
@@ -440,6 +487,7 @@ function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
 		</fetcher.Form>
 	)
 }
+*/
 
 export function ErrorBoundary() {
 	// the nonce doesn't rely on the loader so we can access that
