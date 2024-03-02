@@ -21,7 +21,6 @@ export function MainNavigationMenu({
 	open: { date: string } | null
 	closed: { date: string } | null
 }) {
-	const userIsAdmin = useOptionalAdminUser()
 	return (
 		<NavigationMenu>
 			<NavigationMenuList>
@@ -48,16 +47,14 @@ export function MainNavigationMenu({
 				</NavigationMenuItem>
 				<IrrigationNavigationMenu open={open} closed={closed} />
 				<DocumentsNavigationMenu />
-				{userIsAdmin ? (
-					<NavigationMenuItem>
-						<Link to="/members">
-							<NavigationMenuLink className={navigationMenuTriggerStyle()}>
-								<ToolTipIcon className={iconStyle} name="person" tooltip="Members" aria-hidden="true" />
-								<p className="max-md:hidden">Members</p>
-							</NavigationMenuLink>
-						</Link>
-					</NavigationMenuItem>
-				) : null}
+				<NavigationMenuItem>
+					<Link to="/members">
+						<NavigationMenuLink className={navigationMenuTriggerStyle()}>
+							<ToolTipIcon className={iconStyle} name="person" tooltip="Members" aria-hidden="true" />
+							<p className="max-md:hidden">Members</p>
+						</NavigationMenuLink>
+					</Link>
+				</NavigationMenuItem>
 				<NavigationMenuItem>
 					<Link to="/trade-list">
 						<NavigationMenuLink className={navigationMenuTriggerStyle()}>

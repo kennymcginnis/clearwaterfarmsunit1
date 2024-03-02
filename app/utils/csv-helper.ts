@@ -5,9 +5,11 @@ export type DateFieldFormats = {
 	format: string
 }
 
-export const csvFileToArray = (string: string | undefined) => {
-	if (!string) throw 'Empty CSV file'
+export const csvFileToArray = (input: string | undefined) => {
+	if (!input) throw 'Empty CSV file'
+	const string = input.replaceAll('\r', '')
 	const csvHeader = string.slice(0, string.indexOf('\n')).split(',')
+
 	const csvRows = string.slice(string.indexOf('\n') + 1).split('\n')
 
 	const rows = csvRows.map((csvRow: string) => {

@@ -12,11 +12,13 @@ import { Input } from '#app/components/ui/input.tsx'
 import { Label } from '#app/components/ui/label.tsx'
 import { Separator } from '#app/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#app/components/ui/tabs'
+import { requireSelfOrAdmin } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { getUserImgSrc } from '#app/utils/misc.tsx'
 import { useOptionalUser } from '#app/utils/user.ts'
 
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ request, params }: LoaderFunctionArgs) {
+	await requireSelfOrAdmin({ request, params }, { redirectTo: '/members' })
 	const user = await prisma.user.findFirst({
 		select: {
 			id: true,
@@ -71,7 +73,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 	invariantResponse(user, 'User not found', { status: 404 })
 
-	const currentBalance = await prisma.transaction.groupBy({
+	const currentBalance = await prisma.transactions.groupBy({
 		by: ['userId'],
 		_sum: { debit: true, credit: true },
 		where: { userId: user.id },

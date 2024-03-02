@@ -9,7 +9,14 @@ import { prisma } from '#app/utils/db.server.ts'
 import { getUserImgSrc } from '#app/utils/misc.tsx'
 import useScrollSync from '#app/utils/scroll-sync'
 
-type DitchType = { [key: number]: UserType[] }
+type TotalType = { [key: number]: boolean }
+type PositionDitchType = {
+	// position - for <tr>
+	[key: number]: {
+		// ditch - for <td>
+		[key: number]: UserType
+	}
+}
 type UserType = {
 	id: string
 	username: string
@@ -49,31 +56,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	const result = UserSearchResultsSchema.safeParse(rawUsers)
 	if (!result.success) {
-		return json({ status: 'error', error: result.error.message, users: null, rows: null, cols: null } as const, {
+		return json({ status: 'error', error: result.error.message, users: null, totals: null } as const, {
 			status: 400,
 		})
 	}
 
-	let maxPos = 0,
-		minDitch = 9,
-		maxDitch = 1
-	// initializing all ditches so they all appear in position after searches
-	const ditches: DitchType = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] }
+	const totals: TotalType = {}
+	const users: PositionDitchType = {}
 	for (let user of result.data) {
-		ditches[user.ditch].push(user)
-		if (ditches[user.ditch].length > maxPos) maxPos = ditches[user.ditch].length
-		if (user.ditch < minDitch) minDitch = user.ditch
-		if (user.ditch > maxDitch) maxDitch = user.ditch
+		if (users[user.position]) users[user.position][user.ditch] = user
+		else users[user.position] = { [user.ditch]: user }
+
+		totals[user.ditch] = true
 	}
-
-	let rows = Array.from({ length: maxPos }, (_, i) => i)
-	let cols = Array.from({ length: maxDitch - minDitch + 1 }, (_, i) => i + minDitch)
-
-	return json({ status: 'idle', error: null, users: ditches, rows, cols } as const)
+	return json({ status: 'idle', error: null, users, totals } as const)
 }
 
 export default function MembersRoute() {
-	const { status, error, users, rows, cols } = useLoaderData<typeof loader>()
+	const { status, error, users, totals } = useLoaderData<typeof loader>()
 
 	if (status === 'error') console.error(error)
 
@@ -116,10 +116,10 @@ export default function MembersRoute() {
 					<table>
 						<thead>
 							<tr>
-								{(cols || []).map(c => (
-									<th className="sticky top-0 p-1" key={`ditch-${c}`}>
+								{Object.keys(totals || {}).map(ditch => (
+									<th className="sticky top-0 p-0.5" key={`ditch-${ditch}`}>
 										<p className="mb-1 flex w-44 rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
-											Ditch {c}
+											Ditch {ditch}
 										</p>
 									</th>
 								))}
@@ -134,13 +134,16 @@ export default function MembersRoute() {
 						<div className="m-auto block w-full overflow-x-auto overflow-y-auto" ref={nodeRefB}>
 							<table>
 								<tbody>
-									{rows.map(r => (
-										<tr key={`${r}`}>
-											{cols.map(c => (
-												<td className="p-1" key={`${r}${c}`}>
-													{users[c][r] ? <UserCard user={users[c][r] as UserType} /> : null}
-												</td>
-											))}
+									{Object.keys(users).map(position => (
+										<tr key={`${position}`}>
+											{Object.keys(totals).map(ditch => {
+												const user = users[Number(position)][Number(ditch)]
+												return (
+													<td className="p-0.5" key={`${ditch}${position}`}>
+														{user ? <UserCard user={user} /> : null}
+													</td>
+												)
+											})}
 										</tr>
 									))}
 								</tbody>

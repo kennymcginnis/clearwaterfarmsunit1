@@ -55,7 +55,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 type ProfileActionArgs = {
-	request: Request
+	request?: Request
 	userId: string
 	formData: FormData
 }
@@ -69,18 +69,17 @@ export async function action({ request }: ActionFunctionArgs) {
 	await validateCSRF(formData, request.headers)
 	const intent = formData.get('intent')
 	switch (intent) {
-		case profileUpdateActionIntent: {
-			return profileUpdateAction({ request, userId, formData })
-		}
-		case signOutOfSessionsActionIntent: {
+		case profileUpdateActionIntent:
+			return profileUpdateAction({ userId, formData })
+
+		case signOutOfSessionsActionIntent:
 			return signOutOfSessionsAction({ request, userId, formData })
-		}
-		case deleteDataActionIntent: {
-			return deleteDataAction({ request, userId, formData })
-		}
-		default: {
+
+		case deleteDataActionIntent:
+			return deleteDataAction({ userId, formData })
+
+		default:
 			throw new Response(`Invalid intent "${intent}"`, { status: 400 })
-		}
 	}
 }
 
@@ -238,7 +237,7 @@ function UpdateProfile() {
 }
 
 async function signOutOfSessionsAction({ request, userId }: ProfileActionArgs) {
-	const authSession = await authSessionStorage.getSession(request.headers.get('cookie'))
+	const authSession = await authSessionStorage.getSession(request?.headers.get('cookie'))
 	const sessionId = authSession.get(sessionKey)
 	invariantResponse(sessionId, 'You must be authenticated to sign out of other sessions')
 	await prisma.session.deleteMany({
@@ -286,27 +285,3 @@ async function deleteDataAction({ userId }: ProfileActionArgs) {
 		description: 'All of your data has been deleted',
 	})
 }
-
-/*
-function DeleteData() {
-	const dc = useDoubleCheck()
-
-	const fetcher = useFetcher<typeof deleteDataAction>()
-	return (
-		<fetcher.Form method="POST">
-			<AuthenticityTokenInput />
-			<StatusButton
-				{...dc.getButtonProps({
-					type: 'submit',
-					name: 'intent',
-					value: deleteDataActionIntent,
-				})}
-				variant={dc.doubleCheck ? 'destructive' : 'default'}
-				status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
-			>
-				<Icon name="trash">{dc.doubleCheck ? `Are you sure?` : `Delete all your data`}</Icon>
-			</StatusButton>
-		</fetcher.Form>
-	)
-}
-*/

@@ -14,6 +14,12 @@ export const PhoneSchema = z
 	.regex(/^((\+1|1)?( |-)?)?(\([2-9][0-9]{2}\)|[2-9][0-9]{2})( |-)?([2-9][0-9]{2}( |-)?[0-9]{4})$/, {
 		message: 'Invalid phone number',
 	})
+	export const DateSchema = z
+	.string({ required_error: 'Date required' })
+	.regex(/^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/, {
+		message: 'Invalid phone number',
+	})
+
 export const PasswordSchema = z
 	.string({ required_error: 'Password is required' })
 	.min(6, { message: 'Password is too short' })

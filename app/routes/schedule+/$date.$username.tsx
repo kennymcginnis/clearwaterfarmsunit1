@@ -21,6 +21,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			defaultHours: true,
 			defaultHead: true,
 			restricted: true,
+			restriction: true,
 			ports: {
 				select: {
 					ditch: true,
@@ -79,7 +80,7 @@ export default function UserSchedule() {
 	const { user, schedule, userSchedules } = useLoaderData<typeof loader>()
 
 	return (
-		<div className="flex h-full flex-col content-between gap-4 p-4">
+		<div className="m-auto flex h-full w-[50%] min-w-[350px] flex-col content-between gap-4 p-4">
 			{userSchedules.map(userSchedule => {
 				switch (schedule.state) {
 					case 'open':

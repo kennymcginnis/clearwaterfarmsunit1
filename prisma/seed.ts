@@ -143,8 +143,8 @@ async function seedUsers(scheduleId: string) {
 						create: (userData.deposits || []).map(({ amount, ...deposit }) => ({
 							id: generatePublicId(),
 							...deposit,
-							credit: amount < 0 ? amount : null,
-							debit: amount > 0 ? amount : null,
+							credit: amount < 0 ? (amount * -1) : 0,
+							debit: amount > 0 ? amount : 0,
 							date: '2024-01-01',
 						})),
 					},

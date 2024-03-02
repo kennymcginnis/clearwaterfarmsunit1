@@ -75,6 +75,7 @@ export function UserScheduleEditor({
 		defaultHours: number
 		defaultHead: number
 		restricted: boolean
+		restriction: string | null
 	}
 	schedule: {
 		id: string
@@ -93,7 +94,7 @@ export function UserScheduleEditor({
 	const isPending = useIsPending()
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
-	const canEdit = currentUser?.id === user.id || userIsAdmin
+	const canEdit = (!user.restricted && user.id === currentUser?.id) || userIsAdmin
 
 	const formatHeadValue = (head: Number | null) => (locked ? 70 : head ?? 70).toString()
 

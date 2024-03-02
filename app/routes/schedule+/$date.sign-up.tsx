@@ -1,16 +1,6 @@
 import { invariantResponse } from '@epic-web/invariant'
-import {
-	type ActionFunctionArgs,
-	type UploadHandler,
-	json,
-	redirect,
-	type LoaderFunctionArgs,
-	unstable_composeUploadHandlers as composeUploadHandlers,
-	unstable_createMemoryUploadHandler as createMemoryUploadHandler,
-	unstable_parseMultipartFormData as parseMultipartFormData,
-	type MetaFunction,
-} from '@remix-run/node'
-import { Form, Link, useLoaderData } from '@remix-run/react'
+import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
+import { Form, Link, NavLink, useLoaderData } from '@remix-run/react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { z } from 'zod'
@@ -19,12 +9,12 @@ import { ErrorList } from '#app/components/forms.tsx'
 import { SearchBar } from '#app/components/search-bar'
 import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon'
-import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper.ts'
+import { ScheduleActionButton } from '#app/routes/schedules+/__schedule-action-button.tsx'
 import { prisma } from '#app/utils/db.server.ts'
-import { requireUserWithRole } from '#app/utils/permissions.ts'
 import useScrollSync from '#app/utils/scroll-sync'
-import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
+import { action } from './actions.server'
+export { action }
 
 type TotalType = { [key: number]: number }
 type PositionDitchType = {
@@ -42,100 +32,58 @@ type UserType = {
 	hours: number | bigint | null
 }
 
-const UserSearchResultSchema = z.object({
-	id: z.string(),
-	username: z.string(),
-	ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-	position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(36)),
-	hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.01).min(0).max(36)),
-	head: z.preprocess(x => (x ? x : 70), z.coerce.number().multipleOf(70).min(70).max(140)),
-})
-
-const UserSearchResultsSchema = z.array(UserSearchResultSchema)
-
-export async function action({ request, params }: ActionFunctionArgs) {
-	const userId = await requireUserWithRole(request, 'admin')
-
-	const uploadHandler: UploadHandler = composeUploadHandlers(csvUploadHandler, createMemoryUploadHandler())
-	const formData = await parseMultipartFormData(request, uploadHandler)
-
-	const csv = formData.get('selected_csv')?.toString()
-	const schedules = csvFileToArray(csv)
-
-	const result = UserSearchResultsSchema.safeParse(schedules)
-	if (!result.success) {
-		return json({ status: 'error', error: result.error.message } as const, {
-			status: 400,
-		})
-	}
-
-	const scheduleId = await prisma.schedule.findFirst({
-		select: { id: true },
-		where: { date: params.date },
-	})
-	invariantResponse(scheduleId, 'Not found', { status: 404 })
-
-	for (let schedule of result.data) {
-		await prisma.userSchedule.upsert({
-			select: { scheduleId: true, ditch: true, userId: true },
-			where: { userId_ditch_scheduleId: { userId: schedule.id, ditch: schedule.ditch, scheduleId: scheduleId.id } },
-			create: {
-				userId: schedule.id,
-				ditch: schedule.ditch,
-				scheduleId: scheduleId.id,
-				hours: schedule.hours,
-				head: schedule.head,
-				createdBy: userId,
-			},
-			update: {
-				hours: schedule.hours,
-				head: schedule.head,
-				updatedBy: userId,
-			},
-		})
-	}
-
-	return redirectWithToast('', {
-		type: 'success',
-		title: 'Success',
-		description: 'Your schedule has been uploaded.',
-	})
-}
+export const SearchResultsSchema = z.array(
+	z.object({
+		id: z.string(),
+		username: z.string(),
+		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
+		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(36)),
+		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.01).min(0).max(36)),
+		head: z.preprocess(x => (x ? x : 70), z.coerce.number().multipleOf(70).min(70).max(140)),
+	}),
+)
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const searchTerm = new URL(request.url).searchParams.get('search')
+	invariantResponse(params.date, 'Date parameter Not found', { status: 404 })
 	if (searchTerm === '') return redirect(`/schedule/${params.date}/sign-up`)
-	if (!params?.date) return redirect('/schedules')
+
+	const schedule = await prisma.schedule.findFirst({
+		select: { id: true, state: true },
+		where: { date: params.date },
+	})
+	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.head
+		SELECT User.id, User.username, Port.ditch, Port.position, mid.hours, mid.head
 		FROM User
 		INNER JOIN Port ON User.id = Port.userId
     LEFT JOIN (
       SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.head
       FROM Schedule 
       INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
-      WHERE Schedule.date = ${params.date}
-    ) UserSchedule
-		ON User.id = UserSchedule.userId
-		AND Port.ditch = UserSchedule.ditch
+      WHERE Schedule.id = ${schedule?.id}
+    ) mid
+		ON User.id = mid.userId
+		AND Port.ditch = mid.ditch
 		WHERE User.username LIKE ${like}
 		OR User.member LIKE ${like}
 		ORDER BY Port.ditch, Port.position
 	`
 
-	const result = UserSearchResultsSchema.safeParse(rawUsers)
+	const result = SearchResultsSchema.safeParse(rawUsers)
 	if (!result.success) {
 		return json(
 			{
 				status: 'error',
 				error: result.error.message,
+				schedule: { id: null, date: null, state: null },
 				users: null,
 				totals: null,
+				canOpen: false,
 				rows: null,
 				cols: null,
-				scheduleDate: null,
 			} as const,
 			{ status: 400 },
 		)
@@ -150,13 +98,26 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		if (totals[user.ditch]) totals[user.ditch] += user.hours
 		else totals[user.ditch] = user.hours
 	}
-	return json({ status: 'idle', users, totals, scheduleDate: params.date, error: null } as const)
+	const anythingOpen = await prisma.schedule.findFirst({
+		select: { id: true },
+		where: { state: 'open' },
+	})
+	return json({
+		status: 'idle',
+		schedule: { id: schedule.id, date: params.date, state: schedule.state },
+		users,
+		totals,
+		canOpen: !['open', 'closed'].includes(schedule.state) && !anythingOpen,
+		error: null,
+	} as const)
 }
 
 export default function ScheduleSignupRoute() {
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
-	const { status, users, totals, scheduleDate, error } = useLoaderData<typeof loader>()
+	const { status, schedule, users, totals, canOpen, error } = useLoaderData<typeof loader>()
+	const { id: scheduleId, date: scheduleDate, state } = schedule
+	const canLock = state === 'open'
 
 	const nodeRefA = useRef(null)
 	const nodeRefB = useRef(null)
@@ -192,7 +153,7 @@ export default function ScheduleSignupRoute() {
 	const [showUpload, setShowUpload] = useState(false)
 	const toggleShowUpload = () => setShowUpload(!showUpload)
 
-	if (!users || !Object.keys(users).length) return null
+	if (!scheduleId || !users || !Object.keys(users).length) return null
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
 			<div className="flex w-[90%] flex-row flex-wrap gap-2 p-0.5">
@@ -212,6 +173,33 @@ export default function ScheduleSignupRoute() {
 				<div className="my-1 flex flex-row space-x-2">
 					{userIsAdmin ? (
 						<>
+							{canOpen ? (
+								<ScheduleActionButton
+									id={schedule.id}
+									icon="lock-open-1"
+									value="open-schedule"
+									text="Open Sign-up"
+									variant="secondary"
+								/>
+							) : null}
+							{canLock ? (
+								<>
+									<Button asChild variant="default">
+										<NavLink to={`/schedule/${schedule.date}/sign-up`}>
+											<Icon name="magnifying-glass" className="scale-125 max-md:scale-150">
+												<span className="max-md:hidden">Sign-up</span>
+											</Icon>
+										</NavLink>
+									</Button>
+									<ScheduleActionButton
+										id={schedule.id}
+										icon="lock-closed"
+										value="lock-schedule"
+										text="Lock Scheduling"
+										variant="secondary"
+									/>
+								</>
+							) : null}
 							<Button>
 								<Link reloadDocument to={`/resources/download-signup/${scheduleDate}`}>
 									<Icon name="download">Download</Icon>
@@ -239,7 +227,7 @@ export default function ScheduleSignupRoute() {
 				<div className="mt-2 flex w-[90%] flex-row justify-end space-x-2">
 					<Form method="post" encType="multipart/form-data">
 						<input aria-label="File" type="file" accept=".csv" name="selected_csv" />
-						<Button type="submit" className="btn btn-sm">
+						<Button type="submit" name="intent" value="upload-signup" className="btn btn-sm">
 							Upload CSV
 						</Button>
 					</Form>

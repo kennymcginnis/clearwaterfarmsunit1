@@ -1,5 +1,6 @@
 import { type LoaderFunctionArgs, json } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
+import { z } from 'zod'
 import { DisplayField } from '#app/components/forms'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
 import { getUserId } from '#app/utils/auth.server'
@@ -30,10 +31,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
 				defaultHours: true,
 				defaultHead: true,
 				restricted: true,
+				restriction: true,
 				ports: { select: { ditch: true } },
 			},
 			where: { id: userId },
 		})
+
+		const UserSearchResultsSchema = z.array(z.object({ balance: z.number() }))
+		const currentBalance = await prisma.$queryRaw`
+			SELECT sum(debit - credit) as balance
+				FROM Transactions
+			WHERE userId = ${userId}
+		`
+		const result = UserSearchResultsSchema.safeParse(currentBalance)
+		const balance = result.success ? result.data[0].balance : 0
+
 		const userSchedules = {
 			select: {
 				ditch: true,
@@ -62,6 +74,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		const openUserSchedules = formatUserSchedule(user, open?.userSchedules, closed?.userSchedules)
 		return json({
 			user,
+			balance,
 			open: openSchedules,
 			closed: closedSchedules,
 			userSchedules: {
@@ -84,6 +97,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		const closedSchedules = formatSchedule(closed)
 		return json({
 			user: null,
+			balance: null,
 			open: openSchedules,
 			closed: closedSchedules,
 			userSchedules: { open: null, closed: null },
@@ -92,83 +106,113 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function HomeRoute() {
-	const { user, open, closed, userSchedules } = useLoaderData<typeof loader>()
-	return (
-		<div className="flex flex-col items-center gap-5">
-			{!user ? (
-				<h1 className="text-xl">Log in to sign up for the current schedule.</h1>
-			) : (
-				<div id="closed" className="m-auto grid h-full flex-row content-between gap-4 p-4 md:grid-cols-2">
-					<div className="flex-col">
-						{closed ? (
-							<Card className="bg-muted">
-								<CardHeader className="flex-col items-center">
-									<CardTitle>Schedule Dated: {closed.date}</CardTitle>
-									{closed.start && closed.stop ? (
-										<CardDescription>{closed.schedule.join(' ─ ')}</CardDescription>
-									) : null}
-								</CardHeader>
-								<CardContent className="flex-col gap-2">
-									{userSchedules.closed ? (
-										userSchedules.closed.map(userSchedule => (
-											<UserScheduleTimeline
-												key={`timeline-${userSchedule.ditch}`}
-												user={user}
-												userSchedule={userSchedule}
-											/>
-										))
-									) : (
-										<MissingUserSchedule schedule={userSchedules.closed} />
-									)}
-								</CardContent>
-							</Card>
-						) : (
-							<Card className="bg-muted">
-								<CardHeader>
-									<CardTitle>No Closed schedules found!</CardTitle>
-								</CardHeader>
-								<CardContent />
-							</Card>
-						)}
-					</div>
+	const USDollar = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
-					<div id="open" className="flex-col">
-						{open ? (
-							<Card className="bg-muted">
-								<CardHeader className="flex-col items-center">
-									<CardTitle>Open Until: {open.deadline}</CardTitle>
-									<CardDescription>Sign-Up Deadline Monday at 7pm</CardDescription>
-								</CardHeader>
-								<CardContent className="flex flex-col gap-2">
-									{userSchedules.open ? (
-										userSchedules.open.map(userSchedule => (
-											<UserScheduleEditor
-												key={`schedule-${userSchedule.ditch}`}
-												user={user}
-												schedule={open}
-												previous={userSchedule.previous}
-												userSchedule={userSchedule}
-											/>
-										))
-									) : (
-										<MissingUserSchedule schedule={open} />
-									)}
-								</CardContent>
-							</Card>
-						) : (
-							<Card className="bg-muted">
-								<CardHeader>
-									<CardTitle>No schedules are currently open for Sign-Up!</CardTitle>
-								</CardHeader>
-								<CardContent />
-							</Card>
-						)}
+	const { user, balance, open, closed, userSchedules } = useLoaderData<typeof loader>()
+	if (user) {
+		return (
+			<Card className="m-6 flex flex-col items-center">
+				<CardHeader className="m-auto w-[50%] flex-col items-center">
+					<CardTitle className="pt-3">Clearwater Farms Unit 1 </CardTitle>
+					<CardDescription className="mb-0">Irrigation Schedules</CardDescription>
+				</CardHeader>
+				<CardContent>
+					{user.restricted ? (
+						<div className="m-auto mt-2 flex max-w-[75%] flex-col rounded-md border border-destructive px-3 py-2">
+							<div className="text-md text-center uppercase text-foreground-destructive">User Account Restricted</div>
+							<div className="text-center text-sm text-foreground-destructive">{user.restriction}</div>
+						</div>
+					) : null}
+					{balance ? (
+						<div className="m-auto mt-2 flex max-w-[75%] flex-col rounded-md border border-blue-700 px-3 py-2">
+							<div className="text-center text-lg text-blue-700">Irrigation Balance: {USDollar.format(balance)}</div>
+						</div>
+					) : null}
+
+					<div id="columns" className="m-auto grid h-full flex-col content-between gap-4 p-4 md:grid-cols-2">
+						<div id="closed" className="flex-col">
+							<CardDescription className="text-center">Most Recently Closed Schedule:</CardDescription>
+							{closed ? (
+								<Card className="bg-muted">
+									<CardHeader className="flex-col items-center">
+										<CardTitle>Schedule Dated: {closed.date}</CardTitle>
+										{closed.start && closed.stop ? (
+											<CardDescription>{closed.schedule.join(' ─ ')}</CardDescription>
+										) : null}
+									</CardHeader>
+									<CardContent className="flex-col gap-2">
+										{userSchedules.closed ? (
+											userSchedules.closed.map(userSchedule => (
+												<UserScheduleTimeline
+													key={`timeline-${userSchedule.ditch}`}
+													user={user}
+													userSchedule={userSchedule}
+												/>
+											))
+										) : (
+											<MissingUserSchedule schedule={userSchedules.closed} />
+										)}
+									</CardContent>
+								</Card>
+							) : (
+								<Card className="bg-muted">
+									<CardHeader>
+										<CardTitle>No Closed schedules found!</CardTitle>
+									</CardHeader>
+									<CardContent />
+								</Card>
+							)}
+						</div>
+
+						<div id="open" className="flex-col">
+							<CardDescription className="text-center">Currently Open for Sign-Up:</CardDescription>
+							{open ? (
+								<Card className="bg-muted">
+									<CardHeader className="flex-col items-center">
+										<CardTitle>Open Until: {open.deadline}</CardTitle>
+										<CardDescription>Sign-Up Deadline Monday at 7pm</CardDescription>
+									</CardHeader>
+									<CardContent className="flex flex-col gap-2">
+										{userSchedules.open ? (
+											userSchedules.open.map(userSchedule => (
+												<UserScheduleEditor
+													key={`schedule-${userSchedule.ditch}`}
+													user={user}
+													schedule={open}
+													previous={userSchedule.previous}
+													userSchedule={userSchedule}
+												/>
+											))
+										) : (
+											<MissingUserSchedule schedule={open} />
+										)}
+									</CardContent>
+								</Card>
+							) : (
+								<Card className="bg-muted">
+									<CardHeader>
+										<CardTitle>No schedules are currently open for Sign-Up!</CardTitle>
+									</CardHeader>
+									<CardContent />
+								</Card>
+							)}
+						</div>
 					</div>
-				</div>
-			)}
-		</div>
-	)
+				</CardContent>
+			</Card>
+		)
+	} else {
+		return (
+			<Card className="m-6 flex flex-col items-center gap-5">
+				<CardHeader className="m-auto w-[50%] flex-col items-center border-none">
+					<CardTitle className="pt-3">Clearwater Farms Unit 1</CardTitle>
+					<CardDescription className="pb-3">Log in to sign up for the current schedule.</CardDescription>
+				</CardHeader>
+			</Card>
+		)
+	}
 }
+
 function MissingUserSchedule({
 	schedule,
 }: {

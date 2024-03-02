@@ -1,5 +1,5 @@
 import { type Password, type User } from '@prisma/client'
-import { redirect } from '@remix-run/node'
+import { type LoaderFunctionArgs, redirect } from '@remix-run/node'
 import bcrypt from 'bcryptjs'
 import { safeRedirect } from 'remix-utils/safe-redirect'
 import { prisma } from './db.server.ts'
@@ -39,6 +39,20 @@ export async function requireUserId(request: Request, { redirectTo }: { redirect
 		throw redirect(loginRedirect)
 	}
 	return userId
+}
+
+export async function requireSelfOrAdmin(
+	{ request, params }: { request: Request; params: LoaderFunctionArgs['params'] },
+	{ redirectTo }: { redirectTo?: string | null } = {},
+) {
+	const selfId = await requireUserId(request, { redirectTo })
+	const viewing = await prisma.user.findFirst({ select: { id: true }, where: { username: params.username } })
+	// self
+	if (viewing?.id !== selfId) {
+		const isAdmin = await prisma.user.findUnique({ where: { id: selfId, roles: { some: { name: 'admin' } } } })
+		if (!isAdmin) throw redirect('/members')
+	}
+	return selfId
 }
 
 export async function requireAnonymous(request: Request) {

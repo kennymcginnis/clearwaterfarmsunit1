@@ -5,10 +5,12 @@ import { DisplayField } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon.tsx'
+import { requireSelfOrAdmin } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { useOptionalUser, useOptionalAdminUser } from '#app/utils/user'
 
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ request, params }: LoaderFunctionArgs) {
+	await requireSelfOrAdmin({ request, params }, { redirectTo: '/members' })
 	const user = await prisma.user.findFirst({
 		select: {
 			id: true,

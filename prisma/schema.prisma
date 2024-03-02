@@ -23,7 +23,7 @@ model User {
   phones UserPhone[]
 
   ports        Port[]
-  transactions Transaction[]
+  transactions Transactions[]
   schedules    UserSchedule[]
 
   defaultHours Float @default(0)
@@ -119,12 +119,12 @@ model Port {
   updatedAt DateTime @updatedAt
 }
 
-model Transaction {
+model Transactions {
   id String @id
 
   date   String
-  debit  Float?
-  credit Float?
+  debit  Float   @default(0)
+  credit Float   @default(0)
   note   String?
 
   user   User?   @relation(fields: [userId], references: [id])
@@ -135,7 +135,7 @@ model Transaction {
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 
-  @@map("Transaction")
+  @@map("Transactions")
 }
 
 model Schedule {

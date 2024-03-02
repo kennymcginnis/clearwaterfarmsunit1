@@ -1,14 +1,20 @@
 # // TODO
 
+## Application
+
+- [ ] Upgrade application to use Vite instead of ESBuild
+
 ## Home page
 
 - [ ] Link from CFPOA website to City Property's portal (button on home screen)
-- [x] Make responsive enough for mobile, tablet, laptop, desktop usage
-- [x] Update Icon to point to home page
-- [ ] Add single homepage showing most recent schedule and signup for any open schedule
-  - [ ] Show current irrigation balance
+- [x] Currently shows `No Closed schedules found!` when the schedules doesn't have start/stop dates.
+- [x] Disable edits for a restricted user
+- [x] Add single homepage showing most recent schedule and signup for any open schedule
+  - [x] Show current irrigation balance
   - [x] Add [default] and [previous] buttons to speed up signup
   - [x] Add indication of whether I'm currently signed up or not
+- [x] Make responsive enough for mobile, tablet, laptop, desktop usage
+- [x] Update Icon to point to home page
 
 ## Document pages
 
@@ -34,7 +40,7 @@
 - [x] Make responsive enough for mobile, tablet, laptop, desktop usage
 - [x] Add filter to search for members
 - [x] replace member name with username
-- [x] Add horizontal scrollbar at the top of the list so I don't have to scroll to the bottom 
+- [x] Add horizontal scrollbar at the top of the list so I don't have to scroll to the bottom
 - [x] Hide member list from non-admins
 - [x] Empty columns in filtered tables still have headers
 
@@ -43,8 +49,16 @@
 ### Admin page
 
 - [ ] Create resource routes to post directly to database
-- [ ] Can `close` a locked schedule once timelines have been finalized
-  - [ ] Closing a schedule will update the min start and max stop dates on the schedule
+  - [x] Get user/`username`
+  - [x] Put user/`username`/roles
+  - [x] Put user/`username`/restricted
+  - [x] Get schedule/`date`
+  - [x] Put schedule
+  - [x] Get sessions
+  - [ ] Get transactions
+  - [ ] Delete transactions
+- [x] Can `close` a locked schedule once timelines have been finalized
+  - [x] Closing a schedule will update the min start and max stop dates on the schedule
   - [x] Closing a schedule will automatically calculate the irrigation account withdrawls based on hours*costPerHour
 - [x] One more scheduling state - pending -> open -> `locked` -> closed
 - [x] Can create new schedules with start date, deadline, water source, and cost per hour
@@ -55,7 +69,8 @@
   - [x] `Removed` Allowing people to sign up for irrigation in advance - Has been a nightmare in the past.
 - [x] Can `lock` an open schedule so that members cannot signup after a given hour - currently Mon 7pm
 - [x] Audit: Can always see who edited what and when
-- [x] `Removed` Delayed irrigation schedule when it rains. - Prefer to not do that so we can calculate the schedule, roll it out, and order water and be a second pair of eyes prior to publishing.
+- [x] `Removed` Delayed irrigation schedule when it rains.
+  - Prefer to not do that so we can calculate the schedule, roll it out, and order water and be a second pair of eyes prior to publishing.
 
 ### Irrigation Information
 
@@ -65,7 +80,10 @@
 ### Sign-up page
 
 - [ ] Admin user can edit any member
-  - [ ] Q: Admin user can edit only while `open`?
+- [x] Members cannot submit hours after schedule is `locked`
+- [x] Component width is setup to 100% and looks a bit odd
+- [x] Admin user can lock/close from this screen
+- [x] Admin user can view /timeline screen even once `locked`
 - [x] Ditches seem to be stacking incorrently when showing only signed up members
 - [x] Make responsive enough for mobile, tablet, laptop, desktop usage
 - [x] Forced to choose between 70 and 140, setting the default to 70 head.
@@ -79,9 +97,9 @@
 
 ### Timeline page
 
-- [ ] Timeline upload did nothing
 - [ ] Shortcut button to jump directly to yourself for a logged in user
   - [ ] Button exists, but display page does not
+- [x] Timeline upload did nothing
 - [x] Timeline upload is incorrectly centered
 - [x] Filterable by search box
 - [x] Make responsive enough for mobile, tablet, laptop, desktop usage
@@ -94,13 +112,13 @@
 
 - [ ] Q: Can you change your username?
 - [ ] Q: Should we log in with user or email?
-- [ ] Record of who has signed in.  This way we can find out why others haven't utilized our CFPOA website to sign up for irrigation.
+- [x] Record of who has signed in.  This way we can find out why others haven't utilized our CFPOA website to sign up for irrigation.
 - [x] Make responsive enough for mobile, tablet, laptop, desktop usage
 - [x] Theme switch so I can use Dark Mode! /grin
 
 ### Contact information
 
-- [ ] Hide this page for members unless viewing self
+- [x] Hide this page for members unless viewing self
 - [ ] Add phone numbers array into edit section
 - [ ] Q: Should we mark one phone number as `primary`?
   - [ ] `Attempted` was surprisingly harder than I expected - unless we add it to the edit form and require submit
@@ -120,7 +138,9 @@
 
 ### Irrigation information  
 
-- [x] Irrigation tab is becoming unhighlighted after clicking schedule
+- [ ] Move `USER ACCOUNT RESTRICTED` to Irrigation page - currently it's on `Property`
+- [ ] Viewing a `pending` schedule for a user with more than one ditch, shows an error twice
+- [ ] Add a max-width to the Irrigation history components
 - [ ] Cannot edit if currently restricted
   - [ ] Display reason for restriction
 - [ ] Allow an Admin user to edit
@@ -129,6 +149,7 @@
   - [ ] Allow Editing default hours and head for a logged in user
 - [ ] Simple button to restrict people from irrigating
   - [ ] Restricted: A text box for the administrator providing the reason why they're restricted.
+- [x] Irrigation tab is becoming unhighlighted after clicking schedule
 - [x] Add page for Irrigation information
 - [x] Displays the history of all scheduled irrigation cycles
 - [x] Can edit if schedule is still open

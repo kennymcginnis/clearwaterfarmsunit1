@@ -32,7 +32,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 	invariantResponse(user, 'User not found', { status: 404 })
 
-	const currentBalance = await prisma.transaction.groupBy({
+	const currentBalance = await prisma.transactions.groupBy({
 		by: ['userId'],
 		_sum: { debit: true, credit: true },
 		where: { userId: user.id },

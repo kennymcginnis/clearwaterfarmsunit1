@@ -12,7 +12,7 @@ import { Badge } from '#app/components/ui/badge'
 import { Button } from '#app/components/ui/button.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button'
-import { requireUserId } from '#app/utils/auth.server'
+import { requireSelfOrAdmin, requireUserId } from '#app/utils/auth.server'
 import { validateCSRF } from '#app/utils/csrf.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { cn, getVariantForState, useIsPending } from '#app/utils/misc'
@@ -24,7 +24,8 @@ const IrrigationDefaultsSchema = z.object({
 	defaultHead: z.number().default(70),
 })
 
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ request, params }: LoaderFunctionArgs) {
+	await requireSelfOrAdmin({ request, params }, { redirectTo: '/members' })
 	const { username } = params
 	const user = await prisma.user.findFirst({
 		select: {

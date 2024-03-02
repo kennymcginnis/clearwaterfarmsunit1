@@ -98,17 +98,6 @@ export default function PropertyRoute() {
 								/>
 							</>
 						))}
-						{user.restricted ? (
-							<DisplayField
-								className="col-span-6 text-foreground-destructive"
-								labelProps={{ htmlFor: user.restricted.toString() }}
-								inputProps={{
-									className: 'text-center uppercase border-destructive',
-									defaultValue: 'User Account Restricted',
-								}}
-							/>
-						) : null}
-						<Separator className="col-span-6 mb-1 mt-1" />
 						{user.ports.map(port => (
 							<>
 								<DisplayField

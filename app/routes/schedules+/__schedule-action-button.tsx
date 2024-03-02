@@ -4,7 +4,7 @@ import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { ErrorList } from '#app/components/forms.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
-import { type action } from '#app/routes/schedules+/$date'
+import { type action } from '#app/routes/schedule+/actions.server'
 import { useIsPending } from '#app/utils/misc.tsx'
 
 export function ScheduleActionButton({
@@ -22,11 +22,7 @@ export function ScheduleActionButton({
 }) {
 	const actionData = useActionData<typeof action>()
 	const isPending = useIsPending()
-	const [form] = useForm({
-		id: value,
-		lastSubmission: actionData?.submission,
-	})
-
+	const [form] = useForm({ id: value })
 	return (
 		<Form method="POST" {...form.props}>
 			<AuthenticityTokenInput />
@@ -41,7 +37,7 @@ export function ScheduleActionButton({
 				className="w-full max-md:aspect-square max-md:px-0"
 			>
 				<Icon name={icon} className="scale-125 max-md:scale-150">
-					<span className="text-nowrap overflow-ellipsis max-md:hidden">{text}</span>
+					<span className="overflow-ellipsis text-nowrap max-md:hidden">{text}</span>
 				</Icon>
 			</StatusButton>
 			<ErrorList errors={form.errors} id={form.errorId} />

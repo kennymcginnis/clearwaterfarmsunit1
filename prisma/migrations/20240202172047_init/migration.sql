@@ -80,18 +80,18 @@ CREATE TABLE "Port" (
 );
 
 -- CreateTable
-CREATE TABLE "Transaction" (
+CREATE TABLE "Transactions" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "date" TEXT NOT NULL,
-    "debit" REAL,
-    "credit" REAL,
+    "debit" REAL NOT NULL DEFAULT 0,
+    "credit" REAL NOT NULL DEFAULT 0,
     "note" TEXT,
     "userId" TEXT,
     "createdBy" TEXT NOT NULL DEFAULT 'Admin',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedBy" TEXT NOT NULL DEFAULT 'Admin',
     "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Transaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    CONSTRAINT "Transactions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
