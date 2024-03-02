@@ -159,15 +159,15 @@ export function IrrigationNavigationMenu({
 									<div className="mb-2 mt-4 text-sm font-medium">Basic Irrigation Information</div>
 								</NavigationSubMenuItem>
 							</Link>
-							<Link to={`/schedule/${open?.date}/sign-up`} className={open ? '' : 'pointer-events-none'}>
-								<NavigationSubMenuItem key="sign-up" title="Sign Up">
+							<Link to={`/schedule/${open?.date}/signup`} className={open ? '' : 'pointer-events-none'}>
+								<NavigationSubMenuItem key="signup" title="Sign Up">
 									<div className="mb-2 mt-4 text-sm font-medium">
 										Sign Up or modify schedule {open ? `for ${open.date}` : ''}
 									</div>
 								</NavigationSubMenuItem>
 							</Link>
 							<Link to={`/schedule/${closed?.date}/timeline`} className={closed ? '' : 'pointer-events-none'}>
-								<NavigationSubMenuItem key="schedule" title="Schedule">
+								<NavigationSubMenuItem key="schedule" title="Timeline">
 									<div className="mb-2 mt-4 text-sm font-medium">
 										View the current schedule {closed ? `for ${closed.date}` : ''}
 									</div>

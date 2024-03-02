@@ -2,7 +2,7 @@
 
 ## Application
 
-- [ ] Upgrade application to use Vite instead of ESBuild
+- [ ] Upgrade application to use `Vite` instead of `ESBuild`
 
 ## Home page
 
@@ -138,17 +138,17 @@
 
 ### Irrigation information  
 
-- [ ] Move `USER ACCOUNT RESTRICTED` to Irrigation page - currently it's on `Property`
+- [x] Move `USER ACCOUNT RESTRICTED` to Irrigation page - currently it's on `Property`
 - [ ] Viewing a `pending` schedule for a user with more than one ditch, shows an error twice
-- [ ] Add a max-width to the Irrigation history components
-- [ ] Cannot edit if currently restricted
-  - [ ] Display reason for restriction
-- [ ] Allow an Admin user to edit
+- [x] Add a max-width to the Irrigation history components
+- [x] Cannot edit if currently restricted
+  - [x] Display reason for restriction
+  - [x] Allow an Admin user to edit
 - [ ] Add default hours and head for irrigation
-  - [ ] This is currently under property info due to spacing, may make more sense under the irrigation tab
+  - [x] `Moved` This is currently under property info due to spacing, may make more sense under the irrigation tab
   - [ ] Allow Editing default hours and head for a logged in user
 - [ ] Simple button to restrict people from irrigating
-  - [ ] Restricted: A text box for the administrator providing the reason why they're restricted.
+- [ ] `Restricted`: A text box for the administrator providing the reason why they're restricted.
 - [x] Irrigation tab is becoming unhighlighted after clicking schedule
 - [x] Add page for Irrigation information
 - [x] Displays the history of all scheduled irrigation cycles

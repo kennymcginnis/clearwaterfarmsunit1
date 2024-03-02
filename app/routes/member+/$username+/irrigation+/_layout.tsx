@@ -111,7 +111,13 @@ export default function NotesRoute() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Irrigation Defaults</CardTitle>
+				<CardTitle>Irrigation Defaults</CardTitle>{' '}
+				{user?.restricted ? (
+					<div className="m-auto mt-2 flex w-[50%] flex-col rounded-md border border-destructive px-3 py-2">
+						<div className="text-md text-center uppercase text-foreground-destructive">User Account Restricted</div>
+						<div className="text-center text-sm text-foreground-destructive">{user.restriction}</div>
+					</div>
+				) : null}
 			</CardHeader>
 			<fetcher.Form method="POST" {...form.props}>
 				<CardContent className="flex w-full flex-row justify-stretch gap-2 space-y-2">

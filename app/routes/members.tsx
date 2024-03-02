@@ -8,6 +8,7 @@ import { SearchBar } from '#app/components/search-bar.tsx'
 import { prisma } from '#app/utils/db.server.ts'
 import { getUserImgSrc } from '#app/utils/misc.tsx'
 import useScrollSync from '#app/utils/scroll-sync'
+import { useOptionalAdminUser } from '#app/utils/user'
 
 type TotalType = { [key: number]: boolean }
 type PositionDitchType = {
@@ -74,6 +75,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function MembersRoute() {
 	const { status, error, users, totals } = useLoaderData<typeof loader>()
+	const userIsAdmin = useOptionalAdminUser()
 
 	if (status === 'error') console.error(error)
 
@@ -140,7 +142,20 @@ export default function MembersRoute() {
 												const user = users[Number(position)][Number(ditch)]
 												return (
 													<td className="p-0.5" key={`${ditch}${position}`}>
-														{user ? <UserCard user={user} /> : null}
+														{user ? (
+															userIsAdmin ? (
+																<Link
+																	to={`/member/${user.username}/contact`}
+																	className="flex h-36 w-44 flex-col items-center justify-center rounded-lg bg-muted px-3"
+																>
+																	<UserCard user={user} />
+																</Link>
+															) : (
+																<div className="flex h-36 w-44 flex-col items-center justify-center rounded-lg bg-muted px-3">
+																	<UserCard user={user} />
+																</div>
+															)
+														) : null}
 													</td>
 												)
 											})}
@@ -162,10 +177,7 @@ export default function MembersRoute() {
 
 function UserCard({ user }: { user: UserType }) {
 	return (
-		<Link
-			to={`/member/${user.username}/contact`}
-			className="flex h-36 w-44 flex-col items-center justify-center rounded-lg bg-muted px-3"
-		>
+		<>
 			<img
 				alt={user.member ?? user.username}
 				src={getUserImgSrc(user.imageId, user.id)}
@@ -179,7 +191,7 @@ function UserCard({ user }: { user: UserType }) {
 			<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">
 				Ditch: {user.ditch} Pos: {user.position}
 			</span>
-		</Link>
+		</>
 	)
 }
 

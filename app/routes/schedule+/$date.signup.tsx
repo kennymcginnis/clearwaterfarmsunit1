@@ -1,5 +1,15 @@
 import { invariantResponse } from '@epic-web/invariant'
-import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
+import {
+	type ActionFunctionArgs,
+	type UploadHandler,
+	json,
+	redirect,
+	type LoaderFunctionArgs,
+	unstable_composeUploadHandlers as composeUploadHandlers,
+	unstable_createMemoryUploadHandler as createMemoryUploadHandler,
+	unstable_parseMultipartFormData as parseMultipartFormData,
+	type MetaFunction,
+} from '@remix-run/node'
 import { Form, Link, NavLink, useLoaderData } from '@remix-run/react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -9,12 +19,12 @@ import { ErrorList } from '#app/components/forms.tsx'
 import { SearchBar } from '#app/components/search-bar'
 import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon'
-import { ScheduleActionButton } from '#app/routes/schedules+/__schedule-action-button.tsx'
+import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper.ts'
 import { prisma } from '#app/utils/db.server.ts'
+import { requireUserWithRole } from '#app/utils/permissions.ts'
 import useScrollSync from '#app/utils/scroll-sync'
+import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
-import { action } from './actions.server'
-export { action }
 
 type TotalType = { [key: number]: number }
 type PositionDitchType = {
@@ -42,11 +52,10 @@ export const SearchResultsSchema = z.array(
 		head: z.preprocess(x => (x ? x : 70), z.coerce.number().multipleOf(70).min(70).max(140)),
 	}),
 )
-
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const searchTerm = new URL(request.url).searchParams.get('search')
 	invariantResponse(params.date, 'Date parameter Not found', { status: 404 })
-	if (searchTerm === '') return redirect(`/schedule/${params.date}/sign-up`)
+	if (searchTerm === '') return redirect(`/schedule/${params.date}/signup`)
 
 	const schedule = await prisma.schedule.findFirst({
 		select: { id: true, state: true },
@@ -98,26 +107,87 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		if (totals[user.ditch]) totals[user.ditch] += user.hours
 		else totals[user.ditch] = user.hours
 	}
-	const anythingOpen = await prisma.schedule.findFirst({
-		select: { id: true },
-		where: { state: 'open' },
-	})
+	// const anythingOpen = await prisma.schedule.findFirst({
+	// 	select: { id: true },
+	// 	where: { state: 'open' },
+	// })
 	return json({
 		status: 'idle',
 		schedule: { id: schedule.id, date: params.date, state: schedule.state },
 		users,
 		totals,
-		canOpen: !['open', 'closed'].includes(schedule.state) && !anythingOpen,
+		// canOpen: !['open', 'closed'].includes(schedule.state) && !anythingOpen,
 		error: null,
 	} as const)
+}
+
+const UploadSignupSchema = z.array(
+	z.object({
+		id: z.string(),
+		username: z.string(),
+		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
+		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(36)),
+		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.01).min(0).max(36)),
+		head: z.preprocess(x => (x ? x : 70), z.coerce.number().multipleOf(70).min(70).max(140)),
+	}),
+)
+export async function action({ request, params }: ActionFunctionArgs) {
+	const userId = await requireUserWithRole(request, 'admin')
+	const schedule = await prisma.schedule.findFirst({
+		select: { id: true },
+		where: { date: params.date },
+	})
+	invariantResponse(schedule, 'Not found', { status: 404 })
+
+	const uploadHandler: UploadHandler = composeUploadHandlers(csvUploadHandler, createMemoryUploadHandler())
+	const formData = await parseMultipartFormData(request, uploadHandler)
+
+	const csv = formData.get('selected_csv')
+	invariantResponse(typeof csv === 'string', 'selected_csv filename must be a string')
+
+	const userSchedules = csvFileToArray(csv)
+	const result = UploadSignupSchema.safeParse(userSchedules)
+	if (!result.success) {
+		return json({ status: 'error', error: result.error.message } as const, {
+			status: 400,
+		})
+	}
+
+	for (let userSchedule of result.data) {
+		await prisma.userSchedule.upsert({
+			select: { scheduleId: true, ditch: true, userId: true },
+			where: {
+				userId_ditch_scheduleId: { userId: userSchedule.id, ditch: userSchedule.ditch, scheduleId: schedule.id },
+			},
+			create: {
+				userId: userSchedule.id,
+				ditch: userSchedule.ditch,
+				scheduleId: schedule.id,
+				hours: userSchedule.hours,
+				head: userSchedule.head,
+				createdBy: userId,
+			},
+			update: {
+				hours: userSchedule.hours,
+				head: userSchedule.head,
+				updatedBy: userId,
+			},
+		})
+	}
+
+	return redirectWithToast('.', {
+		type: 'success',
+		title: 'Success',
+		description: 'Your schedule has been uploaded.',
+	})
 }
 
 export default function ScheduleSignupRoute() {
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
-	const { status, schedule, users, totals, canOpen, error } = useLoaderData<typeof loader>()
-	const { id: scheduleId, date: scheduleDate, state } = schedule
-	const canLock = state === 'open'
+	const { status, schedule, users, totals, error } = useLoaderData<typeof loader>()
+	const { id: scheduleId, date: scheduleDate } = schedule
+	// const canLock = state === 'open'
 
 	const nodeRefA = useRef(null)
 	const nodeRefB = useRef(null)
@@ -168,12 +238,19 @@ export default function ScheduleSignupRoute() {
 					) : null}
 				</div>
 				<div className="my-1 flex-grow">
-					<SearchBar action={`/schedule/${scheduleDate}/sign-up`} status={status} autoFocus autoSubmit />
+					<SearchBar action={`/schedule/${scheduleDate}/signup`} status={status} autoFocus autoSubmit />
 				</div>
 				<div className="my-1 flex flex-row space-x-2">
 					{userIsAdmin ? (
 						<>
-							{canOpen ? (
+							<Button asChild variant="default">
+								<NavLink to={`/schedules/${schedule.date}`}>
+									<Icon name="activity-log" className="scale-100 max-md:scale-125">
+										<span className="max-md:hidden">Schedules</span>
+									</Icon>
+								</NavLink>
+							</Button>
+							{/* {canOpen ? (
 								<ScheduleActionButton
 									id={schedule.id}
 									icon="lock-open-1"
@@ -185,7 +262,7 @@ export default function ScheduleSignupRoute() {
 							{canLock ? (
 								<>
 									<Button asChild variant="default">
-										<NavLink to={`/schedule/${schedule.date}/sign-up`}>
+										<NavLink to={`/schedule/${schedule.date}/signup`}>
 											<Icon name="magnifying-glass" className="scale-125 max-md:scale-150">
 												<span className="max-md:hidden">Sign-up</span>
 											</Icon>
@@ -199,7 +276,7 @@ export default function ScheduleSignupRoute() {
 										variant="secondary"
 									/>
 								</>
-							) : null}
+							) : null} */}
 							<Button>
 								<Link reloadDocument to={`/resources/download-signup/${scheduleDate}`}>
 									<Icon name="download">Download</Icon>
@@ -304,7 +381,7 @@ function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType
 	)
 }
 
-export const meta: MetaFunction<null, { 'routes/schedule+/$date/sign-up': typeof loader }> = ({ params }) => {
+export const meta: MetaFunction<null, { 'routes/schedule+/$date/signup': typeof loader }> = ({ params }) => {
 	return [
 		{ title: `Irrigation Sign-Up | ${params.date}` },
 		{

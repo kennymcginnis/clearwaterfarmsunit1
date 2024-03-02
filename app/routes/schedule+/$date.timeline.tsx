@@ -1,6 +1,17 @@
 import { invariantResponse } from '@epic-web/invariant'
-import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
-import { Form, Link, useLoaderData } from '@remix-run/react'
+import {
+	type ActionFunctionArgs,
+	type UploadHandler,
+	json,
+	redirect,
+	type LoaderFunctionArgs,
+	unstable_composeUploadHandlers as composeUploadHandlers,
+	unstable_createMemoryUploadHandler as createMemoryUploadHandler,
+	unstable_parseMultipartFormData as parseMultipartFormData,
+	type MetaFunction,
+} from '@remix-run/node'
+import { Form, Link, NavLink, useLoaderData } from '@remix-run/react'
+import { parseISO } from 'date-fns'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { z } from 'zod'
@@ -9,13 +20,13 @@ import { ErrorList } from '#app/components/forms.tsx'
 import { SearchBar } from '#app/components/search-bar'
 import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon'
-import { DialogCloseSchedule } from '#app/routes/schedules+/__close-schedule-dialog'
+import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatDates, formatHours } from '#app/utils/misc'
+import { requireUserWithRole } from '#app/utils/permissions.ts'
 import useScrollSync from '#app/utils/scroll-sync'
+import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
-import { action } from './actions.server'
-export { action }
 
 type TotalType = { [key: number]: number }
 type PositionDitchType = {
@@ -114,12 +125,75 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	} as const)
 }
 
+const UploadTimelineSchema = z.array(
+	z.object({
+		id: z.string(),
+		username: z.string(),
+		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
+		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(36)),
+		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.01).min(0).max(36)),
+		head: z.preprocess(x => (x ? x : 70), z.coerce.number().multipleOf(70).min(70).max(140)),
+		start: z.preprocess(x => (x && typeof x === 'string' ? parseISO(x) : null), z.date().nullable()),
+		stop: z.preprocess(x => (x && typeof x === 'string' ? parseISO(x) : null), z.date().nullable()),
+	}),
+)
+export async function action({ request, params }: ActionFunctionArgs) {
+	const userId = await requireUserWithRole(request, 'admin')
+	const schedule = await prisma.schedule.findFirst({
+		select: { id: true },
+		where: { date: params.date },
+	})
+	invariantResponse(schedule, 'Not found', { status: 404 })
+
+	const uploadHandler: UploadHandler = composeUploadHandlers(csvUploadHandler, createMemoryUploadHandler())
+	const formData = await parseMultipartFormData(request, uploadHandler)
+
+	const csv = formData.get('selected_csv')
+	invariantResponse(typeof csv === 'string', 'selected_csv filename must be a string')
+
+	const userSchedules = csvFileToArray(csv)
+	const result = UploadTimelineSchema.safeParse(userSchedules)
+	if (!result.success) {
+		return json({ status: 'error', error: result.error.message } as const, { status: 400 })
+	}
+
+	for (let userSchedule of result.data) {
+		await prisma.userSchedule.upsert({
+			create: {
+				userId: userSchedule.id,
+				ditch: userSchedule.ditch,
+				scheduleId: schedule.id,
+				hours: userSchedule.hours,
+				head: userSchedule.head,
+				start: userSchedule.start,
+				stop: userSchedule.stop,
+				createdBy: userId,
+			},
+			update: {
+				hours: userSchedule.hours,
+				head: userSchedule.head,
+				start: userSchedule.start,
+				stop: userSchedule.stop,
+				updatedBy: userId,
+			},
+			where: {
+				userId_ditch_scheduleId: { userId: userSchedule.id, ditch: userSchedule.ditch, scheduleId: schedule.id },
+			},
+		})
+	}
+
+	return redirectWithToast('.', {
+		type: 'success',
+		title: 'Success',
+		description: 'Your timeline has been uploaded.',
+	})
+}
+
 export default function ScheduleTimelineRoute() {
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
 	const { status, schedule, users, totals, error } = useLoaderData<typeof loader>()
-	const { id: scheduleId, date: scheduleDate, state } = schedule
-	const canClose = state === 'locked'
+	const { id: scheduleId, date: scheduleDate } = schedule
 
 	const nodeRefA = useRef(null)
 	const nodeRefB = useRef(null)
@@ -165,7 +239,7 @@ export default function ScheduleTimelineRoute() {
 					</Button>
 					{currentUser && scheduleDate ? (
 						<Button asChild variant="secondary" className="ml-2 pb-2">
-							<Link to={`/timeline/${scheduleDate}/${currentUser.username}`}>Jump to Self</Link>
+							<Link to={`/schedule/${scheduleDate}/${currentUser.username}`}>Jump to Self</Link>
 						</Button>
 					) : null}
 				</div>
@@ -175,7 +249,13 @@ export default function ScheduleTimelineRoute() {
 				<div className="my-1 flex flex-row space-x-2">
 					{userIsAdmin ? (
 						<>
-							{canClose ? <DialogCloseSchedule id={schedule.id} /> : null}
+							<Button asChild variant="default">
+								<NavLink to={`/schedules/${schedule.date}`}>
+									<Icon name="activity-log" className="scale-100 max-md:scale-125">
+										<span className="max-md:hidden">Schedules</span>
+									</Icon>
+								</NavLink>
+							</Button>
 							<Button>
 								<Link reloadDocument to={`/resources/download-timeline/${scheduleDate}`}>
 									<Icon name="download">Download</Icon>

@@ -2,7 +2,6 @@ import { invariantResponse } from '@epic-web/invariant'
 import { json, type ActionFunctionArgs } from '@remix-run/node'
 import { type MetaFunction, Link, useLoaderData, NavLink } from '@remix-run/react'
 import { formatDistanceToNow } from 'date-fns'
-import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { floatingToolbarClassName } from '#app/components/floating-toolbar.tsx'
 import { Button } from '#app/components/ui/button.tsx'
@@ -42,11 +41,6 @@ export async function loader({ params }: ActionFunctionArgs) {
 		canOpen: !['open', 'closed'].includes(schedule.state) && !anythingOpen,
 	})
 }
-
-export const ActionFormSchema = z.object({
-	intent: z.string(),
-	scheduleId: z.string(),
-})
 
 export default function ScheduleRoute() {
 	const { schedule, timeAgo, canOpen } = useLoaderData<typeof loader>()
@@ -107,7 +101,7 @@ export default function ScheduleRoute() {
 						{canLock ? (
 							<>
 								<Button asChild variant="default">
-									<NavLink to={`/schedule/${schedule.date}/sign-up`}>
+									<NavLink to={`/schedule/${schedule.date}/signup`}>
 										<Icon name="magnifying-glass" className="scale-125 max-md:scale-150">
 											<span className="max-md:hidden">Sign-up</span>
 										</Icon>
