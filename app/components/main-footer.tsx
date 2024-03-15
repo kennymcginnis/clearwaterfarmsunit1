@@ -1,3 +1,5 @@
+/* eslint-disable remix-react-routes/use-link-for-routes */
+/* eslint-disable jsx-a11y/anchor-is-valid */
 import { useForm } from '@conform-to/react'
 import { Link, useFetcher } from '@remix-run/react'
 import { Icon } from '#app/components/ui/icon.tsx'
@@ -165,12 +167,12 @@ function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
 
 	const optimisticMode = useOptimisticThemeMode()
 	const mode = optimisticMode ?? userPreference ?? 'system'
-
+	const currentThemeName = { light: 'sun', dark: 'moon', system: 'laptop' }[mode] as 'sun' | 'moon' | 'laptop'
 	return (
 		<fetcher.Form method="POST" {...form.props}>
 			<div className="group fixed bottom-0 right-0 flex h-24 w-24 items-end justify-end p-2 ">
 				<div className="absolute z-50 flex items-center justify-center rounded-full bg-gradient-to-tl from-secondary to-primary p-3 text-white shadow-xl  ">
-					<Icon className="m-2 text-body-md" name={{ light: 'sun', dark: 'moon', system: 'laptop' }[mode]} />
+					<Icon className="m-2 text-body-md" name={currentThemeName} />
 				</div>
 				<div className="duration-[0.2s] border-1 absolute flex scale-x-0 rounded-full border-solid border-gray-950 bg-gray-300 p-2 text-gray-950 transition-all  ease-out hover:p-3 group-hover:-translate-y-16  group-hover:scale-x-100">
 					<button
