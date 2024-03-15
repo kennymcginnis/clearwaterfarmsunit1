@@ -1,12 +1,21 @@
 # // TODO
 
+- What is the goal of this website?
+  - CityProperty will manage all financials
+    - They only have one account per member with the POA dues
+  - We're handling all Irrigation
+    - We are tracking irrigation balances and fees
+
 ## Application
 
-- [ ] Upgrade application to use `Vite` instead of `ESBuild`
+- [ ] `Technical debit` Upgrade application to use `Vite` instead of `ESBuild`
 
 ## Home page
 
-- [ ] Link from CFPOA website to City Property's portal (button on home screen)
+- [x] Add contact information for `water master`
+- [x] Make the `home page` a landing page?
+  - [x] Add `agenda` or `Highlights` on home page on the bottom half of the home page
+- [x] Link from CFPOA website to City Property's portal (button on home screen)
 - [x] Currently shows `No Closed schedules found!` when the schedules doesn't have start/stop dates.
 - [x] Disable edits for a restricted user
 - [x] Add single homepage showing most recent schedule and signup for any open schedule
@@ -16,10 +25,22 @@
 - [x] Make responsive enough for mobile, tablet, laptop, desktop usage
 - [x] Update Icon to point to home page
 
+## Footer page
+
+- [x] Links
+- [x] Contact
+  - [ ] Add `social` links (or remove icons)
+
 ## Document pages
 
+- [x] Credits should not be negative
 - [ ] Add Rules and Regulations
   - [ ] Rules and Regulations page added, content still missing.
+- [x] Add pdf download link so documents can be shared
+  - [x] Add this to the Markdown:
+    - [Open AofInc.pdf](/pdf/AofInc.pdf)
+    - [Open Bylaws.pdf](/pdf/Bylaws.pdf)
+    - [Open CCR.pdf](/pdf/CCR.pdf)
 - [x] Make responsive enough for mobile, tablet, laptop, desktop usage
 - [x] User Markdown for formatting
 - [x] Allow Admin users to Edit markdown
@@ -37,6 +58,9 @@
 
 ## Members pages
 
+- [x] Hide members list for users not logged in
+- [x] Can change Username name
+  - [x] Irrigation `display` name is export on downloads
 - [x] Make responsive enough for mobile, tablet, laptop, desktop usage
 - [x] Add filter to search for members
 - [x] replace member name with username
@@ -48,15 +72,17 @@
 
 ### Admin page
 
+- [ ] If `head` is 140, don't allow half hour intervals
 - [ ] Create resource routes to post directly to database
   - [x] Get user/`username`
   - [x] Put user/`username`/roles
   - [x] Put user/`username`/restricted
   - [x] Get schedule/`date`
-  - [x] Put schedule
-  - [x] Get sessions
-  - [ ] Get transactions
-  - [ ] Delete transactions
+  - [x] Put `schedule`
+  - [x] Get `sessions`
+  - [ ] Get `transactions`
+  - [ ] Delete `transactions`
+  - [ ] Update `transactions`  
 - [x] Can `close` a locked schedule once timelines have been finalized
   - [x] Closing a schedule will update the min start and max stop dates on the schedule
   - [x] Closing a schedule will automatically calculate the irrigation account withdrawls based on hours*costPerHour
@@ -74,12 +100,15 @@
 
 ### Irrigation Information
 
+- [ ] Emails notifications for upcoming schedules
 - [ ] Irrigation tips sheet for new irrigators or people who need a reference.
   - [ ] Irrigation tips sheet page added, content still missing.
+- [ ] Text message notifications
 
 ### Sign-up page
 
 - [ ] Admin user can edit any member
+- [x] Source: well - capitalize "Well" /grin
 - [x] Members cannot submit hours after schedule is `locked`
 - [x] Component width is setup to 100% and looks a bit odd
 - [x] Admin user can lock/close from this screen
@@ -97,8 +126,8 @@
 
 ### Timeline page
 
-- [ ] Shortcut button to jump directly to yourself for a logged in user
-  - [ ] Button exists, but display page does not
+- [x] Shortcut button to jump directly to yourself for a logged in user
+  - [x] Button exists, but display page does not
 - [x] Timeline upload did nothing
 - [x] Timeline upload is incorrectly centered
 - [x] Filterable by search box
@@ -110,16 +139,20 @@
 
 ## Profile pages
 
-- [ ] Q: Can you change your username?
-- [ ] Q: Should we log in with user or email?
+- [x] Make theme switch more obvious for a non-tech user
 - [x] Record of who has signed in.  This way we can find out why others haven't utilized our CFPOA website to sign up for irrigation.
 - [x] Make responsive enough for mobile, tablet, laptop, desktop usage
 - [x] Theme switch so I can use Dark Mode! /grin
 
+### Trade List
+
+- [ ] See if I can add a search box
+- [ ] A `hyperlink` to request to be added to the trade list
+
 ### Contact information
 
 - [x] Hide this page for members unless viewing self
-- [ ] Add phone numbers array into edit section
+- [x] Add phone numbers array into edit section
 - [ ] Q: Should we mark one phone number as `primary`?
   - [ ] `Attempted` was surprisingly harder than I expected - unless we add it to the edit form and require submit
 - [ ] Email domain needs to be configured and confirmed.
@@ -156,6 +189,18 @@
 
 ### Transactions information
 
+- [ ] Create a report formatted for QuickBooks upload
+  - [ ] Get the QB format from Katy
+- [ ] Add `insert new` transaction
+- [ ] Add ditch and position columns
+  - [ ] Add schedule date columns?
+- [ ] Make columns sortable
+- [ ] Add `items per page`
+- [ ] Add filter
+  - [ ] by date
+  - [ ] by ditch
+  - [ ] by schedule date
+- [ ] Add download
 - [ ] Allow an Admin user to edit
 - [x] Add page for Transactions information
 - [x] Shows the initial starting balance in the irrigation account

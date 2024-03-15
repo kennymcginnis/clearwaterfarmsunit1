@@ -25,7 +25,7 @@ export default function UsersRoute() {
 			<div className="container my-8 flex flex-col items-center justify-center gap-6">
 				<h1 className="text-center text-h1">Irrigation Sign-up Schedule for {schedule.date}</h1>
 				<h2 className="text-h2">Sign-up deadline {schedule.deadline}</h2>
-				<h3 className="text-h3">
+				<h3 className="text-h3 capitalize">
 					Source: {schedule.source} | Cost Per Hour: ${schedule.costPerHour}
 				</h3>
 			</div>

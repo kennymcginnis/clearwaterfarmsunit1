@@ -56,7 +56,7 @@ export default function DocumentComponent() {
 	const Component = React.useMemo(() => getMDXComponent(code), [code])
 
 	return (
-		<Card className="container mb-6 rounded-none bg-muted px-0 pb-12 lg:rounded-3xl">
+		<Card className="container mb-6 rounded-none bg-muted px-0 pb-12 xl:rounded-3xl">
 			<CardHeader className="mx-0">
 				{userIsAdmin ? (
 					<div className="flex w-full items-center justify-between gap-2 p-4 pb-0 pl-5">

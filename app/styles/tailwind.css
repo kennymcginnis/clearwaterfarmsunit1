@@ -112,4 +112,11 @@
 	.text-align-webkit-center {	text-align: -webkit-center;}
 	.bg-muted-40 { background-color: hsl(var(--muted) / 0.4);}
 
+	.light-filter {
+		filter: invert(100%) sepia(100%) saturate(2%) hue-rotate(261deg) brightness(106%) contrast(100%);
 	}
+
+	.border-1 { border-width: 1px; }
+
+
+}

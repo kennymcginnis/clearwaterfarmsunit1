@@ -1,13 +1,12 @@
-import { useForm } from '@conform-to/react'
 import { parse } from '@conform-to/zod'
 import { cssBundleHref } from '@remix-run/css-bundle'
 import {
 	json,
 	type LoaderFunctionArgs,
-	type ActionFunctionArgs,
 	type HeadersFunction,
 	type LinksFunction,
 	type MetaFunction,
+	type ActionFunctionArgs,
 } from '@remix-run/node'
 import {
 	Form,
@@ -18,7 +17,6 @@ import {
 	Outlet,
 	Scripts,
 	ScrollRestoration,
-	useFetcher,
 	useFetchers,
 	useLoaderData,
 	useSubmit,
@@ -29,7 +27,7 @@ import { AuthenticityTokenProvider } from 'remix-utils/csrf/react'
 import { HoneypotProvider } from 'remix-utils/honeypot/react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from './components/error-boundary.tsx'
-// import { ErrorList } from './components/forms.tsx'
+import { Footer } from './components/main-footer.tsx'
 import { MainNavigationMenu } from './components/main-nav.tsx'
 import { EpicProgress } from './components/progress-bar.tsx'
 import { useToast } from './components/toaster.tsx'
@@ -53,7 +51,7 @@ import { honeypot } from './utils/honeypot.server.ts'
 import { combineHeaders, getDomainUrl, getUserImgSrc } from './utils/misc.tsx'
 import { useNonce } from './utils/nonce-provider.ts'
 import { useRequestInfo } from './utils/request-info.ts'
-import { type Theme, setTheme, getTheme } from './utils/theme.server.ts'
+import { type Theme, getTheme, setTheme } from './utils/theme.server.ts'
 import { makeTimings, time } from './utils/timing.server.ts'
 import { getToast } from './utils/toast.server.ts'
 import { useOptionalUser } from './utils/user.ts'
@@ -187,6 +185,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	)
 }
 
+export const ThemeFormSchema = z.object({ intent: z.enum(['system', 'light', 'dark']) })
+export async function action({ request }: ActionFunctionArgs) {
+	const formData = await request.formData()
+	const submission = parse(formData, { schema: ThemeFormSchema })
+	if (submission.intent !== 'submit') return json({ status: 'idle', submission } as const)
+	if (!submission.value) return json({ status: 'error', submission } as const, { status: 400 })
+	const { intent } = submission.value
+	const responseInit = { headers: { 'set-cookie': setTheme(intent) } }
+	return json({ success: true, submission }, responseInit)
+}
+
 export const headers: HeadersFunction = ({ loaderHeaders }) => {
 	const headers = {
 		'Server-Timing': loaderHeaders.get('Server-Timing') ?? '',
@@ -195,29 +204,6 @@ export const headers: HeadersFunction = ({ loaderHeaders }) => {
 }
 
 export type RootLoaderType = typeof loader
-
-const ThemeFormSchema = z.object({
-	theme: z.enum(['system', 'light', 'dark']),
-})
-
-export async function action({ request }: ActionFunctionArgs) {
-	const formData = await request.formData()
-	const submission = parse(formData, {
-		schema: ThemeFormSchema,
-	})
-	if (submission.intent !== 'submit') {
-		return json({ status: 'idle', submission } as const)
-	}
-	if (!submission.value) {
-		return json({ status: 'error', submission } as const, { status: 400 })
-	}
-	const { theme } = submission.value
-
-	const responseInit = {
-		headers: { 'set-cookie': setTheme(theme) },
-	}
-	return json({ success: true, submission }, responseInit)
-}
 
 function Document({
 	children,
@@ -264,28 +250,39 @@ function App() {
 	return (
 		<Document nonce={nonce} theme={theme} env={data.ENV}>
 			<div className="flex h-screen flex-col">
-				<header className="sticky top-0 mx-6 flex flex-col bg-background py-6 text-foreground hover:z-10">
+				<header className="sticky top-0 flex flex-col bg-background px-6 py-6 text-foreground hover:z-10">
 					<div className="flex items-center justify-between gap-4 md:gap-8">
-						<Link to="/" className="group grid leading-snug">
-							<span className="text-lg font-bold transition group-hover:translate-x-1">Clearwater Farms</span>
-							<span className="text-md font-light transition group-hover:-translate-x-1">Unit 1</span>
+						<img src="/img/cwf.svg" className="dark:light-filter h-12" alt="CWF" />
+						<Link to="/" className="group flex flex-wrap items-center leading-snug md:max-2xl:hidden">
+							<span className="text-lg font-bold transition group-hover:translate-y-1">Clearwater Farms&nbsp;</span>
+							<span className="text-md text-nowrap font-light transition group-hover:-translate-y-1">Unit 1</span>
 						</Link>
-						<div className="flex max-md:hidden">
+						<div id="row1-nav" className="flex max-md:hidden">
 							<MainNavigationMenu open={data.open} closed={data.closed} />
 						</div>
-						<div className="flex md:max-lg:hidden">
+						<div id="row1-profile" className="flex md:max-lg:hidden">
 							<UserProfile theme={data.requestInfo.userPrefs.theme} />
 						</div>
 					</div>
-					<div className="flex md:hidden">
+					<div id="row2-icons" className="flex md:hidden">
 						<MainNavigationMenu open={data.open} closed={data.closed} />
 					</div>
-					<div className="hidden self-end md:max-lg:flex">
+					<div id="row2-logo" className="hidden w-full justify-between p-1 lg:max-2xl:flex">
+						<Link to="/" className="group flex flex-wrap items-center leading-snug">
+							<span className="text-lg font-bold transition group-hover:translate-y-1">Clearwater Farms&nbsp;</span>
+							<span className="text-md font-light transition group-hover:-translate-y-1">Unit 1</span>
+						</Link>
+					</div>
+					<div id="row2-profile" className="hidden w-full justify-between md:max-lg:flex">
+						<Link to="/" className="group flex flex-wrap items-center leading-snug">
+							<span className="text-lg font-bold transition group-hover:translate-y-1">Clearwater Farms&nbsp;</span>
+							<span className="text-md font-light transition group-hover:-translate-y-1">Unit 1</span>
+						</Link>
 						<UserProfile theme={data.requestInfo.userPrefs.theme} />
 					</div>
 				</header>
-
 				<Outlet />
+				<Footer userPreference={data.requestInfo.userPrefs.theme} />
 			</div>
 			<EpicToaster closeButton position="top-center" theme={theme} />
 			<EpicProgress />
@@ -297,35 +294,6 @@ function UserProfile({ theme }: { theme: Theme | null }) {
 	const user = useOptionalUser()
 	const submit = useSubmit()
 	const formRef = useRef<HTMLFormElement>(null)
-
-	const fetcher = useFetcher<typeof action>()
-
-	const [form] = useForm({
-		id: 'theme-switch',
-		lastSubmission: fetcher.data?.submission,
-	})
-
-	const optimisticMode = useOptimisticThemeMode()
-	const mode = optimisticMode ?? theme ?? 'system'
-	const nextMode = mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system'
-	const modeLabel = {
-		light: (
-			<Icon className="m-2 text-body-md" name="sun">
-				Theme: Light
-			</Icon>
-		),
-		dark: (
-			<Icon className="m-2 text-body-md" name="moon">
-				Theme: Dark
-			</Icon>
-		),
-		system: (
-			<Icon className="m-2 text-body-md" name="laptop">
-				Theme: System
-			</Icon>
-		),
-	}
-
 	return (
 		<div className="flex items-center gap-5">
 			{user ? (
@@ -364,12 +332,6 @@ function UserProfile({ theme }: { theme: Theme | null }) {
 										Irrigation
 									</Icon>
 								</Link>
-							</DropdownMenuItem>
-							<DropdownMenuItem asChild>
-								<fetcher.Form method="POST" {...form.props} role="menuitem">
-									<input type="hidden" name="theme" value={nextMode} />
-									<button type="submit">{modeLabel[nextMode]}</button>
-								</fetcher.Form>
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								asChild
@@ -430,6 +392,7 @@ export function useTheme() {
  * If the user's changing their theme mode preference, this will return the
  * value it's being changed to.
  */
+
 export function useOptimisticThemeMode() {
 	const fetchers = useFetchers()
 	const themeFetcher = fetchers.find(f => f.formAction === '/')
@@ -438,7 +401,7 @@ export function useOptimisticThemeMode() {
 		const submission = parse(themeFetcher.formData, {
 			schema: ThemeFormSchema,
 		})
-		return submission.value?.theme
+		return submission.value?.intent
 	}
 }
 

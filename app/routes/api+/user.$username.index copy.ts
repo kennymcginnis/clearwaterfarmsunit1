@@ -87,7 +87,16 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	return json(user)
 }
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, params }: ActionFunctionArgs) => {
+	if (params.username === 'display-name') {
+		const users = await prisma.user.findMany()
+		users.map(async u => {
+			await prisma.user.update({
+				data: { display: u.username },
+			})
+		})
+		return `Complete. ${users.length} updated.`
+	}
 	switch (request.method) {
 		case 'POST': {
 			/* handle "POST" */
@@ -102,4 +111,5 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 			/* handle "DELETE" */
 		}
 	}
+	return null
 }

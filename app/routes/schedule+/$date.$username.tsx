@@ -96,17 +96,30 @@ export default function UserSchedule() {
 						return (
 							<UserScheduleTimeline key={`timeline-${userSchedule.ditch}`} user={user} userSchedule={userSchedule} />
 						)
+					case 'pending':
+					case 'locked':
+						return (
+							<div key={`locked-${userSchedule.ditch}`}>
+								<Card>
+									<CardContent>
+										<Icon name="lock-closed" className="mb-1 mr-2 scale-100 max-md:scale-125"></Icon>
+										This Schedule has not yet been {{ pending: 'opened', locked: 'finalized' }[schedule.state]}.
+									</CardContent>
+								</Card>
+							</div>
+						)
+					default:
+						return (
+							<div key={`locked-${userSchedule.ditch}`}>
+								<Card>
+									<CardContent>
+										<Icon name="lock-closed" className="mb-1 mr-2 scale-100 max-md:scale-125"></Icon>
+										This Schedule is in an invalid state. Reach out for support.
+									</CardContent>
+								</Card>
+							</div>
+						)
 				}
-				return (
-					<div key={`locked-${userSchedule.ditch}`}>
-						<Card>
-							<CardContent>
-								<Icon name="lock-closed" className="mb-1 mr-2 scale-100 max-md:scale-125"></Icon>
-								This Schedule has not yet been opened.
-							</CardContent>
-						</Card>
-					</div>
-				)
 			})}
 		</div>
 	)
