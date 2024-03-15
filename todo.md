@@ -80,7 +80,7 @@
   - [x] Get schedule/`date`
   - [x] Put `schedule`
   - [x] Get `sessions`
-  - [ ] Get `transactions`
+  - [x] Get `transactions`
   - [ ] Delete `transactions`
   - [ ] Update `transactions`  
 - [x] Can `close` a locked schedule once timelines have been finalized
