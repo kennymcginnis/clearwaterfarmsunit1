@@ -190,6 +190,7 @@ function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
 						name="intent"
 						value="light"
 						className="flex h-8 w-8 cursor-pointer items-center justify-center"
+						onClick={toggleOpen}
 					>
 						<Icon className="m-2 text-body-md" name="sun" />
 					</button>
@@ -203,6 +204,7 @@ function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
 						name="intent"
 						value="dark"
 						className="flex h-8 w-8 cursor-pointer items-center justify-center"
+						onClick={toggleOpen}
 					>
 						<Icon className="m-2 text-body-md" name="moon" />
 					</button>
@@ -216,6 +218,7 @@ function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
 						name="intent"
 						value="system"
 						className="flex h-8 w-8 cursor-pointer items-center justify-center"
+						onClick={toggleOpen}
 					>
 						<Icon className="m-2 text-body-md" name="laptop" />
 					</button>
