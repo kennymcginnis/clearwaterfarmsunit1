@@ -1,3 +1,4 @@
+import { useForm } from '@conform-to/react'
 import { parse } from '@conform-to/zod'
 import { cssBundleHref } from '@remix-run/css-bundle'
 import {
@@ -20,12 +21,14 @@ import {
 	useFetchers,
 	useLoaderData,
 	useSubmit,
+	useFetcher,
 } from '@remix-run/react'
 import { withSentry } from '@sentry/remix'
 import { useRef } from 'react'
 import { AuthenticityTokenProvider } from 'remix-utils/csrf/react'
 import { HoneypotProvider } from 'remix-utils/honeypot/react'
 import { z } from 'zod'
+import { Icon, href as iconsHref } from '#app/components/ui/icon.tsx'
 import { GeneralErrorBoundary } from './components/error-boundary.tsx'
 import { Footer } from './components/main-footer.tsx'
 import { MainNavigationMenu } from './components/main-nav.tsx'
@@ -39,7 +42,7 @@ import {
 	DropdownMenuPortal,
 	DropdownMenuTrigger,
 } from './components/ui/dropdown-menu.tsx'
-import { Icon, href as iconsHref } from './components/ui/icon.tsx'
+
 import { EpicToaster } from './components/ui/sonner.tsx'
 import tailwindStyleSheetUrl from './styles/tailwind.css'
 import { getUserId, logout } from './utils/auth.server.ts'
@@ -185,14 +188,23 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	)
 }
 
-export const ThemeFormSchema = z.object({ intent: z.enum(['system', 'light', 'dark']) })
+export const ThemeFormSchema = z.object({ theme: z.enum(['system', 'light', 'dark']) })
 export async function action({ request }: ActionFunctionArgs) {
 	const formData = await request.formData()
-	const submission = parse(formData, { schema: ThemeFormSchema })
-	if (submission.intent !== 'submit') return json({ status: 'idle', submission } as const)
-	if (!submission.value) return json({ status: 'error', submission } as const, { status: 400 })
-	const { intent } = submission.value
-	const responseInit = { headers: { 'set-cookie': setTheme(intent) } }
+	const submission = parse(formData, {
+		schema: ThemeFormSchema,
+	})
+	if (submission.intent !== 'submit') {
+		return json({ status: 'idle', submission } as const)
+	}
+	if (!submission.value) {
+		return json({ status: 'error', submission } as const, { status: 400 })
+	}
+	const { theme } = submission.value
+
+	const responseInit = {
+		headers: { 'set-cookie': setTheme(theme) },
+	}
 	return json({ success: true, submission }, responseInit)
 }
 
@@ -260,8 +272,9 @@ function App() {
 						<div id="row1-nav" className="flex max-md:hidden">
 							<MainNavigationMenu open={data.open} closed={data.closed} />
 						</div>
-						<div id="row1-profile" className="flex md:max-lg:hidden">
-							<UserProfile theme={data.requestInfo.userPrefs.theme} />
+						<div id="row1-profile" className="flex gap-1 md:max-lg:hidden">
+							<ThemeSwitch userPreference={data.requestInfo.userPrefs.theme} />
+							<UserProfile />
 						</div>
 					</div>
 					<div id="row2-icons" className="flex md:hidden">
@@ -278,7 +291,10 @@ function App() {
 							<span className="text-lg font-bold transition group-hover:translate-y-1">Clearwater Farms&nbsp;</span>
 							<span className="text-md font-light transition group-hover:-translate-y-1">Unit 1</span>
 						</Link>
-						<UserProfile theme={data.requestInfo.userPrefs.theme} />
+						<div className="flex flex-row gap-1">
+							<ThemeSwitch userPreference={data.requestInfo.userPrefs.theme} />
+							<UserProfile />
+						</div>
 					</div>
 				</header>
 				<Outlet />
@@ -290,7 +306,7 @@ function App() {
 	)
 }
 
-function UserProfile({ theme }: { theme: Theme | null }) {
+function UserProfile() {
 	const user = useOptionalUser()
 	const submit = useSubmit()
 	const formRef = useRef<HTMLFormElement>(null)
@@ -401,11 +417,10 @@ export function useOptimisticThemeMode() {
 		const submission = parse(themeFetcher.formData, {
 			schema: ThemeFormSchema,
 		})
-		return submission.value?.intent
+		return submission.value?.theme
 	}
 }
 
-/*
 function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
 	const fetcher = useFetcher<typeof action>()
 
@@ -446,11 +461,9 @@ function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
 					{modeLabel[mode]}
 				</button>
 			</div>
-			<ErrorList errors={form.errors} id={form.errorId} />
 		</fetcher.Form>
 	)
 }
-*/
 
 export function ErrorBoundary() {
 	// the nonce doesn't rely on the loader so we can access that

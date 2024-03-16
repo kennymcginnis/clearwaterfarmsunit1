@@ -1,10 +1,6 @@
 /* eslint-disable remix-react-routes/use-link-for-routes */
 /* eslint-disable jsx-a11y/anchor-is-valid */
-import { useForm } from '@conform-to/react'
-import { Link, useFetcher } from '@remix-run/react'
-import { useState } from 'react'
-import { Icon } from '#app/components/ui/icon.tsx'
-import { type action, useOptimisticThemeMode } from '#app/root'
+import { Link } from '@remix-run/react'
 import { type Theme } from '#app/utils/theme.server.ts'
 
 export function Footer({ userPreference }: { userPreference?: Theme | null }) {
@@ -153,77 +149,6 @@ Waddell, Arizona 85355`
 					</div>
 				</div>
 			</div>
-			<ThemeSwitch userPreference={userPreference} />
 		</footer>
-	)
-}
-
-function ThemeSwitch({ userPreference }: { userPreference?: Theme | null }) {
-	const fetcher = useFetcher<typeof action>()
-
-	const [open, setOpen] = useState(false)
-	const toggleOpen = () => setOpen(!open)
-
-	const [form] = useForm({
-		id: 'theme-switch',
-		lastSubmission: fetcher.data?.submission,
-	})
-
-	const optimisticMode = useOptimisticThemeMode()
-	const mode = optimisticMode ?? userPreference ?? 'system'
-	const currentThemeName = { light: 'sun', dark: 'moon', system: 'laptop' }[mode] as 'sun' | 'moon' | 'laptop'
-	return (
-		<fetcher.Form method="POST" {...form.props}>
-			<div className="group fixed bottom-0 right-0 flex h-24 w-24 items-end justify-end p-2">
-				<div
-					className="absolute z-50 flex items-center justify-center rounded-full bg-gradient-to-tl from-secondary to-primary p-3 text-white shadow-xl"
-					onClick={toggleOpen}
-				>
-					<Icon className="m-2 text-body-md" name={currentThemeName} />
-				</div>
-				<div
-					data-open={open}
-					className={`duration-[0.2s] border-1 ${open ? '-translate-y-16 scale-x-100' : null} absolute flex scale-x-0 rounded-full border-solid border-gray-950 bg-gray-300 p-2 text-gray-950 transition-all ease-out hover:p-3 group-hover:-translate-y-16 group-hover:scale-x-100`}
-				>
-					<button
-						type="submit"
-						name="intent"
-						value="light"
-						className="flex h-8 w-8 cursor-pointer items-center justify-center"
-						onClick={toggleOpen}
-					>
-						<Icon className="m-2 text-body-md" name="sun" />
-					</button>
-				</div>
-				<div
-					data-open={open}
-					className={`duration-[0.2s] border-1 ${open ? '-translate-x-16 scale-y-100' : null} absolute flex scale-100 scale-y-0 rounded-full border-solid border-gray-500 bg-gray-950 p-2 text-white transition-all ease-out hover:p-3 group-hover:-translate-x-16 group-hover:scale-y-100`}
-				>
-					<button
-						type="submit"
-						name="intent"
-						value="dark"
-						className="flex h-8 w-8 cursor-pointer items-center justify-center"
-						onClick={toggleOpen}
-					>
-						<Icon className="m-2 text-body-md" name="moon" />
-					</button>
-				</div>
-				<div
-					data-open={open}
-					className={`duration-[0.2s] ${open ? '-translate-x-14 -translate-y-14 scale-x-100' : null} absolute flex scale-x-0 rounded-full bg-gray-500 p-2 text-gray-950 transition-all ease-out hover:p-3 group-hover:-translate-x-14 group-hover:-translate-y-14 group-hover:scale-x-100`}
-				>
-					<button
-						type="submit"
-						name="intent"
-						value="system"
-						className="flex h-8 w-8 cursor-pointer items-center justify-center"
-						onClick={toggleOpen}
-					>
-						<Icon className="m-2 text-body-md" name="laptop" />
-					</button>
-				</div>
-			</div>
-		</fetcher.Form>
 	)
 }
