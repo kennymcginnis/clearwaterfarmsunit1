@@ -56,6 +56,7 @@ export const getNewTableUrl = (
 	if (!newValue) {
 		//Passing an empty value means we want to clear the key
 		params.delete(newKey)
+		if (newKey === 'filter') params.delete('age')
 	} else {
 		switch (newKey) {
 			case 'sort':
@@ -78,10 +79,15 @@ export const getNewTableUrl = (
 				params.set('page', '1')
 				break
 			case 'age':
-			case 'filter':
-				//Age and filter push you back to page 1
 				params.set(newKey, newValue)
 				params.set('page', '1')
+				params.delete('filter')
+				break
+			case 'filter':
+				params.set(newKey, newValue)
+				params.set('page', '1')
+				params.delete('age')
+				break
 			default:
 				params.set(newKey, newValue)
 		}

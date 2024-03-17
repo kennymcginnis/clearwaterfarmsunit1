@@ -1,0 +1,52 @@
+import { CalendarIcon } from '@heroicons/react/24/outline'
+import { Link } from '@remix-run/react'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '#app/components/ui/dropdown-menu'
+import { getNewTableUrl, type ItemTableParams } from '#app/utils/pagination/itemTable'
+import { Button } from './ui/button'
+
+interface FilterProps {
+	ages: Array<{ value: number; label: string }>
+	baseUrl: string
+	dropdownDefault: string
+	filters: string[]
+	tableParams: ItemTableParams
+}
+
+const DateFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, filters, ages, dropdownDefault }) => {
+	const currentFilter = tableParams.filter ?? ages.find(a => a.value === tableParams.age)?.label ?? 'Date Filter'
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger>
+				<Button variant="secondary">
+					<CalendarIcon className="mr-2 w-4" />
+					{currentFilter}
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent>
+				<Link to={getNewTableUrl(baseUrl, tableParams, 'filter')}>
+					<DropdownMenuItem className="capitalize">{dropdownDefault}</DropdownMenuItem>
+				</Link>
+				<DropdownMenuSeparator />
+				{ages.map((age, i) => (
+					<Link key={`age-${i}`} to={getNewTableUrl(baseUrl, tableParams, 'age', age.value.toString())}>
+						<DropdownMenuItem>{age.label}</DropdownMenuItem>
+					</Link>
+				))}
+				<DropdownMenuSeparator />
+				{filters.map((filter, i) => (
+					<Link key={`filter-${i}`} to={getNewTableUrl(baseUrl, tableParams, 'filter', filter)}>
+						<DropdownMenuItem className="capitalize">{filter}</DropdownMenuItem>
+					</Link>
+				))}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	)
+}
+
+export default DateFilters

@@ -13,6 +13,7 @@ const select = {
 	stop: true,
 }
 
+// Read - GET
 export async function loader({ params }: LoaderFunctionArgs) {
 	return await prisma.schedule.findFirstOrThrow({
 		select,
@@ -25,6 +26,11 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 	// 	select: { id: true },
 	// 	where: { date: params.date },
 	// })
+
+	// Create - POST
+	// Upsert - PUT
+	// Update - PATCH
+	// Delete - DELETE
 
 	switch (request.method) {
 		case 'PUT':
