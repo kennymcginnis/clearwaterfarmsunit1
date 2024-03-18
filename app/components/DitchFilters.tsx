@@ -4,7 +4,6 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '#app/components/ui/dropdown-menu'
 import { getNewTableUrl, type ItemTableParams } from '#app/utils/pagination/itemTable'
@@ -18,7 +17,7 @@ interface DitchProps {
 }
 
 const DitchDitchs: React.FC<DitchProps> = ({ baseUrl, tableParams, ditches, dropdownDefault }) => {
-	const currentDitch = tableParams.ditch ? `Ditch ${tableParams.ditch}` :  'All Ditches'
+	const currentDitch = tableParams.ditch ? `Ditch ${tableParams.ditch}` : 'All Ditches'
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger>
