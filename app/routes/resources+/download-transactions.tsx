@@ -7,9 +7,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const file = createReadableStreamFromReadable(
 		Readable.from(
 			[
-				['id', 'username', 'date', 'debit', 'credit', 'note'].join(','),
+				['id', 'scheduleId', 'ditch', 'userId', 'username', 'date', 'debit', 'credit', 'note'].join(','),
 				...data.transactions.map(raw =>
-					[raw.id, raw.user.username, raw.date, raw.debit, raw.credit, raw.note].join(','),
+					[
+						raw.id,
+						raw.scheduleId,
+						raw.ditch,
+						raw.user.id,
+						raw.user.username,
+						raw.date,
+						raw.debit,
+						raw.credit,
+						raw.note,
+					].join(','),
 				),
 			].join('\n'),
 		),
@@ -17,7 +27,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	return new Response(file, {
 		headers: {
-			'Content-Disposition': `attachment; filename="transaction-export-${new Date().toISOString}.csv"`,
+			'Content-Disposition': `attachment; filename="transaction-export-${new Date().toISOString()}.csv"`,
 			'Content-Type': 'application/csv',
 		},
 	})

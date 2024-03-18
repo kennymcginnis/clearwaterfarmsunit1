@@ -128,8 +128,10 @@ model Transactions {
   credit Float   @default(0)
   note   String?
 
-  user   User?   @relation(fields: [userId], references: [id])
-  userId String?
+  user       User?   @relation(fields: [userId], references: [id])
+  userId     String?
+  scheduleId String?
+  ditch      Int?
 
   createdBy String   @default("Admin")
   createdAt DateTime @default(now())

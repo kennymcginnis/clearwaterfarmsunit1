@@ -192,15 +192,15 @@
 - [ ] Create a report formatted for QuickBooks upload
   - [ ] Get the QB format from Katy
 - [ ] Add `insert new` transaction
-- [ ] Add ditch and position columns
-  - [ ] Add schedule date columns?
-- [ ] Make columns sortable
-- [ ] Add `items per page`
-- [ ] Add filter
-  - [ ] by date
-  - [ ] by ditch
-  - [ ] by schedule date
-- [ ] Add download
+- [x] Add ditch and position columns
+  - [x] Add schedule date columns?
+- [x] Make columns sortable
+- [x] Add `items per page`
+- [x] Add filter
+  - [x] by date
+  - [x] by ditch
+  - [x] by schedule date
+- [x] Add download
 - [ ] Allow an Admin user to edit
 - [x] Add page for Transactions information
 - [x] Shows the initial starting balance in the irrigation account

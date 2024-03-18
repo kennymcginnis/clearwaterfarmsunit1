@@ -6,6 +6,7 @@ export const itemTableSchema = z.object({
 	items: z.number().min(1),
 	search: z.string().optional(),
 	age: z.number().min(0).optional(),
+	ditch: z.number().min(1).max(9).optional(),
 	direction: z.enum(['asc', 'desc']).optional(),
 	//Override these two with an enum of possible keys
 	filter: z.string().optional(),
@@ -17,6 +18,7 @@ export type ItemTableParams = z.infer<typeof itemTableSchema>
 export const getItemTableParams = <ZodSchema>(request: Request, schema: z.Schema<ZodSchema>) => {
 	const query = new URL(request.url).searchParams
 	const age = query.get('age')
+	const ditch = query.get('ditch')
 
 	const params = Object.fromEntries(
 		Object.entries({
@@ -24,6 +26,7 @@ export const getItemTableParams = <ZodSchema>(request: Request, schema: z.Schema
 			items: parseInt(query.get('items') || '10'),
 			search: query.get('search'),
 			age: age ? parseInt(age) : null,
+			ditch: ditch ? parseInt(ditch) : null,
 			filter: query.get('filter'),
 			sort: query.get('sort'),
 			direction: query.get('direction'),
@@ -62,10 +65,10 @@ export const getNewTableUrl = (
 			case 'sort':
 				if (!oldParams.sort || oldParams.sort !== newValue) {
 					params.set(newKey, newValue)
-					params.set('direction', 'desc')
-				} else if (oldParams.direction === 'desc') {
-					params.set(newKey, newValue)
 					params.set('direction', 'asc')
+				} else if (oldParams.direction === 'asc') {
+					params.set(newKey, newValue)
+					params.set('direction', 'desc')
 				} else {
 					//Third consecutive click resets the sort
 					params.delete('direction')
@@ -75,6 +78,10 @@ export const getNewTableUrl = (
 			case 'search':
 				//Searching resets the table
 				params = new URLSearchParams()
+				params.set(newKey, newValue)
+				params.set('page', '1')
+				break
+			case 'ditch':
 				params.set(newKey, newValue)
 				params.set('page', '1')
 				break

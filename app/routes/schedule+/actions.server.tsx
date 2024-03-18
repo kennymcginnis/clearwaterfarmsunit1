@@ -116,7 +116,7 @@ async function closeScheduleAction({ userId, schedule, formData }: ScheduleActio
 
 	if (submission.value) {
 		const userSchedules = await prisma.userSchedule.findMany({
-			select: { userId: true, hours: true },
+			select: { userId: true, hours: true, ditch: true },
 			where: { scheduleId: schedule.id },
 		})
 
@@ -125,7 +125,9 @@ async function closeScheduleAction({ userId, schedule, formData }: ScheduleActio
 				await prisma.transactions.create({
 					data: {
 						id: generatePublicId(),
+						scheduleId: schedule.id,
 						userId: userSchedule.userId,
+						ditch: userSchedule.ditch,
 						credit: userSchedule.hours * schedule.costPerHour,
 						date: schedule.date,
 						note: `${userSchedule.hours} hours at $${schedule.costPerHour} per hour`,

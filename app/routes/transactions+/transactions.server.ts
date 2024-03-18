@@ -11,7 +11,7 @@ export const getPaginatedTransactions = async (request: Request) => {
 	return await getTransactions(request)
 }
 export const getFilteredTransactions = async (request: Request) => {
-	return await getTransactions(request, false)
+	return await getTransactions(request, true)
 }
 const getTransactions = async (request: Request, returnAll?: boolean) => {
 	const tableParams = getItemTableParams(request, transactionsPaginationSchema)
@@ -23,19 +23,21 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		total: 0,
 	}
 
-	const transactionsSelect: Prisma.TransactionsSelect = {
+	const select: Prisma.TransactionsSelect = {
 		id: true,
+		scheduleId: true,
+		ditch: true,
+		userId: true,
 		date: true,
 		debit: true,
 		credit: true,
 		note: true,
-		user: { select: { username: true } },
+		user: { select: { id: true, username: true } },
 	}
-
 	const filter: Prisma.TransactionsFindManyArgs = returnAll
-		? { select: transactionsSelect, where: {} }
+		? { select, where: {} }
 		: {
-				select: transactionsSelect,
+				select,
 				where: {},
 				skip: tableParams.items * (tableParams.page - 1),
 				take: tableParams.items,
@@ -45,6 +47,13 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		filter.where = {
 			...filter.where,
 			OR: [{ note: { contains: tableParams.search } }, { user: { username: { contains: tableParams.search } } }],
+		}
+	}
+
+	if (tableParams.ditch) {
+		filter.where = {
+			...filter.where,
+			ditch: tableParams.ditch,
 		}
 	}
 
@@ -75,24 +84,11 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 					user: { username: tableParams.direction },
 				}
 				break
-			case 'date':
+			default:
 				filter.orderBy = {
-					date: tableParams.direction,
+					[tableParams.sort]: tableParams.direction,
 				}
 				break
-			case 'debit':
-				filter.orderBy = {
-					debit: tableParams.direction,
-				}
-				break
-			case 'credit':
-				filter.orderBy = {
-					credit: tableParams.direction,
-				}
-			case 'note':
-				filter.orderBy = {
-					note: tableParams.direction,
-				}
 		}
 	}
 
@@ -102,6 +98,8 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		})
 		return res || 0
 	}
+
+	console.dir({ filter })
 
 	const getTransactions = async () => {
 		// @ts-ignore
