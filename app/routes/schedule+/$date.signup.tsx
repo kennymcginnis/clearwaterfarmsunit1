@@ -107,16 +107,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		if (totals[user.ditch]) totals[user.ditch] += user.hours
 		else totals[user.ditch] = user.hours
 	}
-	// const anythingOpen = await prisma.schedule.findFirst({
-	// 	select: { id: true },
-	// 	where: { state: 'open' },
-	// })
 	return json({
 		status: 'idle',
 		schedule: { id: schedule.id, date: params.date, state: schedule.state },
 		users,
 		totals,
-		// canOpen: !['open', 'closed'].includes(schedule.state) && !anythingOpen,
 		error: null,
 	} as const)
 }
@@ -187,7 +182,6 @@ export default function ScheduleSignupRoute() {
 	const userIsAdmin = useOptionalAdminUser()
 	const { status, schedule, users, totals, error } = useLoaderData<typeof loader>()
 	const { id: scheduleId, date: scheduleDate } = schedule
-	// const canLock = state === 'open'
 
 	const nodeRefA = useRef(null)
 	const nodeRefB = useRef(null)
@@ -250,33 +244,6 @@ export default function ScheduleSignupRoute() {
 									</Icon>
 								</NavLink>
 							</Button>
-							{/* {canOpen ? (
-								<ScheduleActionButton
-									id={schedule.id}
-									icon="lock-open-1"
-									value="open-schedule"
-									text="Open Sign-up"
-									variant="secondary"
-								/>
-							) : null}
-							{canLock ? (
-								<>
-									<Button asChild variant="default">
-										<NavLink to={`/schedule/${schedule.date}/signup`}>
-											<Icon name="magnifying-glass" className="scale-125 max-md:scale-150">
-												<span className="max-md:hidden">Sign-up</span>
-											</Icon>
-										</NavLink>
-									</Button>
-									<ScheduleActionButton
-										id={schedule.id}
-										icon="lock-closed"
-										value="lock-schedule"
-										text="Lock Scheduling"
-										variant="secondary"
-									/>
-								</>
-							) : null} */}
 							<Button>
 								<Link reloadDocument to={`/resources/download-signup/${scheduleDate}`}>
 									<Icon name="download">Download</Icon>

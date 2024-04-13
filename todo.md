@@ -29,10 +29,14 @@
 
 - [x] Links
 - [x] Contact
-  - [ ] Add `social` links (or remove icons)
+  - [x] Add `social` links (or remove icons)
+    - [x] Facebook
+    - [x] Nextdoor
 
 ## Document pages
 
+- [x] rename `trade list` to `Trades & Resources`
+- [ ] Button to take you back to the top of the page
 - [x] Credits should not be negative
 - [ ] Add Rules and Regulations
   - [ ] Rules and Regulations page added, content still missing.
@@ -72,7 +76,8 @@
 
 ### Admin page
 
-- [ ] If `head` is 140, don't allow half hour intervals
+- [ ] "Are you sure?" button for those wanting 140" head of water instead of the default 70"
+- [x] If `head` is 140, don't allow half hour intervals
 - [ ] Create resource routes to post directly to database
   - [x] Get user/`username`
   - [x] Put user/`username`/roles
@@ -152,10 +157,10 @@
 ### Contact information
 
 - [x] Hide this page for members unless viewing self
+- [ ] Email domain needs to be configured and confirmed.
 - [x] Add phone numbers array into edit section
 - [ ] Q: Should we mark one phone number as `primary`?
   - [ ] `Attempted` was surprisingly harder than I expected - unless we add it to the edit form and require submit
-- [ ] Email domain needs to be configured and confirmed.
 - [ ] Allow an Admin user to edit
 - [x] Add page for Profile information
 - [x] Allow Editing of Self for a logged in user

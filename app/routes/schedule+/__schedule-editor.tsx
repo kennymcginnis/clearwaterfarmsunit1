@@ -143,7 +143,7 @@ export function UserScheduleEditor({
 							inputProps={{
 								name: 'hours',
 								type: 'number',
-								step: 0.5,
+								step: headValue === '70' ? 0.5 : 1,
 								min: 0,
 								max: 12,
 								value: hoursValue,

@@ -33,19 +33,6 @@ export function MainNavigationMenu({
 						</NavigationMenuLink>
 					</Link>
 				</NavigationMenuItem>
-				{/* <NavigationMenuItem>
-					<Link to="/announcements">
-						<NavigationMenuLink className={navigationMenuTriggerStyle()}>
-							<ToolTipIcon
-								className={iconStyle}
-								name="exclamation-triangle"
-								tooltip="Announcements"
-								aria-hidden="true"
-							/>
-							<p className="max-md:hidden">Announcements</p>
-						</NavigationMenuLink>
-					</Link>
-				</NavigationMenuItem> */}
 				<IrrigationNavigationMenu open={open} closed={closed} />
 				<DocumentsNavigationMenu />
 				{userIsAdmin ? (
@@ -61,8 +48,8 @@ export function MainNavigationMenu({
 				<NavigationMenuItem>
 					<Link to="/trade-list">
 						<NavigationMenuLink className={navigationMenuTriggerStyle()}>
-							<ToolTipIcon className={iconStyle} name="id-card" tooltip="Trade List" aria-hidden="true" />
-							<p className="text-ellipsis text-nowrap max-md:hidden">Trade List</p>
+							<ToolTipIcon className={iconStyle} name="id-card" tooltip="Trades & Resources" aria-hidden="true" />
+							<p className="text-ellipsis text-nowrap max-md:hidden">Trades & Resources</p>
 						</NavigationMenuLink>
 					</Link>
 				</NavigationMenuItem>
