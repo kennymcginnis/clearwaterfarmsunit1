@@ -50,8 +50,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		FROM User
 		LEFT JOIN UserImage ON User.id = UserImage.userId
 		INNER JOIN Port ON User.id = Port.userId
-		WHERE User.username LIKE ${like}
-		OR User.member LIKE ${like}
+		WHERE User.active 
+		AND (User.username LIKE ${like} OR User.member LIKE ${like})
 		ORDER BY Port.ditch, Port.position
 	`
 

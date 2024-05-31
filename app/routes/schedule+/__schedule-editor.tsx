@@ -5,7 +5,6 @@ import { type SetStateAction, useState } from 'react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
 import { Field } from '#app/components/forms.tsx'
-import { HeadCombobox } from '#app/components/head-combobox'
 import { Button } from '#app/components/ui/button'
 import { Card, CardHeader, CardFooter, CardContent, CardTitle, CardDescription } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
@@ -21,7 +20,6 @@ const UserScheduleEditorSchema = z.object({
 	scheduleId: z.string(),
 	ditch: z.number(),
 	hours: z.number().min(0).max(12),
-	head: z.number(),
 })
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -35,7 +33,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	}
 
 	if (submission.value) {
-		const { userId, ditch, scheduleId, hours, head } = submission.value
+		const { userId, ditch, scheduleId, hours } = submission.value
 
 		await prisma.userSchedule.upsert({
 			select: { userId: true, ditch: true, scheduleId: true },
@@ -45,12 +43,10 @@ export async function action({ request }: ActionFunctionArgs) {
 				scheduleId,
 				ditch,
 				hours,
-				head,
 				createdBy: currentUser,
 			},
 			update: {
 				hours,
-				head,
 				updatedBy: currentUser,
 			},
 		})
@@ -73,7 +69,6 @@ export function UserScheduleEditor({
 		id: string
 		username: string
 		defaultHours: number
-		defaultHead: number
 		restricted: boolean
 		restriction: string | null
 	}
@@ -84,40 +79,26 @@ export function UserScheduleEditor({
 	userSchedule: {
 		ditch: number
 		hours: number | null
-		head: number | null
 	}
-	previous?: {
-		hours: number | null
-		head: number | null
-	}
+	previous?: number | null
 }) {
 	const isPending = useIsPending()
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
 	const canEdit = (!user.restricted && user.id === currentUser?.id) || userIsAdmin
 
-	const formatHeadValue = (head: Number | null) => (locked ? 70 : head ?? 70).toString()
-
 	const handlePrevious = (): void => {
-		if (previous && previous.hours && previous.head) {
-			setHeadValue(formatHeadValue(previous.head))
-			setHoursValue(previous.hours)
-		}
+		if (previous) setHoursValue(previous)
 	}
 	const handleDefault = (): void => {
-		if (user.defaultHours && user.defaultHead) {
-			setHeadValue(formatHeadValue(user.defaultHead))
-			setHoursValue(user.defaultHours)
-		}
+		if (user.defaultHours) setHoursValue(user.defaultHours)
 	}
 	const handleHoursChanged = (e: { target: { value: SetStateAction<string> } }) => {
 		const { value } = e.target
 		if (Number(value) >= 0) setHoursValue(Number(value))
 	}
 
-	const locked = schedule.source === 'well'
 	const [hoursValue, setHoursValue] = useState(userSchedule.hours || 0)
-	const [headValue, setHeadValue] = useState(formatHeadValue(userSchedule.head))
 
 	return (
 		<Card key={userSchedule.ditch}>
@@ -143,15 +124,13 @@ export function UserScheduleEditor({
 							inputProps={{
 								name: 'hours',
 								type: 'number',
-								step: headValue === '70' ? 0.5 : 1,
+								step: 0.5,
 								min: 0,
 								max: 12,
 								value: hoursValue,
 								onChange: handleHoursChanged,
 							}}
 						/>
-						<input type="hidden" name="head" value={headValue} />
-						<HeadCombobox label="Head" value={headValue} setValue={setHeadValue} locked={locked} />
 					</div>
 				</CardContent>
 				{canEdit ? (
@@ -162,7 +141,7 @@ export function UserScheduleEditor({
 									Default
 								</Button>
 							) : null}
-							{previous && previous.hours ? (
+							{previous ? (
 								<Button variant="secondary" type="reset" onClick={handlePrevious}>
 									Previous
 								</Button>

@@ -16,7 +16,7 @@ import { prisma } from '#app/utils/db.server.ts'
 import { useDoubleCheck, useIsPending } from '#app/utils/misc'
 import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server'
-import { EmailSchema, NameSchema, PhoneSchema, UsernameSchema } from '#app/utils/user-validation'
+import { EmailSchema, NameSchema, PhoneNumberSchema, UsernameSchema } from '#app/utils/user-validation'
 
 const UserContactSchema = z.object({
 	id: z.string(),
@@ -29,14 +29,14 @@ const UserContactSchema = z.object({
 const CreatePhoneSchema = z.object({
 	userId: z.string(),
 	type: z.string(),
-	number: PhoneSchema,
+	number: PhoneNumberSchema,
 })
 
 const UpdatePhoneSchema = z.object({
 	userId: z.string(),
 	id: z.string(),
 	type: z.string(),
-	number: PhoneSchema,
+	number: PhoneNumberSchema,
 	primary: z.boolean().optional().default(false),
 })
 

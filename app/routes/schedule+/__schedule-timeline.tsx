@@ -12,7 +12,6 @@ export function UserScheduleTimeline({
 	userSchedule: {
 		ditch: number
 		hours: number | null
-		head: number | null
 		schedule: string[]
 	}
 }) {

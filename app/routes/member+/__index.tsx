@@ -25,7 +25,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			username: true,
 			member: true,
 			defaultHours: true,
-			defaultHead: true,
 			restricted: true,
 			userAddress: {
 				select: {
@@ -214,7 +213,6 @@ export default function MemberRoute() {
 function ViewIrrigation(user: {
 	restricted: boolean
 	defaultHours: number
-	defaultHead: number
 	ports: {
 		ditch: number
 		position: number
@@ -239,11 +237,6 @@ function ViewIrrigation(user: {
 					className="col-span-3"
 					labelProps={{ htmlFor: (user.defaultHours || 0).toString(), children: 'Default Hours' }}
 					inputProps={{ defaultValue: user.defaultHours }}
-				/>
-				<DisplayField
-					className="col-span-3"
-					labelProps={{ htmlFor: (user.defaultHead || 70).toString(), children: 'Default Head' }}
-					inputProps={{ defaultValue: user.defaultHead }}
 				/>
 				<Separator className="col-span-6 mb-1 mt-1" />
 				{user.ports.map(port => (

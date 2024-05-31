@@ -3,17 +3,14 @@ import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node'
 import { useLoaderData, NavLink, Outlet, useFetcher } from '@remix-run/react'
-import { useState } from 'react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary'
 import { Field } from '#app/components/forms.tsx'
-import { HeadCombobox } from '#app/components/head-combobox'
 import { Badge } from '#app/components/ui/badge'
 import { Button } from '#app/components/ui/button.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button'
 import { requireSelfOrAdmin, requireUserId } from '#app/utils/auth.server'
-import { validateCSRF } from '#app/utils/csrf.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { cn, getVariantForState, useIsPending } from '#app/utils/misc'
 import { redirectWithToast } from '#app/utils/toast.server'
@@ -21,7 +18,6 @@ import { redirectWithToast } from '#app/utils/toast.server'
 const IrrigationDefaultsSchema = z.object({
 	id: z.string(),
 	defaultHours: z.number().default(0),
-	defaultHead: z.number().default(70),
 })
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -29,8 +25,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const { username } = params
 	const user = await prisma.user.findFirst({
 		select: {
+			id: true,
 			defaultHours: true,
-			defaultHead: true,
 			restricted: true,
 			restriction: true,
 		},
@@ -58,7 +54,6 @@ const updateDefaultsActionIntent = 'update-defaults'
 export async function action({ request }: ActionFunctionArgs) {
 	const currentUser = await requireUserId(request)
 	const formData = await request.formData()
-	await validateCSRF(formData, request.headers)
 	const submission = await parse(formData, { schema: IrrigationDefaultsSchema, async: true })
 
 	if (submission.intent !== 'submit') {
@@ -66,12 +61,11 @@ export async function action({ request }: ActionFunctionArgs) {
 	}
 
 	if (submission.value) {
-		const { id, defaultHours, defaultHead } = submission.value
+		const { id, defaultHours } = submission.value
 		await prisma.user.update({
 			where: { id },
 			data: {
 				defaultHours,
-				defaultHead,
 				updatedBy: currentUser,
 			},
 		})
@@ -79,7 +73,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		return redirectWithToast('', {
 			type: 'success',
 			title: 'Success',
-			description: `Defaults hours and head updated.`,
+			description: `Defaults hours updated.`,
 		})
 	} else {
 		return json({ status: 'error', submission } as const, { status: 400 })
@@ -91,8 +85,6 @@ export default function NotesRoute() {
 	const isPending = useIsPending()
 	const navLinkDefaultClassName =
 		'line-clamp-2 block rounded-full md:rounded-r-none py-2 pl-8 pr-6 text-base lg:text-xl'
-
-	const [headValue, setHeadValue] = useState((user?.defaultHead ?? 70).toString())
 
 	const fetcher = useFetcher<typeof action>()
 	const [form, fields] = useForm({
@@ -121,6 +113,7 @@ export default function NotesRoute() {
 			</CardHeader>
 			<fetcher.Form method="POST" {...form.props}>
 				<CardContent className="flex w-full flex-row justify-stretch gap-2 space-y-2">
+					<input type="hidden" name="id" value={user?.id} />
 					<Field
 						className="col-span-3 flex-1"
 						labelProps={{ children: 'Default Hours' }}
@@ -133,10 +126,6 @@ export default function NotesRoute() {
 							autoFocus: true,
 						}}
 					/>
-					<div className="flex flex-1 flex-col gap-0.5">
-						<input type="hidden" name="defaultHead" value={headValue} />
-						<HeadCombobox label="Default Head" value={headValue} setValue={setHeadValue} locked={false} />
-					</div>
 					<div className="flex w-full flex-1 flex-row items-end gap-2">
 						<Button form={form.id} variant="destructive" type="reset">
 							Reset

@@ -12,9 +12,32 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 	switch (request.method) {
 		case 'PUT': {
 			switch (params.intent) {
+				case 'moved': {
+					const updated = await prisma.user.update({
+						select: { id: true, username: true, active: true, ports: { select: { ditch: true, position: true } } },
+						data: { active: false },
+						where: { id: user.id },
+					})
+					// decrement every position after moved user
+					for (let port of updated.ports) {
+						const ports = await prisma.port.findMany({
+							where: {
+								ditch: port.ditch,
+								position: { gte: port.position },
+							},
+						})
+						ports.map(async p => {
+							await prisma.port.update({
+								data: { position: p.position === port.position ? 0 : p.position - 1 },
+								where: { id: p.id },
+							})
+						})
+					}
+					return json({ status: 'updated', ...updated } as const, { status: 200 })
+				}
 				case 'restricted': {
-					const PutUserRolesSchema = z.object({ restricted: z.boolean(), restriction: z.string().optional() })
-					const result = PutUserRolesSchema.safeParse(await request.json())
+					const PutUserRestrictedSchema = z.object({ restricted: z.boolean(), restriction: z.string().optional() })
+					const result = PutUserRestrictedSchema.safeParse(await request.json())
 					if (!result.success) {
 						return json({ status: 'error', error: result.error.message } as const, {
 							status: 400,

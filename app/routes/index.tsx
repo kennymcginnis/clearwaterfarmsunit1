@@ -58,7 +58,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 				id: true,
 				username: true,
 				defaultHours: true,
-				defaultHead: true,
 				restricted: true,
 				restriction: true,
 				ports: { select: { ditch: true } },
@@ -79,7 +78,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			select: {
 				ditch: true,
 				hours: true,
-				head: true,
 				start: true,
 				stop: true,
 			},

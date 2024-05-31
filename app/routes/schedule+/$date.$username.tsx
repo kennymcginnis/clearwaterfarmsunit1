@@ -19,7 +19,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			id: true,
 			username: true,
 			defaultHours: true,
-			defaultHead: true,
 			restricted: true,
 			restriction: true,
 			ports: {
@@ -48,7 +47,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		select: {
 			ditch: true,
 			hours: true,
-			head: true,
 			start: true,
 			stop: true,
 		},
@@ -65,7 +63,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			userSchedules.push({
 				ditch: port.ditch,
 				hours: user.defaultHours,
-				head: user.defaultHead,
 				start: null,
 				stop: null,
 				schedule: [],

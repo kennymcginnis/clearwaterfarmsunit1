@@ -53,8 +53,7 @@ const SearchResultsSchema = z.array(
 		username: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(36)),
-		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.01).min(0).max(36)),
-		head: z.preprocess(x => (x ? x : 70), z.coerce.number().multipleOf(70).min(70).max(140)),
+		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
 		start: z.date().nullable(),
 		stop: z.date().nullable(),
 	}),
@@ -73,19 +72,19 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, Port.ditch, Port.position, mid.hours, mid.head, mid.start, mid.stop
+		SELECT User.id, User.username, Port.ditch, Port.position, mid.hours, mid.start, mid.stop
 		FROM User
 		INNER JOIN Port ON User.id = Port.userId
     LEFT JOIN (
-      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.head, UserSchedule.start, UserSchedule.stop
+      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
       FROM Schedule 
       INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
       WHERE Schedule.id = ${schedule?.id}
     ) mid
 		ON User.id = mid.userId
 		AND Port.ditch = mid.ditch
-		WHERE User.username LIKE ${like}
-		OR User.member LIKE ${like}
+		WHERE User.active
+		AND (User.username LIKE ${like} OR User.member LIKE ${like})
 		ORDER BY Port.ditch, Port.position
 	`
 
@@ -131,8 +130,7 @@ const UploadTimelineSchema = z.array(
 		username: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(36)),
-		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.01).min(0).max(36)),
-		head: z.preprocess(x => (x ? x : 70), z.coerce.number().multipleOf(70).min(70).max(140)),
+		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
 		start: z.preprocess(x => (x && typeof x === 'string' ? parseISO(x) : null), z.date().nullable()),
 		stop: z.preprocess(x => (x && typeof x === 'string' ? parseISO(x) : null), z.date().nullable()),
 	}),
@@ -164,14 +162,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				ditch: userSchedule.ditch,
 				scheduleId: schedule.id,
 				hours: userSchedule.hours,
-				head: userSchedule.head,
 				start: userSchedule.start,
 				stop: userSchedule.stop,
 				createdBy: userId,
 			},
 			update: {
 				hours: userSchedule.hours,
-				head: userSchedule.head,
 				start: userSchedule.start,
 				stop: userSchedule.stop,
 				updatedBy: userId,

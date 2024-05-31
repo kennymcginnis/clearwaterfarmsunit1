@@ -9,7 +9,6 @@ const UserSearchResultSchema = z.object({
 	ditch: z.number(),
 	position: z.number(),
 	hours: z.bigint().or(z.number()).nullable(),
-	head: z.number().nullable(),
 })
 
 const UserSearchResultsSchema = z.array(UserSearchResultSchema)
@@ -20,17 +19,18 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	}
 
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.display, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.head
+		SELECT User.id, User.display, Port.ditch, Port.position, UserSchedule.hours
 		FROM User
 		INNER JOIN Port ON User.id = Port.userId
     LEFT JOIN (
-      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.head
+      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours
       FROM Schedule 
       INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
       WHERE Schedule.date = ${params.date}
     ) UserSchedule
 		ON User.id = UserSchedule.userId
 		AND Port.ditch = UserSchedule.ditch
+		WHERE User.active
 		ORDER BY Port.ditch, Port.position
 	`
 
@@ -44,8 +44,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	const file = createReadableStreamFromReadable(
 		Readable.from(
 			[
-				['id', 'display', 'ditch', 'position', 'hours', 'head'].join(','),
-				...result.data.map(raw => [raw.id, raw.display, raw.ditch, raw.position, raw.hours, raw.head].join(',')),
+				['id', 'display', 'ditch', 'position', 'hours'].join(','),
+				...result.data.map(raw => [raw.id, raw.display, raw.ditch, raw.position, raw.hours].join(',')),
 			].join('\n'),
 		),
 	)

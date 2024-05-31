@@ -333,13 +333,9 @@ export function getRequiredEnvVar(key: string, env = process.env): string {
 export type UserSchedule = {
 	ditch: number
 	hours: number | null
-	head: number | null
 	start: Date | null
 	stop: Date | null
-	previous: {
-		hours: number | null
-		head: number | null
-	}
+	previous: number | null
 	schedule: string[]
 }
 export type UserSchedules = UserSchedule[]
@@ -354,7 +350,7 @@ export function formatSchedule(
 		state: string
 		start: Date | null
 		stop: Date | null
-		userSchedules?: { ditch: number; start: Date | null; stop: Date | null; hours: number; head: number }[]
+		userSchedules?: { ditch: number; start: Date | null; stop: Date | null; hours: number }[]
 	} | null,
 ) {
 	return schedule && schedule.start && schedule.stop
@@ -372,7 +368,6 @@ export function formatUserSchedule(
 				start: Date | null
 				stop: Date | null
 				hours: number
-				head: number
 		  }[]
 		| undefined,
 	previousUserSchedules?:
@@ -381,7 +376,6 @@ export function formatUserSchedule(
 				start: Date | null
 				stop: Date | null
 				hours: number
-				head: number
 		  }[]
 		| undefined,
 ): UserSchedules {
@@ -389,15 +383,14 @@ export function formatUserSchedule(
 		const empty = {
 			ditch: port.ditch,
 			hours: null,
-			head: null,
 			start: null,
 			stop: null,
 		}
 		const found = userSchedules?.find(us => us.ditch === port.ditch) ?? empty
-		const { hours, head } = previousUserSchedules?.find(us => us.ditch === port.ditch) ?? empty
+		const { hours } = previousUserSchedules?.find(us => us.ditch === port.ditch) ?? empty
 		return {
 			...found,
-			previous: { hours, head },
+			previous: hours,
 			schedule: formatDates({ start: found?.start, stop: found?.stop }),
 		}
 	})

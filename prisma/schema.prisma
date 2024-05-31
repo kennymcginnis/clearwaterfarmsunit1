@@ -16,6 +16,8 @@ model User {
   display  String?
   member   String?
 
+  active   Boolean @default(true)
+
   userAddress UserAddress[]
 
   primaryEmail   String? @unique
@@ -28,7 +30,6 @@ model User {
   schedules    UserSchedule[]
 
   defaultHours Float @default(0)
-  defaultHead  Int   @default(70)
 
   restricted  Boolean @default(false)
   restriction String?
