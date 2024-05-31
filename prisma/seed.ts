@@ -1,6 +1,7 @@
+import { createPassword } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { generatePublicId } from '#app/utils/public-id'
-import { cleanupDb, createPassword } from '#tests/db-utils.ts'
+import { cleanupDb } from '#tests/db-utils.ts'
 import documents from './seed.documents'
 import { timeline } from './seed.timeline'
 import { users } from './seed.users'

@@ -117,6 +117,13 @@ export async function logout(
 	})
 }
 
+export function createPassword(password: string) {
+	if (password.length < 6) password = `${password}123456`.substring(0,6)
+	return {
+		hash: bcrypt.hashSync(password, 10),
+	}
+}
+
 export async function getPasswordHash(password: string) {
 	return await bcrypt.hash(password, 10)
 }

@@ -1,10 +1,10 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { type ActionFunctionArgs, type LoaderFunctionArgs, json } from '@remix-run/node'
 import { z } from 'zod'
+import { createPassword } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { generatePublicId } from '#app/utils/public-id'
 import { AddressSchema, DepositsSchema, PhoneSchema, PortsSchema } from '#app/utils/user-validation'
-import { createPassword } from '#tests/db-utils'
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	return await prisma.user.findMany()

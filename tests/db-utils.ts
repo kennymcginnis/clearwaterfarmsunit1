@@ -1,7 +1,6 @@
 import fs from 'node:fs'
 import { faker } from '@faker-js/faker'
 import { type PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
 
 import { UniqueEnforcer } from 'enforce-unique'
 
@@ -30,13 +29,6 @@ export function createUser() {
 		restricted: false,
 		member: `${firstName} ${lastName}`,
 		primaryEmail: `${username}@example.com`,
-	}
-}
-
-export function createPassword(password: string = faker.internet.password()) {
-	if (password.length < 6) password = `${password}123456`.substring(0,6)
-	return {
-		hash: bcrypt.hashSync(password, 10),
 	}
 }
 
