@@ -47,7 +47,7 @@ export const SearchResultsSchema = z.array(
 		id: z.string(),
 		username: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(36)),
+		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
 	}),
 )
@@ -120,8 +120,8 @@ const UploadSignupSchema = z.array(
 		id: z.string(),
 		username: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(36)),
-		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36))
+		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
+		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(99)),
 	}),
 )
 export async function action({ request, params }: ActionFunctionArgs) {
