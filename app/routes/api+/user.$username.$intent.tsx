@@ -10,7 +10,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 	})
 
 	switch (request.method) {
-		case 'PUT': {
+		case 'POST':
+		case 'PUT':
 			switch (params.intent) {
 				case 'moved': {
 					const updated = await prisma.user.update({
@@ -65,12 +66,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 					})
 				}
 			}
-		}
-		case 'PATCH': {
+		case 'PATCH':
 			switch (params.intent) {
 				case 'roles':
 			}
-		}
 	}
 	invariantResponse(params.intent, `${request.method} Intent not handled.`, { status: 404 })
 }
