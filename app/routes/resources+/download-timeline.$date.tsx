@@ -5,7 +5,7 @@ import { prisma } from '#app/utils/db.server.ts'
 
 const UserSearchResultSchema = z.object({
 	id: z.string(),
-	display: z.string(),
+	username: z.string(),
 	ditch: z.number(),
 	position: z.number(),
 	hours: z.bigint().or(z.number()).nullable(),
@@ -21,7 +21,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	}
 
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.display, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
+		SELECT User.id, User.username, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
 		FROM User
 		INNER JOIN Port ON User.id = Port.userId
     LEFT JOIN (
@@ -46,11 +46,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	const file = createReadableStreamFromReadable(
 		Readable.from(
 			[
-				['id', 'display', 'ditch', 'position', 'hours', 'start', 'stop'].join(','),
+				['id', 'username', 'ditch', 'position', 'hours', 'start', 'stop'].join(','),
 				...result.data.map(raw =>
 					[
 						raw.id,
-						raw.display,
+						raw.username,
 						raw.ditch,
 						raw.position,
 						raw.hours,
