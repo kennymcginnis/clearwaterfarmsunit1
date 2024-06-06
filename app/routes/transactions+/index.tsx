@@ -120,7 +120,7 @@ export default function ViewTransactions() {
 				<Input id="scheduleId" disabled={true} className="col-span-1" value={scheduleId} />
 				<Input id="ditch" disabled={true} className="col-span-1" value={ditch} />
 				<Input id="userId" disabled={true} className="col-span-1" value={user.id} />
-				<Input id="username" disabled={true} className="col-span-2" value={user.username} />
+				<Input id="username" disabled={true} className="col-span-2 capitalize" value={user.username} />
 				<Input id="date" disabled={editing !== id} className="col-span-1 text-right" value={date} />
 				{editing === id ? (
 					<Input

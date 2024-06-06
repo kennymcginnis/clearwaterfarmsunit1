@@ -127,7 +127,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 const UploadTimelineSchema = z.array(
 	z.object({
 		id: z.string(),
-		username: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(99)),
@@ -347,7 +346,7 @@ function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType
 			className={`flex h-[82px] w-44 flex-col rounded-lg ${user.hours ? 'bg-muted' : 'bg-muted-40'} p-2`}
 		>
 			<div className="flex w-full flex-row justify-between gap-1 border-b-2">
-				<span className="overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
+				<span className="overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground capitalize">
 					{user.position}: {user.username}
 				</span>
 				<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">

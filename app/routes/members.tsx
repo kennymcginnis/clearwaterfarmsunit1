@@ -65,10 +65,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const totals: TotalType = {}
 	const users: PositionDitchType = {}
 	for (let user of result.data) {
-		if (users[user.position]) users[user.position][user.ditch] = user
-		else users[user.position] = { [user.ditch]: user }
+		const { position, ditch } = user
+		if (users[position]) users[position][ditch] = user
+		else users[position] = { [ditch]: user }
 
-		totals[user.ditch] = true
+		totals[ditch] = true
 	}
 	return json({ status: 'idle', error: null, users, totals } as const)
 }
@@ -184,7 +185,7 @@ function UserCard({ user }: { user: UserType }) {
 				className="h-16 w-16 rounded-full"
 			/>
 			{user.member ? (
-				<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md">
+				<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md capitalize">
 					{user.username}
 				</span>
 			) : null}

@@ -22,7 +22,7 @@ export function UserScheduleTimeline({
 		<Card>
 			<CardHeader>
 				<CardTitle>Ditch {userSchedule.ditch}</CardTitle>
-				<CardDescription>
+				<CardDescription className="capitalize">
 					{user.username} {formatHours(userSchedule.hours)}
 				</CardDescription>
 			</CardHeader>

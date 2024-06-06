@@ -118,7 +118,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 const UploadSignupSchema = z.array(
 	z.object({
 		id: z.string(),
-		username: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(99)),
@@ -334,7 +333,7 @@ function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType
 			to={`/schedule/${scheduleDate}/${user.username}`}
 			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg  ${user.hours ? 'bg-muted' : 'bg-muted-40'} px-5 py-3`}
 		>
-			<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-body-sm text-muted-foreground">
+			<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-body-sm text-muted-foreground capitalize">
 				{user.position}: {user.username}
 			</span>
 			<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
