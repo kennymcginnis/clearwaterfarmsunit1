@@ -32,7 +32,7 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		debit: true,
 		credit: true,
 		note: true,
-		user: { select: { id: true, username: true } },
+		user: { select: { id: true, display: true } },
 	}
 	const filter: Prisma.TransactionsFindManyArgs = returnAll
 		? { select, where: {} }
@@ -46,7 +46,7 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 	if (tableParams.search) {
 		filter.where = {
 			...filter.where,
-			OR: [{ note: { contains: tableParams.search } }, { user: { username: { contains: tableParams.search } } }],
+			OR: [{ note: { contains: tableParams.search } }, { user: { display: { contains: tableParams.search } } }],
 		}
 	}
 
@@ -79,9 +79,9 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 
 	if (tableParams.sort) {
 		switch (tableParams.sort) {
-			case 'username':
+			case 'display':
 				filter.orderBy = {
-					user: { username: tableParams.direction },
+					user: { display: tableParams.direction },
 				}
 				break
 			default:
