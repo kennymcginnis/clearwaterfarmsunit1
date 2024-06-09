@@ -9,7 +9,7 @@ import { Icon } from '#app/components/ui/icon'
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { parseMdx } from '#app/utils/mdx-bundler.server'
-import { formatSchedule, formatUserSchedule } from '#app/utils/misc'
+import { formatDay, formatSchedule, formatUserSchedule } from '#app/utils/misc'
 import AnnouncementsComponent from './_marketing+/announcements'
 import { UserScheduleEditor, action } from './schedule+/__schedule-editor'
 import { UserScheduleTimeline } from './schedule+/__schedule-timeline'
@@ -57,6 +57,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			select: {
 				id: true,
 				username: true,
+				display: true,
 				defaultHours: true,
 				restricted: true,
 				restriction: true,
@@ -220,7 +221,7 @@ export default function HomeRoute() {
 							<Card className="bg-muted">
 								<CardHeader className="flex-col items-center">
 									<CardTitle>Open Until: {open.deadline}</CardTitle>
-									<CardDescription>Sign-Up Deadline Monday at 7pm</CardDescription>
+									<CardDescription>Sign-Up Deadline {formatDay(open.deadline)} at 7pm</CardDescription>
 								</CardHeader>
 								<CardContent className="flex flex-col gap-2">
 									{userSchedules.open ? (

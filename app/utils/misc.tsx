@@ -1,6 +1,6 @@
 import { useFormAction, useNavigation, Link, type LinkProps } from '@remix-run/react'
 import { clsx, type ClassValue } from 'clsx'
-import { format } from 'date-fns'
+import { format, parse } from 'date-fns'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as React from 'react'
 import { useSpinDelay } from 'spin-delay'
@@ -396,13 +396,38 @@ export function formatUserSchedule(
 	})
 }
 
+export function formatDay(deadline: string): string {
+	const deadlineDate = parse(deadline, 'yyyy-MM-dd', new Date())
+	return format(deadlineDate, 'eeee')
+}
+
 export function formatDates({ start, stop }: { start: Date | null; stop: Date | null }): string[] {
 	if (!start || !stop) return ['', '']
 	if (start.getDay() === stop.getDay()) {
 		return [format(start, 'MMM do'), `${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}`]
 	} else {
-		return [format(start, 'MMM do h:mmaaa'), format(stop, 'MMM do h:mmaaa')]
+		return [format(start, 'MMM do, h:mmaaa'), format(stop, 'MMM do, h:mmaaa')]
 	}
+}
+
+export function formatPrintableDates({ start, stop }: { start: Date | null; stop: Date | null }): string {
+	if (!start || !stop) return ''
+	if (start.getDay() === stop.getDay()) {
+		return `"${format(start, 'MMM do')}, ${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}"`
+	} else {
+		return `"${format(start, 'MMM do, h:mmaaa')}-${format(stop, 'MMM do, h:mmaaa')}"`
+	}
+}
+
+export function formatDisplayName({ display, member }: { display: string; member: string | null }): string {
+	let output = display
+	if (output.includes('-')) output = output.replaceAll('-', ', ')
+	if (member && member.toLowerCase().startsWith(output)) return member.substring(0, output.length)
+	return capitalizeFirstLetter(output)
+}
+
+export function capitalizeFirstLetter([first = '', ...rest]: string): string {
+	return [first.toUpperCase(), ...rest].join('')
 }
 
 export function getVariantForState(

@@ -67,7 +67,7 @@ export function UserScheduleEditor({
 }: {
 	user: {
 		id: string
-		username: string
+		display: string | null
 		defaultHours: number
 		restricted: boolean
 		restriction: string | null
@@ -109,7 +109,7 @@ export function UserScheduleEditor({
 				<input type="hidden" name="ditch" value={userSchedule.ditch} />
 				<CardHeader>
 					<CardTitle>Ditch {userSchedule.ditch}</CardTitle>
-					<CardDescription>{user.username}</CardDescription>
+					<CardDescription>{user.display}</CardDescription>
 				</CardHeader>
 				{userSchedule.hours ? (
 					<CardDescription className="mx-3 mb-0 mt-1.5 rounded-sm border-2 border-blue-900 p-2 text-center text-blue-700">

@@ -2,6 +2,7 @@ import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@rem
 import { useLoaderData, Outlet } from '@remix-run/react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { prisma } from '#app/utils/db.server.ts'
+import { formatDay } from '#app/utils/misc'
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	if (!params?.date) {
@@ -24,7 +25,7 @@ export default function UsersRoute() {
 		<>
 			<div className="container my-8 flex flex-col items-center justify-center gap-6">
 				<h1 className="text-center text-h1">Irrigation Sign-up Schedule for {schedule.date}</h1>
-				<h2 className="text-h2">Sign-up deadline {schedule.deadline}</h2>
+				<h2 className="text-h2">Sign-up Deadline {formatDay(schedule.deadline)} at 7pm</h2>
 				<h3 className="text-h3 capitalize">
 					Source: {schedule.source} | Cost Per Hour: ${schedule.costPerHour}
 				</h3>

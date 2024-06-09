@@ -7,7 +7,7 @@ export function UserScheduleTimeline({
 }: {
 	user: {
 		id: string
-		username: string
+		display: string | null
 	}
 	userSchedule: {
 		ditch: number
@@ -22,8 +22,8 @@ export function UserScheduleTimeline({
 		<Card>
 			<CardHeader>
 				<CardTitle>Ditch {userSchedule.ditch}</CardTitle>
-				<CardDescription className="capitalize">
-					{user.username} {formatHours(userSchedule.hours)}
+				<CardDescription>
+					{user.display} {formatHours(userSchedule.hours)}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-2">

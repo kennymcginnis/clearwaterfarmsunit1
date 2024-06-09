@@ -5,6 +5,7 @@ import { type loader as rootLoader } from '#app/root.tsx'
 interface User {
 	id: string
 	username: string
+	display: string | null
 	member: string | null
 	image: {
 		id: string

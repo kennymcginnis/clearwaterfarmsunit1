@@ -10,7 +10,7 @@ export type Transaction = {
 	debit: number
 	credit: number
 	note: string | null
-	user: { id: string; username: string }
+	user: { id: string; display: string }
 }
 
 export interface TransactionData {
@@ -25,7 +25,7 @@ export type TransactionHeader =
 	| 'scheduleId'
 	| 'ditch'
 	| 'userId'
-	| 'username'
+	| 'display'
 	| 'date'
 	| 'debit'
 	| 'credit'
@@ -35,7 +35,7 @@ export const TransactionHeaders: TransactionHeader[] = [
 	'scheduleId',
 	'ditch',
 	'userId',
-	'username',
+	'display',
 	'date',
 	'debit',
 	'credit',
@@ -68,7 +68,7 @@ export const TransactionAges = [
 export const transactionsPaginationSchema = itemTableSchema.merge(
 	z.object({
 		search: z.string().optional(),
-		sort: z.enum(['id', 'scheduleId', 'ditch', 'userId', 'username', 'date', 'debit', 'credit', 'note']).optional(),
+		sort: z.enum(['id', 'scheduleId', 'ditch', 'userId', 'display', 'date', 'debit', 'credit', 'note']).optional(),
 	}),
 )
 

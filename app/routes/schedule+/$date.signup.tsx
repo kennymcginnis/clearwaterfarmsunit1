@@ -37,6 +37,7 @@ type PositionDitchType = {
 type UserType = {
 	id: string
 	username: string
+	display: string
 	ditch: number
 	position: number
 	hours: number | bigint | null
@@ -46,6 +47,7 @@ export const SearchResultsSchema = z.array(
 	z.object({
 		id: z.string(),
 		username: z.string(),
+		display: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
@@ -64,7 +66,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, Port.ditch, Port.position, mid.hours
+		SELECT User.id, User.username, User.display, Port.ditch, Port.position, mid.hours
 		FROM User
 		INNER JOIN Port ON User.id = Port.userId
     LEFT JOIN (
@@ -333,8 +335,8 @@ function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType
 			to={`/schedule/${scheduleDate}/${user.username}`}
 			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg  ${user.hours ? 'bg-muted' : 'bg-muted-40'} px-5 py-3`}
 		>
-			<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-body-sm text-muted-foreground capitalize">
-				{user.position}: {user.username}
+			<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-body-sm text-muted-foreground">
+				{user.position}: {user.display}
 			</span>
 			<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
 				{Number(user.hours)}

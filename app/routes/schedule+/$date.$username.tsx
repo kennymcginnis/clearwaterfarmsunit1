@@ -18,6 +18,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		select: {
 			id: true,
 			username: true,
+			display: true,
 			defaultHours: true,
 			restricted: true,
 			restriction: true,

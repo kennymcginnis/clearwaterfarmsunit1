@@ -7,14 +7,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const file = createReadableStreamFromReadable(
 		Readable.from(
 			[
-				['id', 'scheduleId', 'ditch', 'userId', 'username', 'date', 'debit', 'credit', 'note'].join(','),
+				['id', 'scheduleId', 'ditch', 'userId', 'display', 'date', 'debit', 'credit', 'note'].join(','),
 				...data.transactions.map(raw =>
 					[
 						raw.id,
 						raw.scheduleId,
 						raw.ditch,
 						raw.user.id,
-						raw.user.username,
+						raw.user.display,
 						raw.date,
 						raw.debit,
 						raw.credit,

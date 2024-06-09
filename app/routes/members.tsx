@@ -21,6 +21,7 @@ type PositionDitchType = {
 type UserType = {
 	id: string
 	username: string
+	display: string
 	imageId: string | null
 	member: string | null
 	ditch: number
@@ -30,6 +31,7 @@ type UserType = {
 const UserSearchResultSchema = z.object({
 	id: z.string(),
 	username: z.string(),
+	display: z.string(),
 	member: z.string().nullable(),
 	imageId: z.string().nullable(),
 	ditch: z.number(),
@@ -46,7 +48,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, User.member, UserImage.id AS imageId, Port.ditch, Port.position
+		SELECT User.id, User.username, User.display, User.member, UserImage.id AS imageId, Port.ditch, Port.position
 		FROM User
 		LEFT JOIN UserImage ON User.id = UserImage.userId
 		INNER JOIN Port ON User.id = Port.userId
@@ -185,8 +187,8 @@ function UserCard({ user }: { user: UserType }) {
 				className="h-16 w-16 rounded-full"
 			/>
 			{user.member ? (
-				<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md capitalize">
-					{user.username}
+				<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md">
+					{user.display}
 				</span>
 			) : null}
 			<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">

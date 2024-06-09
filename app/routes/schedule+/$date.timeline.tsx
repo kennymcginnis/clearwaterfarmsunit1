@@ -39,6 +39,7 @@ type PositionDitchType = {
 type UserType = {
 	id: string
 	username: string
+	display: string
 	ditch: number
 	position: number
 	hours: number | bigint | null
@@ -51,6 +52,7 @@ const SearchResultsSchema = z.array(
 	z.object({
 		id: z.string(),
 		username: z.string(),
+		display: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
@@ -72,7 +74,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, Port.ditch, Port.position, mid.hours, mid.start, mid.stop
+		SELECT User.id, User.username, User.display, Port.ditch, Port.position, mid.hours, mid.start, mid.stop
 		FROM User
 		INNER JOIN Port ON User.id = Port.userId
     LEFT JOIN (
@@ -251,6 +253,13 @@ export default function ScheduleTimelineRoute() {
 									</Icon>
 								</NavLink>
 							</Button>
+							<Button asChild variant="default">
+								<NavLink to={`/schedule/${schedule.date}/print`}>
+									<Icon name="reader" className="scale-100 max-md:scale-125">
+										<span className="max-md:hidden">Printable</span>
+									</Icon>
+								</NavLink>
+							</Button>
 							<Button>
 								<Link reloadDocument to={`/resources/download-timeline/${scheduleDate}`}>
 									<Icon name="download">Download</Icon>
@@ -346,8 +355,8 @@ function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType
 			className={`flex h-[82px] w-44 flex-col rounded-lg ${user.hours ? 'bg-muted' : 'bg-muted-40'} p-2`}
 		>
 			<div className="flex w-full flex-row justify-between gap-1 border-b-2">
-				<span className="overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground capitalize">
-					{user.position}: {user.username}
+				<span className="overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
+					{user.position}: {user.display}
 				</span>
 				<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">
 					{formatHours(Number(user.hours))}
