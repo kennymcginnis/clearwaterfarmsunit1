@@ -404,18 +404,18 @@ export function formatDay(deadline: string): string {
 export function formatDates({ start, stop }: { start: Date | null; stop: Date | null }): string[] {
 	if (!start || !stop) return ['', '']
 	if (start.getDay() === stop.getDay()) {
-		return [format(start, 'MMM do'), `${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}`]
+		return [format(start, 'eee, MMM do'), `${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}`]
 	} else {
-		return [format(start, 'MMM do, h:mmaaa'), format(stop, 'MMM do, h:mmaaa')]
+		return [format(start, 'eee, MMM dd, h:mmaaa'), format(stop, 'eee, MMM dd, h:mmaaa')]
 	}
 }
 
 export function formatPrintableDates({ start, stop }: { start: Date | null; stop: Date | null }): string {
 	if (!start || !stop) return ''
 	if (start.getDay() === stop.getDay()) {
-		return `"${format(start, 'MMM do')}, ${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}"`
+		return `"${format(start, 'eee, MMM do')}, ${format(start, 'h:mmaaa')} - ${format(stop, 'h:mmaaa')}"`
 	} else {
-		return `"${format(start, 'MMM do, h:mmaaa')}-${format(stop, 'MMM do, h:mmaaa')}"`
+		return `"${format(start, 'eee, MMM dd, h:mmaaa')} - ${format(stop, 'eee, MMM dd, h:mmaaa')}"`
 	}
 }
 

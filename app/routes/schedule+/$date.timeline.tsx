@@ -351,7 +351,7 @@ export default function ScheduleTimelineRoute() {
 function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType }) {
 	return (
 		<Link
-			to={`/timeline/${scheduleDate}/${user.username}`}
+			to={`/schedule/${scheduleDate}/${user.username}`}
 			className={`flex h-[82px] w-44 flex-col rounded-lg ${user.hours ? 'bg-muted' : 'bg-muted-40'} p-2`}
 		>
 			<div className="flex w-full flex-row justify-between gap-1 border-b-2">

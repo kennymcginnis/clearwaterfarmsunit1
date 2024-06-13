@@ -99,8 +99,6 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		return res || 0
 	}
 
-	console.dir({ filter })
-
 	const getTransactions = async () => {
 		// @ts-ignore
 		const res: Transactions = await prisma.transactions.findMany(filter)

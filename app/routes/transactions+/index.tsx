@@ -44,7 +44,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 const TransactionSchema = z.object({
 	id: z.string(),
-	username: z.string(),
+	display: z.string(),
 	date: DateSchema,
 	debit: z.number().optional(),
 	credit: z.number().optional(),
@@ -65,7 +65,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				return json({ status: 'idle', submission } as const)
 			}
 			if (submission.value) {
-				const { id, username, ...data } = submission.value
+				const { id, display, ...data } = submission.value
 				await prisma.transactions.update({
 					select: { id: true },
 					where: { id },
@@ -82,10 +82,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function ViewTransactions() {
 	const { transactions, tableParams, filters, total } = useLoaderData<TransactionData>()
+	const toggleEditable = false
 	const [editing, setEditing] = useState<string | null>(null)
 
 	const location = useLocation()
-	console.dir({ location })
 	const baseUrl = '/transactions'
 
 	const Header = ({ header, className }: { header: string; className: string }) => {
@@ -109,19 +109,19 @@ export default function ViewTransactions() {
 
 	const ItemRow = ({ id, scheduleId, ditch, user, date, debit, credit, note }: Transaction) => {
 		return (
-			<Form method="POST" key={`row-${id}`} className="grid grid-cols-12 gap-1">
-				{/*
-					This hidden submit button is here to ensure that when the user hits
-					"enter" on an input field, the primary form function is submitted
-					rather than the first button in the form (which is delete/add image).
-				*/}
+			<Form method="POST" key={`row-${id}`} className="grid grid-cols-12 gap-1 disabled:cursor-default">
 				<button type="submit" className="hidden" />
-				<Input id="id" disabled={true} className="col-span-1" value={id} />
-				<Input id="scheduleId" disabled={true} className="col-span-1" value={scheduleId} />
-				<Input id="ditch" disabled={true} className="col-span-1" value={ditch} />
-				<Input id="userId" disabled={true} className="col-span-1" value={user.id} />
-				<Input id="display" disabled={true} className="col-span-2" value={user.display} />
-				<Input id="date" disabled={editing !== id} className="col-span-1 text-right" value={date} />
+				<Input id="id" disabled={true} className="col-span-1 disabled:cursor-default" value={id} />
+				<Input id="scheduleId" disabled={true} className="col-span-1 disabled:cursor-default" value={scheduleId} />
+				<Input id="ditch" disabled={true} className="col-span-1 disabled:cursor-default" value={ditch} />
+				<Input id="userId" disabled={true} className="col-span-1 disabled:cursor-default" value={user.id} />
+				<Input id="username" disabled={true} className="col-span-2 disabled:cursor-default" value={user.display} />
+				<Input
+					id="date"
+					disabled={editing !== id}
+					className="col-span-1 text-right disabled:cursor-default"
+					value={date}
+				/>
 				{editing === id ? (
 					<Input
 						id="debit"
@@ -133,7 +133,7 @@ export default function ViewTransactions() {
 					<Input
 						id="debit"
 						disabled={editing !== id}
-						className="col-span-1 text-right"
+						className="col-span-1 text-right disabled:cursor-default"
 						value={debit.toString() ?? ''}
 					/>
 				)}
@@ -148,60 +148,80 @@ export default function ViewTransactions() {
 					<Input
 						id="credit"
 						disabled={editing !== id}
-						className="col-span-1 text-right"
+						className="col-span-1 text-right disabled:cursor-default"
 						value={credit.toString() ?? ''}
 					/>
 				)}
 				{editing === id ? (
-					<Input id="note" disabled={editing !== id} className="col-span-2" defaultValue={note ?? ''} />
+					<Input
+						id="note"
+						disabled={editing !== id}
+						className={`col-span-${toggleEditable ? '2' : '3'}`}
+						defaultValue={note ?? ''}
+					/>
 				) : (
-					<Input id="note" disabled={editing !== id} className="col-span-2" value={note ?? ''} />
+					<Input
+						id="note"
+						disabled={editing !== id}
+						className={`col-span-${toggleEditable ? '2' : '3'} disabled:cursor-default`}
+						value={note ?? ''}
+					/>
 				)}
-				<div className="flex flex-row items-center gap-1">
-					{editing === id ? (
-						<>
-							<Button
-								type="submit"
-								name="intent"
-								value="save"
-								variant="outline"
-								size="sm"
-								className="h-10 w-10"
-								onClick={() => setEditing(null)}
-							>
-								<Icon name="check" className="scale-125 text-green-900 max-md:scale-150" />
-							</Button>
-							<Button
-								type="reset"
-								size="sm"
-								variant="outline"
-								className="peer-invalid:hidden"
-								onClick={() => setEditing(null)}
-							>
-								<Icon name="reset" className="scale-125 text-blue-900 max-md:scale-150" />
-							</Button>
-						</>
-					) : (
-						<>
-							<Button variant="outline" size="sm" className="h-10 w-10" onClick={() => setEditing(id)}>
-								<Icon name="pencil-1" className="scale-125 text-blue-900 max-md:scale-150" />
-							</Button>
-							<Form method="POST">
-								<input type="hidden" name={id} value={id} />
-								<Button type="submit" name="intent" value="delete" variant="outline" size="sm" className="h-10 w-10">
-									<Icon name="trash" className="scale-125 text-red-900 max-md:scale-150" />
-								</Button>
-							</Form>
-						</>
-					)}
-				</div>
+				{toggleEditable ? (
+					<>
+						<div className="flex flex-row items-center gap-1">
+							{editing === id ? (
+								<>
+									<Button
+										type="submit"
+										name="intent"
+										value="save"
+										variant="outline"
+										size="sm"
+										className="h-10 w-10"
+										onClick={() => setEditing(null)}
+									>
+										<Icon name="check" className="scale-125 text-green-900 max-md:scale-150" />
+									</Button>
+									<Button
+										type="reset"
+										size="sm"
+										variant="outline"
+										className="peer-invalid:hidden"
+										onClick={() => setEditing(null)}
+									>
+										<Icon name="reset" className="scale-125 text-blue-900 max-md:scale-150" />
+									</Button>
+								</>
+							) : (
+								<>
+									<Button variant="outline" size="sm" className="h-10 w-10" onClick={() => setEditing(id)}>
+										<Icon name="pencil-1" className="scale-125 text-blue-900 max-md:scale-150" />
+									</Button>
+									<Form method="POST">
+										<input type="hidden" name={id} value={id} />
+										<Button
+											type="submit"
+											name="intent"
+											value="delete"
+											variant="outline"
+											size="sm"
+											className="h-10 w-10"
+										>
+											<Icon name="trash" className="scale-125 text-red-900 max-md:scale-150" />
+										</Button>
+									</Form>
+								</>
+							)}
+						</div>
+					</>
+				) : null}
 			</Form>
 		)
 	}
 
 	return (
 		<Card className="m-6 rounded-none bg-accent px-0 pb-12 lg:rounded-3xl">
-			<pre>{JSON.stringify(location, null, 2)}</pre>
 			<CardHeader>
 				<div className="flex gap-2">
 					<DateFilters
@@ -245,8 +265,8 @@ export default function ViewTransactions() {
 					<Header header="date" className="col-span-1 pr-2 text-right" />
 					<Header header="debit" className="col-span-1 pr-3 text-right" />
 					<Header header="credit" className="col-span-1 pr-3 text-right" />
-					<Header header="note" className="col-span-2 pl-3" />
-					<Header header="intent" className="col-span-1 pl-1.5 text-left" />
+					<Header header="note" className={`col-span-${toggleEditable ? '2' : '3'} pl-3`} />
+					{toggleEditable ? <Header header="intent" className="col-span-1 pl-1.5 text-left" /> : null}
 				</div>
 				{transactions && transactions.length ? (
 					transactions.map(ItemRow)
@@ -257,14 +277,18 @@ export default function ViewTransactions() {
 				)}
 			</CardContent>
 			<CardFooter>
-				{total > tableParams.items ? (
-					<div className="ml-8 items-center justify-between text-nowrap">
+				<div className="ml-8 items-center justify-between text-nowrap">
+					{total > tableParams.items ? (
 						<p className="text-sm tracking-wider">
 							Showing <b>{tableParams.items * (tableParams.page - 1) + 1}</b> to{' '}
 							<b>{tableParams.items * tableParams.page}</b> of <b>{total}</b> results
 						</p>
-					</div>
-				) : null}
+					) : (
+						<p className="text-sm tracking-wider">
+							Showing <b>{total}</b> results
+						</p>
+					)}
+				</div>
 				<PaginationComponent totalPages={Math.ceil(total / tableParams.items)} pageParam="page" className="mt-8" />
 				<div className="mr-2">
 					<Dropdown
