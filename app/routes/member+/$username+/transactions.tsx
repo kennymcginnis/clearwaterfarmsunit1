@@ -23,6 +23,9 @@ export async function loader({ params }: LoaderFunctionArgs) {
 					credit: true,
 					note: true,
 				},
+				orderBy: {
+					date: 'desc',
+				},
 			},
 		},
 		where: {
@@ -62,6 +65,9 @@ export default function TransactionsRoute() {
 		else setEditProfile(profile)
 	}
 
+	const formatCurrency = (n: number): string =>
+		n ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''
+
 	return (
 		<Card>
 			<CardHeader>
@@ -72,36 +78,9 @@ export default function TransactionsRoute() {
 					</Icon>
 				</Button>
 			</CardHeader>
-			<CardContent className="space-y-2">
+			<CardContent className="max-h-[600px] space-y-2 overflow-auto">
 				<CardDescription>Irrigation Account Balance</CardDescription>
 				<div className="grid grid-cols-6 gap-1">
-					<>
-						<Label htmlFor="Date" children="Date" className="col-span-1 pr-3 text-right" />
-						<Label htmlFor="Date" children="Debit" className="col-span-1 pr-3 text-right" />
-						<Label htmlFor="Date" children="Credit" className="col-span-1 pr-3 text-right" />
-						<Label htmlFor="Date" children="Note" className="col-span-3 pl-3" />
-					</>
-					{transactions.map((lineItem, i) => (
-						<>
-							<Input id="date" readOnly={true} className="col-span-1 text-right" defaultValue={lineItem.date} />
-							<Input
-								id="debit"
-								readOnly={true}
-								className="col-span-1 text-right"
-								defaultValue={lineItem.debit?.toString() ?? ''}
-							/>
-							<Input
-								id="credit"
-								readOnly={true}
-								className="col-span-1 text-right"
-								defaultValue={lineItem.credit?.toString() ?? ''}
-							/>
-							<Input id="note" readOnly={true} className="col-span-3" defaultValue={lineItem.note ?? ''} />
-						</>
-					))}
-
-					<Separator className="col-span-6 mb-1 mt-1 border-b-2 border-t-2" />
-
 					<Input
 						id="date"
 						readOnly={true}
@@ -112,9 +91,36 @@ export default function TransactionsRoute() {
 						id="total"
 						readOnly={true}
 						className="col-span-2 text-right"
-						defaultValue={(debit || 0) - (credit || 0)}
+						defaultValue={`$${formatCurrency((debit || 0) - (credit || 0))}`}
 					/>
 					<Input id="balance" readOnly={true} className="col-span-3" defaultValue="Current Balance" />
+
+					<Separator className="col-span-6 mb-1 mt-1 border-b-2 border-t-2" />
+
+					<>
+						<Label htmlFor="Date" children="Date" className="col-span-1 m-1 pr-3 text-right" />
+						<Label htmlFor="Date" children="Debit" className="col-span-1 m-1 pr-3 text-right" />
+						<Label htmlFor="Date" children="Credit" className="col-span-1 m-1 pr-3 text-right" />
+						<Label htmlFor="Date" children="Note" className="col-span-3 m-1 pl-3" />
+					</>
+					{transactions.map((lineItem, i) => (
+						<>
+							<Input id="date" readOnly={true} className="col-span-1 text-right" defaultValue={lineItem.date} />
+							<Input
+								id="debit"
+								readOnly={true}
+								className="col-span-1 text-right"
+								defaultValue={formatCurrency(lineItem.debit)}
+							/>
+							<Input
+								id="credit"
+								readOnly={true}
+								className="col-span-1 text-right"
+								defaultValue={formatCurrency(lineItem.credit)}
+							/>
+							<Input id="note" readOnly={true} className="col-span-3" defaultValue={lineItem.note ?? ''} />
+						</>
+					))}
 				</div>
 			</CardContent>
 		</Card>

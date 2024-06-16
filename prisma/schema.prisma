@@ -11,12 +11,13 @@ datasource db {
 }
 
 model User {
-  id       String  @id
-  username String  @unique
-  display  String?
-  member   String?
+  id         String  @id
+  username   String  @unique
+  display    String?
+  member     String?
+  quickbooks String?
 
-  active   Boolean @default(true)
+  active Boolean @default(true)
 
   userAddress UserAddress[]
 

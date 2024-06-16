@@ -1,8 +1,17 @@
-import { parse } from '@conform-to/zod'
+import { invariantResponse } from '@epic-web/invariant'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
-import { type LoaderFunctionArgs, json, type ActionFunctionArgs } from '@remix-run/node'
+import {
+	type ActionFunctionArgs,
+	type UploadHandler,
+	json,
+	type LoaderFunctionArgs,
+	unstable_composeUploadHandlers as composeUploadHandlers,
+	unstable_createMemoryUploadHandler as createMemoryUploadHandler,
+	unstable_parseMultipartFormData as parseMultipartFormData,
+} from '@remix-run/node'
 import { Form, Link, useLoaderData, useLocation } from '@remix-run/react'
 import clsx from 'clsx'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
 import DateFilters from '#app/components/DateFilters'
@@ -13,7 +22,7 @@ import { Button } from '#app/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon'
 import { Input } from '#app/components/ui/input'
-import { requireUserId } from '#app/utils/auth.server'
+import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper'
 import { prisma } from '#app/utils/db.server'
 import { cn } from '#app/utils/misc.tsx'
 import { itemTableSchema, getNewTableUrl } from '#app/utils/pagination/itemTable'
@@ -23,6 +32,9 @@ import {
 	type Transaction,
 	DitchesArray,
 } from '#app/utils/pagination/transactions'
+import { requireUserWithRole } from '#app/utils/permissions'
+import { generatePublicId } from '#app/utils/public-id'
+import { redirectWithToast } from '#app/utils/toast.server'
 import { DateSchema } from '#app/utils/user-validation'
 import { getPaginatedTransactions } from './transactions.server'
 
@@ -42,48 +54,66 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	return json(data)
 }
 
-const TransactionSchema = z.object({
-	id: z.string(),
-	display: z.string(),
-	date: DateSchema,
-	debit: z.number().optional(),
-	credit: z.number().optional(),
-	note: z.string(),
-})
+const TransactionSchema = z.array(
+	z.object({
+		id: z.string().optional(),
+		userId: z.string().optional(),
+		scheduleId: z.string().optional(),
+		ditch: z.number().optional(),
+		date: DateSchema,
+		debit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
+		credit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
+		note: z.string().optional(),
+	}),
+)
 export async function action({ request }: ActionFunctionArgs) {
-	const currentUser = await requireUserId(request)
-	const formData = await request.formData()
-	const intent = formData.get('intent')
-	console.log({ intent })
-	switch (intent) {
-		case 'delete':
-			break
-		case 'save':
-			const submission = await parse(formData, { schema: TransactionSchema, async: true })
+	const currentUser = await requireUserWithRole(request, 'admin')
 
-			if (submission.intent !== 'submit') {
-				return json({ status: 'idle', submission } as const)
-			}
-			if (submission.value) {
-				const { id, display, ...data } = submission.value
-				await prisma.transactions.update({
-					select: { id: true },
-					where: { id },
-					data: {
-						...data,
-						updatedBy: currentUser,
-					},
-				})
-				break
-			}
+	const uploadHandler: UploadHandler = composeUploadHandlers(csvUploadHandler, createMemoryUploadHandler())
+	const formData = await parseMultipartFormData(request, uploadHandler)
+
+	const csv = formData.get('selected_csv')
+	invariantResponse(typeof csv === 'string', 'selected_csv filename must be a string')
+
+	const transactions = csvFileToArray(csv)
+	const result = TransactionSchema.safeParse(transactions)
+	if (!result.success) {
+		return json({ status: 'error', error: result.error.message } as const, { status: 400 })
 	}
-	return null
+
+	const missingUsers = []
+	for (let transaction of result.data) {
+		try {
+			await prisma.transactions.upsert({
+				where: { id: transaction.id ?? '__new_transaction__' },
+				create: {
+					id: generatePublicId(),
+					...transaction,
+					createdBy: currentUser,
+				},
+				update: {
+					...transaction,
+					updatedBy: currentUser,
+				},
+			})
+		} catch (error) {
+			console.error(JSON.stringify({ error, transaction }, null, 2))
+			missingUsers.push(transaction.userId)
+		}
+	}
+	return redirectWithToast('.', {
+		type: 'success',
+		title: 'Success',
+		description: JSON.stringify(missingUsers),
+	})
 }
 
 export default function ViewTransactions() {
 	const { transactions, tableParams, filters, total } = useLoaderData<TransactionData>()
 	const toggleEditable = false
 	const [editing, setEditing] = useState<string | null>(null)
+	const [showUpload, setShowUpload] = useState(false)
+	const toggleShowUpload = () => setShowUpload(!showUpload)
 
 	const location = useLocation()
 	const baseUrl = '/transactions'
@@ -116,114 +146,73 @@ export default function ViewTransactions() {
 				<Input id="ditch" disabled={true} className="col-span-1 disabled:cursor-default" value={ditch} />
 				<Input id="userId" disabled={true} className="col-span-1 disabled:cursor-default" value={user.id} />
 				<Input id="username" disabled={true} className="col-span-2 disabled:cursor-default" value={user.display} />
+				<Input id="date" disabled={true} className="col-span-1 text-right disabled:cursor-default" value={date} />
 				<Input
-					id="date"
+					id="debit"
 					disabled={editing !== id}
 					className="col-span-1 text-right disabled:cursor-default"
-					value={date}
+					{...(editing === id
+						? { defaultValue: debit.toString() ?? '' }
+						: { disabled: true, value: debit.toString() ?? '' })}
 				/>
-				{editing === id ? (
-					<Input
-						id="debit"
-						disabled={editing !== id}
-						className="col-span-1 text-right"
-						defaultValue={debit.toString() ?? ''}
-					/>
-				) : (
-					<Input
-						id="debit"
-						disabled={editing !== id}
-						className="col-span-1 text-right disabled:cursor-default"
-						value={debit.toString() ?? ''}
-					/>
-				)}
-				{editing === id ? (
-					<Input
-						id="credit"
-						disabled={editing !== id}
-						className="col-span-1 text-right"
-						defaultValue={credit.toString() ?? ''}
-					/>
-				) : (
-					<Input
-						id="credit"
-						disabled={editing !== id}
-						className="col-span-1 text-right disabled:cursor-default"
-						value={credit.toString() ?? ''}
-					/>
-				)}
-				{editing === id ? (
-					<Input
-						id="note"
-						disabled={editing !== id}
-						className={`col-span-${toggleEditable ? '2' : '3'}`}
-						defaultValue={note ?? ''}
-					/>
-				) : (
-					<Input
-						id="note"
-						disabled={editing !== id}
-						className={`col-span-${toggleEditable ? '2' : '3'} disabled:cursor-default`}
-						value={note ?? ''}
-					/>
-				)}
+				<Input
+					id="credit"
+					disabled={editing !== id}
+					className="col-span-1 text-right disabled:cursor-default"
+					{...(editing === id
+						? { defaultValue: credit.toString() ?? '' }
+						: { disabled: true, value: credit.toString() ?? '' })}
+				/>
+				<Input
+					id="note"
+					className={`col-span-${toggleEditable ? '2' : '3'}`}
+					{...(editing === id ? { defaultValue: note ?? '' } : { disabled: true, value: note ?? '' })}
+				/>
 				{toggleEditable ? (
-					<>
-						<div className="flex flex-row items-center gap-1">
-							{editing === id ? (
-								<>
-									<Button
-										type="submit"
-										name="intent"
-										value="save"
-										variant="outline"
-										size="sm"
-										className="h-10 w-10"
-										onClick={() => setEditing(null)}
-									>
-										<Icon name="check" className="scale-125 text-green-900 max-md:scale-150" />
-									</Button>
-									<Button
-										type="reset"
-										size="sm"
-										variant="outline"
-										className="peer-invalid:hidden"
-										onClick={() => setEditing(null)}
-									>
-										<Icon name="reset" className="scale-125 text-blue-900 max-md:scale-150" />
-									</Button>
-								</>
-							) : (
-								<>
-									<Button variant="outline" size="sm" className="h-10 w-10" onClick={() => setEditing(id)}>
-										<Icon name="pencil-1" className="scale-125 text-blue-900 max-md:scale-150" />
-									</Button>
-									<Form method="POST">
-										<input type="hidden" name={id} value={id} />
-										<Button
-											type="submit"
-											name="intent"
-											value="delete"
-											variant="outline"
-											size="sm"
-											className="h-10 w-10"
-										>
-											<Icon name="trash" className="scale-125 text-red-900 max-md:scale-150" />
-										</Button>
-									</Form>
-								</>
-							)}
-						</div>
-					</>
+					<div className="flex flex-row items-center gap-1">
+						{editing === id ? (
+							<>
+								<Button
+									type="submit"
+									name="intent"
+									value="save"
+									variant="outline"
+									size="sm"
+									className="h-10 w-10"
+									onClick={() => setEditing(null)}
+								>
+									<Icon name="check" className="scale-125 text-green-900 max-md:scale-150" />
+								</Button>
+								<Button
+									type="reset"
+									size="sm"
+									variant="outline"
+									className="peer-invalid:hidden"
+									onClick={() => setEditing(null)}
+								>
+									<Icon name="reset" className="scale-125 text-blue-900 max-md:scale-150" />
+								</Button>
+							</>
+						) : (
+							<Button variant="outline" size="sm" className="h-10 w-10" onClick={() => setEditing(id)}>
+								<Icon name="pencil-1" className="scale-125 text-blue-900 max-md:scale-150" />
+							</Button>
+						)}
+					</div>
 				) : null}
 			</Form>
 		)
 	}
 
 	return (
-		<Card className="m-6 rounded-none bg-accent px-0 pb-12 lg:rounded-3xl">
-			<CardHeader>
+		<Card className="m-auto mt-2 flex w-[90%] flex-col items-center justify-center gap-1 rounded-none bg-accent px-0 pb-4 lg:rounded-3xl">
+			<CardHeader className="flex w-full flex-row flex-wrap gap-2 self-center p-4">
 				<div className="flex gap-2">
+					<Button variant="secondary">
+						<Link className="text-brand-400 hover:text-brand-800 text-sm tracking-wide" to={baseUrl}>
+							Reset Table
+						</Link>
+					</Button>
 					<DateFilters
 						ages={TransactionAges}
 						baseUrl={baseUrl}
@@ -239,7 +228,7 @@ export default function ViewTransactions() {
 					/>
 				</div>
 				<div className="flex flex-col items-center">
-					<CardTitle>Transactions</CardTitle>
+					<CardTitle className="text-3xl">Transactions</CardTitle>
 					<CardDescription>Irrigation Accounts</CardDescription>
 				</div>
 				<div className="flex gap-2">
@@ -248,14 +237,33 @@ export default function ViewTransactions() {
 							<Icon name="download">Download</Icon>
 						</Link>
 					</Button>
-					<Button variant="secondary">
-						<Link className="text-brand-400 hover:text-brand-800 text-sm tracking-wide" to={baseUrl}>
-							Reset Table
-						</Link>
+					<Button onClick={toggleShowUpload}>
+						<Icon name="upload">Upload</Icon>
+						{showUpload ? (
+							<ChevronDown
+								className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
+								aria-hidden="true"
+							/>
+						) : (
+							<ChevronUp
+								className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
+								aria-hidden="true"
+							/>
+						)}
 					</Button>
 				</div>
+				{showUpload ? (
+					<div className="mt-2 flex w-full flex-row justify-end space-x-2">
+						<Form method="post" encType="multipart/form-data">
+							<input aria-label="File" type="file" accept=".csv" name="selected_csv" />
+							<Button type="submit" name="intent" value="upload-timeline" className="btn btn-sm">
+								Upload CSV
+							</Button>
+						</Form>
+					</div>
+				) : null}
 			</CardHeader>
-			<CardContent className="space-y-2">
+			<CardContent className="w-full space-y-2">
 				<div className="grid grid-cols-12 gap-1">
 					<Header header="id" className="col-span-1 pr-3" />
 					<Header header="scheduleId" className="col-span-1 pr-3" />
@@ -276,7 +284,7 @@ export default function ViewTransactions() {
 					</div>
 				)}
 			</CardContent>
-			<CardFooter>
+			<CardFooter className="w-full">
 				<div className="ml-8 items-center justify-between text-nowrap">
 					{total > tableParams.items ? (
 						<p className="text-sm tracking-wider">

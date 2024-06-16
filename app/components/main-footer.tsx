@@ -10,7 +10,7 @@ PO BOX 597
 Waddell, Arizona 85355`
 	return (
 		<footer className="bg-white dark:bg-gray-900">
-			<div className="mx-auto w-full max-w-screen-xl p-2 py-6 lg:py-8">
+			<div className="w-full p-4 lg:p-8">
 				<div className="md:flex md:justify-between">
 					<div className="mb-6 md:mb-0">
 						<div className="flex content-start">
@@ -24,7 +24,7 @@ Waddell, Arizona 85355`
 							<pre>{mailingAddress}</pre>
 						</pre>
 					</div>
-					<div className="grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-6">
+					<div className="grid grid-cols-2 gap-8 sm:gap-6">
 						<div>
 							<h2 className="mb-6 text-sm font-semibold uppercase text-gray-900 dark:text-white">Resources</h2>
 							<ul className="font-medium text-gray-500 dark:text-gray-400">
@@ -49,17 +49,6 @@ Waddell, Arizona 85355`
 
 								<li>Zach Walter</li>
 								<li>(623) 256-7077</li>
-							</ul>
-						</div>
-						<div>
-							<h2 className="mb-6 text-sm font-semibold uppercase text-gray-900 dark:text-white">Legal</h2>
-							<ul className="font-medium text-gray-500 dark:text-gray-400">
-								<li className="mb-4 hover:underline">
-									<Link to="/documents/articles-of-incorporation">Articles of Inc.</Link>
-								</li>
-								<li className="mb-4 hover:underline">
-									<Link to="/documents/cc-and-r-s">CC&R's</Link>
-								</li>
 							</ul>
 						</div>
 					</div>
