@@ -419,6 +419,9 @@ export function formatPrintableDates({ start, stop }: { start: Date | null; stop
 	}
 }
 
+export const formatCurrency = (n: number | null): string =>
+	n ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'
+
 export function formatDisplayName({ display, member }: { display: string; member: string | null }): string {
 	let output = display
 	if (output.includes('-')) output = output.replaceAll('-', ', ')

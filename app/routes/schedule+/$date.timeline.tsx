@@ -229,7 +229,7 @@ export default function ScheduleTimelineRoute() {
 	if (!scheduleId || !users || !Object.keys(users).length) return null
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
-			<div className="flex w-[90%] flex-row flex-wrap gap-2 p-0.5">
+			<div className="flex w-[63.5%] flex-row flex-wrap gap-2 p-0.5">
 				<div className="my-1 flex flex-row space-x-2">
 					<Button variant="outline" onClick={toggleShowAll} className="pb-2">
 						Display {showAll ? 'Scheduled' : 'All'}
@@ -284,7 +284,7 @@ export default function ScheduleTimelineRoute() {
 				</div>
 			</div>
 			{showUpload ? (
-				<div className="mt-2 flex w-[90%] flex-row justify-end space-x-2">
+				<div className="mb-2 flex w-[63.5%] flex-row justify-end space-x-2">
 					<Form method="post" encType="multipart/form-data">
 						<input aria-label="File" type="file" accept=".csv" name="selected_csv" />
 						<Button type="submit" name="intent" value="upload-timeline" className="btn btn-sm">

@@ -33,7 +33,7 @@ export function SearchBar({
 		<Form
 			method="GET"
 			action={action}
-			className="flex flex-wrap items-center justify-center gap-1"
+			className="flex w-full flex-grow items-center justify-center gap-1"
 			onChange={e => autoSubmit && handleFormChange(e.currentTarget)}
 		>
 			<div className="flex-1">

@@ -283,8 +283,8 @@ function ViewTransactions(
 			<div className="grid grid-cols-6 gap-1">
 				<>
 					<Label htmlFor="Date" children="Date" className="col-span-1 pr-3 text-right" />
-					<Label htmlFor="Date" children="Debit" className="col-span-1 pr-3 text-right" />
-					<Label htmlFor="Date" children="Credit" className="col-span-1 pr-3 text-right" />
+					<Label htmlFor="Date" children="Debit (Incoming)" className="col-span-1 pr-3 text-right" />
+					<Label htmlFor="Date" children="Credit (Outgoing)" className="col-span-1 pr-3 text-right" />
 					<Label htmlFor="Date" children="Note" className="col-span-3 pl-3" />
 				</>
 				{transactions.map((lineItem, i) => (

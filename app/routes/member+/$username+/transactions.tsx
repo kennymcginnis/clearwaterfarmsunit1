@@ -9,6 +9,7 @@ import { Input } from '#app/components/ui/input.tsx'
 import { Label } from '#app/components/ui/label.tsx'
 import { Separator } from '#app/components/ui/separator'
 import { prisma } from '#app/utils/db.server.ts'
+import { formatCurrency } from '#app/utils/misc'
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	const user = await prisma.user.findFirst({
@@ -65,9 +66,6 @@ export default function TransactionsRoute() {
 		else setEditProfile(profile)
 	}
 
-	const formatCurrency = (n: number): string =>
-		n ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''
-
 	return (
 		<Card>
 			<CardHeader>
@@ -99,8 +97,8 @@ export default function TransactionsRoute() {
 
 					<>
 						<Label htmlFor="Date" children="Date" className="col-span-1 m-1 pr-3 text-right" />
-						<Label htmlFor="Date" children="Debit" className="col-span-1 m-1 pr-3 text-right" />
-						<Label htmlFor="Date" children="Credit" className="col-span-1 m-1 pr-3 text-right" />
+						<Label htmlFor="Date" children="Debit (Incoming)" className="col-span-1 m-1 pr-3 text-right" />
+						<Label htmlFor="Date" children="Credit (Outgoing)" className="col-span-1 m-1 pr-3 text-right" />
 						<Label htmlFor="Date" children="Note" className="col-span-3 m-1 pl-3" />
 					</>
 					{transactions.map((lineItem, i) => (

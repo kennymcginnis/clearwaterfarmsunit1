@@ -5,8 +5,10 @@ import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { ErrorList } from '#app/components/forms.tsx'
 import { SearchBar } from '#app/components/search-bar.tsx'
-import { prisma } from '#app/utils/db.server.ts'
-import { getUserImgSrc } from '#app/utils/misc.tsx'
+import { Button } from '#app/components/ui/button'
+import { Icon } from '#app/components/ui/icon'
+import { prisma } from '#app/utils/db.server'
+import { formatCurrency, getUserImgSrc } from '#app/utils/misc.tsx'
 import useScrollSync from '#app/utils/scroll-sync'
 import { useOptionalAdminUser } from '#app/utils/user'
 
@@ -26,6 +28,7 @@ type UserType = {
 	member: string | null
 	ditch: number
 	position: number
+	currentBalance: number | null
 }
 
 const UserSearchResultSchema = z.object({
@@ -36,6 +39,7 @@ const UserSearchResultSchema = z.object({
 	imageId: z.string().nullable(),
 	ditch: z.number(),
 	position: z.number(),
+	currentBalance: z.number().nullable(),
 })
 
 const UserSearchResultsSchema = z.array(UserSearchResultSchema)
@@ -48,12 +52,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, User.display, User.member, UserImage.id AS imageId, Port.ditch, Port.position
+		SELECT User.id, User.username, User.display, User.member, UserImage.id AS imageId, 
+			Port.ditch, Port.position,
+			SUM(debit - credit) AS currentBalance
 		FROM User
 		LEFT JOIN UserImage ON User.id = UserImage.userId
 		INNER JOIN Port ON User.id = Port.userId
+		LEFT JOIN Transactions ON User.id = Transactions.userId
 		WHERE User.active 
 		AND (User.username LIKE ${like} OR User.member LIKE ${like})
+		GROUP BY User.id, Port.ditch, Port.position
 		ORDER BY Port.ditch, Port.position
 	`
 
@@ -114,8 +122,13 @@ export default function MembersRoute() {
 			<header className="sticky top-0 m-auto flex w-full flex-col items-center gap-6 bg-background text-foreground">
 				<div className="flex text-nowrap text-h2 max-md:hidden lg:text-h1">Clearwater Farms Unit 1 Members</div>
 				<div className="flex text-nowrap text-h3 md:hidden">CWF Unit 1 Members</div>
-				<div className="w-[70%]">
+				<div className="flex w-[50%] flex-row gap-2 p-0.5">
 					<SearchBar action="/members" status={status} autoFocus autoSubmit />
+					<Button>
+						<Link reloadDocument to={`/resources/download-balances`}>
+							<Icon name="download">Download</Icon>
+						</Link>
+					</Button>
 				</div>
 				<div className="m-auto block w-[90%] overflow-x-auto bg-background text-foreground" ref={nodeRefA}>
 					<table>
@@ -193,6 +206,9 @@ function UserCard({ user }: { user: UserType }) {
 			) : null}
 			<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">
 				Ditch: {user.ditch} Pos: {user.position}
+			</span>
+			<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">
+				Balance: ${formatCurrency(user.currentBalance)}
 			</span>
 		</>
 	)

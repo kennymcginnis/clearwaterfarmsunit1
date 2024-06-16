@@ -4,8 +4,8 @@ import { Link } from '@remix-run/react'
 import { type Theme } from '#app/utils/theme.server.ts'
 
 export function Footer({ userPreference }: { userPreference?: Theme | null }) {
-	const mailingAddress = `Clearwater Farms Property Owners Association, Unit #1
-(C.F.P.O.A. Unit 1) 
+	const mailingAddress = `Clearwater Farms Property Owners Association, 
+Unit #1 (C.F.P.O.A. Unit 1)
 PO BOX 597 
 Waddell, Arizona 85355`
 	return (
