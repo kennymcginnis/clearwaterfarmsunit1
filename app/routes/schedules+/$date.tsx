@@ -48,6 +48,7 @@ export default function ScheduleRoute() {
 
 	const state = schedule.state.toLowerCase()
 	const timelineLink = state === 'closed' || state === 'locked'
+	const quickbooksLink = state === 'closed'
 	const canEdit = state !== 'closed'
 	const canDelete = state === 'pending'
 	const canLock = state === 'open'
@@ -78,6 +79,13 @@ export default function ScheduleRoute() {
 								text="Delete"
 								variant="destructive"
 							/>
+						) : null}
+						{quickbooksLink ? (
+							<Button>
+								<Link reloadDocument to={`/resources/download-quickbooks/${schedule.date}`}>
+									<Icon name="download">Quickbooks</Icon>
+								</Link>
+							</Button>
 						) : null}
 						{timelineLink ? (
 							<Button asChild variant="default">

@@ -37,7 +37,7 @@ type PositionDitchType = {
 type UserType = {
 	id: string
 	username: string
-	display: string
+	display: string | null
 	ditch: number
 	position: number
 	hours: number | bigint | null

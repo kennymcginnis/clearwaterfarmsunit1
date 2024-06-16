@@ -130,6 +130,8 @@ async function closeScheduleAction({ userId, schedule, formData }: ScheduleActio
 						ditch: userSchedule.ditch,
 						credit: userSchedule.hours * schedule.costPerHour,
 						date: schedule.date,
+						quantity: userSchedule.hours,
+						rate: schedule.costPerHour,
 						note: `${userSchedule.hours} hours at $${schedule.costPerHour} per hour`,
 						createdBy: userId,
 					},

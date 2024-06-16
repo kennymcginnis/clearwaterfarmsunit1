@@ -7,6 +7,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			id: true,
 			username: true,
 			member: true,
+			quickbooks: true,
 			defaultHours: true,
 			active: true,
 			restricted: true,

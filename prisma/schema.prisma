@@ -123,10 +123,12 @@ model Port {
 model Transactions {
   id String @id
 
-  date   String
-  debit  Float   @default(0)
-  credit Float   @default(0)
-  note   String?
+  date     String
+  debit    Float   @default(0)
+  credit   Float   @default(0)
+  quantity Float?
+  rate     Int?
+  note     String?
 
   user       User?   @relation(fields: [userId], references: [id])
   userId     String?
