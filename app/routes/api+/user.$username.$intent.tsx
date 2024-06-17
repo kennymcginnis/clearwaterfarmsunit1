@@ -65,6 +65,23 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 						where: { id: user.id },
 					})
 				}
+				case 'emails': {
+					const PutEmailSchema = z.object({
+						primaryEmail: z.string().optional(),
+						secondaryEmail: z.string().optional(),
+					})
+					const result = PutEmailSchema.safeParse(await request.json())
+					if (!result.success) {
+						return json({ status: 'error', error: result.error.message } as const, {
+							status: 400,
+						})
+					}
+					await prisma.user.update({
+						data: { ...result.data },
+						where: { id: user.id },
+					})
+					return json({ status: 'updated', ...result } as const, { status: 200 })
+				}
 			}
 		case 'PATCH':
 			switch (params.intent) {

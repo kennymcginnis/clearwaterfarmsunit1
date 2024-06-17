@@ -45,6 +45,19 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 				})
 				return `Complete. ${Object.keys(body).length} updated.`
 			}
+		case 'username':
+			if (Object.keys(body).length) {
+				Object.entries(body).forEach(async ([key, value]) => {
+					const user = await prisma.user.findFirst({ where: { username: key } })
+					if (user && value) {
+						await prisma.user.update({
+							data: { username: value },
+							where: { username: key },
+						})
+					}
+				})
+				return `Complete. ${Object.keys(body).length} updated.`
+			}
 		default:
 			invariantResponse(params.intent, `Intent not handled.`, { status: 404 })
 			break
