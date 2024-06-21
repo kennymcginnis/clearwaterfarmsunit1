@@ -158,7 +158,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				ditch: userSchedule.ditch,
 				scheduleId: schedule.id,
 				hours: userSchedule.hours,
-				createdBy: userId,
+				updatedBy: userId,
 			},
 			update: {
 				hours: userSchedule.hours,

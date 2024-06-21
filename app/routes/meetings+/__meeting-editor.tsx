@@ -79,7 +79,7 @@ export async function action({ request }: ActionFunctionArgs) {
 					content: Buffer.from(`# Meeting ${doc} ${date}`),
 				})),
 			},
-			createdBy: userId,
+			updatedAt: userId,
 		},
 		update: { date, updatedBy: userId },
 	})

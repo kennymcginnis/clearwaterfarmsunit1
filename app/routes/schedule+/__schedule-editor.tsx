@@ -43,7 +43,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				scheduleId,
 				ditch,
 				hours,
-				createdBy: currentUser,
+				updatedBy: currentUser,
 			},
 			update: {
 				hours,

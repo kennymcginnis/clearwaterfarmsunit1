@@ -4,13 +4,13 @@ type session = { [key: string]: Date }
 export async function loader() {
 	const sessions = await prisma.session.findMany({
 		select: {
-			createdAt: true,
+			updatedAt: true,
 			user: { select: { username: true } },
 		},
-		orderBy: { createdAt: 'desc' },
+		orderBy: { updatedAt: 'desc' },
 	})
 	return sessions.reduce((agg, cur): session => {
-		if (!agg[cur.user.username]) agg[cur.user.username] = cur.createdAt
+		if (!agg[cur.user.username]) agg[cur.user.username] = cur.updatedAt
 		return agg
 	}, {} as session)
 }

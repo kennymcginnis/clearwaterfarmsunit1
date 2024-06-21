@@ -89,7 +89,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				create: {
 					id: generatePublicId(),
 					...transaction,
-					createdBy: currentUser,
+					updatedBy: currentUser,
 				},
 				update: {
 					...transaction,

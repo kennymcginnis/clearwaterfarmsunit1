@@ -17,7 +17,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			member: true,
 			username: true,
 			image: { select: { id: true } },
-			createdAt: true,
+			updatedAt: true,
 		},
 		where: {
 			username: params.username,
@@ -25,7 +25,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	})
 
 	invariantResponse(user, 'User not found', { status: 404 })
-	return json({ user, userJoinedDisplay: user.createdAt.toLocaleDateString() })
+	return json({ user, userJoinedDisplay: user.updatedAt.toLocaleDateString() })
 }
 
 export default function MemberProfileRoute() {

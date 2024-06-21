@@ -2,6 +2,6 @@ import { prisma } from '#app/utils/db.server.ts'
 
 export async function loader() {
 	return await prisma.transactions.findMany({
-		orderBy: { createdAt: 'desc' },
+		orderBy: { updatedAt: 'desc' },
 	})
 }

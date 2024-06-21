@@ -60,7 +60,7 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 	if (tableParams.age) {
 		filter.where = {
 			...filter.where,
-			createdAt: {
+			updatedAt: {
 				gte: new Date(
 					[6, 12].includes(tableParams.age) //6 and 12 are months so hardcoded this bit, otherwise it's days
 						? new Date().setMonth(-tableParams.age)

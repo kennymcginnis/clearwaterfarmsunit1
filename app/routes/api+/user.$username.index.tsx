@@ -48,7 +48,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 				},
 			},
 			image: { select: { id: true } },
-			createdAt: true,
+			updatedAt: true,
 		},
 		where: { username: params.username },
 	})

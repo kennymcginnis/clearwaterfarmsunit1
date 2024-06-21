@@ -133,7 +133,7 @@ async function closeScheduleAction({ userId, schedule, formData }: ScheduleActio
 						quantity: userSchedule.hours,
 						rate: schedule.costPerHour,
 						note: `${userSchedule.hours} hours at $${schedule.costPerHour} per hour`,
-						createdBy: userId,
+						updatedBy: userId,
 					},
 				})
 			}

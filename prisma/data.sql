@@ -304,6 +304,7 @@ INSERT INTO User VALUES('7sfd-b2kf-kzbd','bandin','Bandin, Alexander',NULL,NULL,
 INSERT INTO User VALUES('ykfs-2g7k-y36u','leblanc','Leblanc, Georgory & Kristel','gleblanc.medicareonthemove@gmail.com',NULL,0,70,0,NULL,'Admin',1706915764206,'Admin',1706915764206);
 INSERT INTO User VALUES('fagg-8aut-255c','effland','Effland, Dustin & Leslie',NULL,NULL,0,70,0,NULL,'Admin',1706915764265,'Admin',1706915764265);
 INSERT INTO User VALUES('sf4d-pat6-2qz8','sommerhalder','Sommerhalder, Lisa',NULL,NULL,0,70,0,NULL,'Admin',1706915764318,'Admin',1706915764318);
+INSERT INTO User VALUES('h5gg-sc53-gevx','cox','Cox, Kyle & Jenna Leemae Whitcher',NULL,NULL,0,70,0,NULL,'Admin',1706915764318,'Admin',1706915764318);
 CREATE TABLE IF NOT EXISTS "Address" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "address" TEXT NOT NULL,

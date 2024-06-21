@@ -165,7 +165,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				hours: userSchedule.hours,
 				start: userSchedule.start,
 				stop: userSchedule.stop,
-				createdBy: userId,
+				updatedBy: userId,
 			},
 			update: {
 				hours: userSchedule.hours,

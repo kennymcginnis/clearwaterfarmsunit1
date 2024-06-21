@@ -176,16 +176,16 @@ function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType
 			className={`flex rounded-lg ${user.hours ? 'bg-muted' : 'bg-muted-40'} p-2`}
 		>
 			<div className="flex w-full flex-row justify-between gap-1">
-				<span className="overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
+				<span className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
 					{user.position}: {user.display}
 				</span>
-				<span className="overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">
+				<span className="w-[10%] overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">
 					{formatHours(Number(user.hours))}
 				</span>
 				{user.schedule.map((row, r) => (
 					<span
 						key={`row-${r}`}
-						className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground"
+						className="w-[30%] overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground"
 					>
 						{row}
 					</span>

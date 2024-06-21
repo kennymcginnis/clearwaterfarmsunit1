@@ -49,7 +49,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 						data: {
 							...data,
 							id: generatePublicId(),
-							createdAt: new Date(),
+							updatedAt: new Date(),
 						},
 					})
 					return json({ status: 'created', transaction })

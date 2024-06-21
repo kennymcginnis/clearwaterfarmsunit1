@@ -14,14 +14,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 			console.log('Creating a user and Address:')
 			const CreateUserSchema = z
 				.object({
-					id: z.undefined(),
+					id: z.string().optional(),
 					username: z.string(),
 					member: z.string(),
 					display: z.string().optional(),
 					address: z.string(),
 					primaryEmail: z.string().optional(),
 					secondaryEmail: z.string().optional(),
-					phone: PhoneSchema.array(),
+					phone: PhoneSchema.array().optional(),
 					ports: PortsSchema.array(),
 					deposits: DepositsSchema.array(),
 				})
@@ -38,6 +38,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 				let response = []
 
 				for (const userData of result.data) {
+					if (userData.id) {
+						const userId = await prisma.user.findFirst({ select: { id: true }, where: { id: userData.id } })
+						if (userId) {
+							response.push({
+								status: 'error',
+								message: 'User with this ID already exists.',
+								address: userData.id,
+							})
+							continue
+						}
+					}
+
 					const address = await prisma.address.findFirst({ where: { address: userData.address } })
 
 					if (!address) {
@@ -48,7 +60,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 					const { id } = await prisma.user.create({
 						select: { id: true },
 						data: {
-							id: generatePublicId(),
+							id: userData.id ?? generatePublicId(),
 							username: userData.username,
 							member: userData.member,
 							display: userData.display ?? userData.member,

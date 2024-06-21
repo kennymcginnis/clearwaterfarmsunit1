@@ -40,8 +40,6 @@ model User {
   roles    Role[]
   sessions Session[]
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
@@ -53,8 +51,6 @@ model Address {
   users        UserAddress[]
   parcelAndLot ParcelAndLot[]
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
@@ -67,8 +63,6 @@ model UserAddress {
   address   Address @relation(fields: [addressId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   addressId String
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 
@@ -84,8 +78,6 @@ model ParcelAndLot {
   parcel String
   lot    String
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
@@ -99,8 +91,6 @@ model UserPhone {
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
@@ -109,13 +99,12 @@ model Port {
   id       String  @id
   ditch    Int
   position Int
+  section  String?
   entry    String?
 
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
@@ -135,8 +124,6 @@ model Transactions {
   scheduleId String?
   ditch      Int?
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 
@@ -156,8 +143,27 @@ model Schedule {
 
   userSchedules UserSchedule[]
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
+  updatedBy String   @default("Admin")
+  updatedAt DateTime @updatedAt
+}
+
+model Timeline {
+  id String @id
+
+  userId  String
+  display String?
+
+  ditch    Int
+  position Int
+  section  String?
+
+  scheduleId String
+  date       String
+
+  hours Float
+  start DateTime?
+  stop  DateTime?
+
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
@@ -175,8 +181,6 @@ model UserSchedule {
   start DateTime?
   stop  DateTime?
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 
@@ -189,8 +193,6 @@ model Meeting {
 
   documents Document[]
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
@@ -205,8 +207,6 @@ model Document {
   meetingId String?
   images    DocumentImage[]
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
@@ -215,8 +215,6 @@ model Comment {
   id      String @id
   comment String
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
@@ -230,8 +228,6 @@ model DocumentImage {
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   documentId String
 
-  createdBy String   @default("Admin")
-  createdAt DateTime @default(now())
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 
@@ -248,7 +244,6 @@ model UserImage {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String @unique
 
-  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
@@ -263,7 +258,6 @@ model Session {
   id             String   @id @default(cuid())
   expirationDate DateTime
 
-  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -280,7 +274,6 @@ model Permission {
   access      String // e.g. own or any
   description String @default("")
 
-  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   roles Role[]
@@ -296,7 +289,6 @@ model Role {
   users       User[]
   permissions Permission[]
 
-  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 

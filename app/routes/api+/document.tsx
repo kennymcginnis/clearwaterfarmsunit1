@@ -5,7 +5,7 @@ import { generatePublicId } from '#app/utils/public-id'
 
 export async function loader() {
 	const documents = await prisma.document.findMany({
-		orderBy: { createdAt: 'desc' },
+		orderBy: { updatedAt: 'desc' },
 	})
 	return documents.map(({ content, ...rest }) => ({ ...rest, content: content.toString() }))
 }

@@ -63,7 +63,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 				},
 			},
 			image: { select: { id: true } },
-			createdAt: true,
+			updatedAt: true,
 		},
 		where: {
 			username: params.username,
@@ -78,7 +78,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		where: { userId: user.id },
 	})
 
-	return json({ user, currentBalance, userJoinedDisplay: user.createdAt.toLocaleDateString() })
+	return json({ user, currentBalance, userJoinedDisplay: user.updatedAt.toLocaleDateString() })
 }
 
 export default function MemberRoute() {

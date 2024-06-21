@@ -92,7 +92,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			deadline,
 			source,
 			costPerHour,
-			createdBy: userId,
+			updatedBy: userId,
 		},
 		update: {
 			date,
