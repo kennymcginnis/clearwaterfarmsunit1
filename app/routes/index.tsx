@@ -184,27 +184,7 @@ export default function HomeRoute() {
 					<div id="closed" className="w-[352px] flex-col">
 						<CardDescription className="text-center">Most Recently Closed Schedule:</CardDescription>
 						{closed ? (
-							<Card className="bg-muted">
-								<CardHeader className="flex-col items-center">
-									<CardTitle>Schedule Dated: {closed.date}</CardTitle>
-									{closed.start && closed.stop ? (
-										<CardDescription>{closed.schedule.join(' ─ ')}</CardDescription>
-									) : null}
-								</CardHeader>
-								<CardContent className="flex-col gap-2">
-									{userSchedules.closed ? (
-										userSchedules.closed.map(userSchedule => (
-											<UserScheduleTimeline
-												key={`timeline-${userSchedule.ditch}`}
-												user={user}
-												userSchedule={userSchedule}
-											/>
-										))
-									) : (
-										<MissingUserSchedule schedule={userSchedules.closed} />
-									)}
-								</CardContent>
-							</Card>
+							<ClosedSchedule closed={closed} userSchedules={userSchedules} user={user} />
 						) : (
 							<Card className="bg-muted">
 								<CardHeader>
@@ -218,27 +198,7 @@ export default function HomeRoute() {
 					<div id="open" className="w-[352px] flex-col">
 						<CardDescription className="text-center">Currently Open for Sign-Up:</CardDescription>
 						{open ? (
-							<Card className="bg-muted">
-								<CardHeader className="flex-col items-center">
-									<CardTitle>Open Until: {open.deadline}</CardTitle>
-									<CardDescription>Sign-Up Deadline {formatDay(open.deadline)} at 7pm</CardDescription>
-								</CardHeader>
-								<CardContent className="flex flex-col gap-2">
-									{userSchedules.open ? (
-										userSchedules.open.map(userSchedule => (
-											<UserScheduleEditor
-												key={`schedule-${userSchedule.ditch}`}
-												user={user}
-												schedule={open}
-												previous={userSchedule.previous}
-												userSchedule={userSchedule}
-											/>
-										))
-									) : (
-										<MissingUserSchedule schedule={open} />
-									)}
-								</CardContent>
-							</Card>
+							<OpenSchedule open={open} userSchedules={userSchedules} user={user} />
 						) : (
 							<Card className="bg-muted">
 								<CardHeader>
@@ -265,6 +225,100 @@ export default function HomeRoute() {
 			</>
 		)
 	}
+}
+
+function OpenSchedule({
+	open,
+	userSchedules,
+	user,
+}: {
+	open: {
+		id: string
+		date: string
+		deadline: string
+		source: string
+		costPerHour: number
+	}
+	userSchedules: {
+		open: {
+			ditch: number
+			hours: number | null
+			previous: number | null
+		}[]
+	}
+	user: {
+		id: string
+		display: string | null
+		defaultHours: number
+		restricted: boolean
+		restriction: string | null
+	}
+}) {
+	return (
+		<Card className="bg-muted">
+			<CardHeader className="flex-col items-center">
+				<CardTitle>Open Until: {open.deadline}</CardTitle>
+				<CardDescription>Sign-Up Deadline {formatDay(open.deadline)} at 7pm</CardDescription>
+			</CardHeader>
+			<CardContent className="flex flex-col gap-2">
+				{userSchedules.open ? (
+					userSchedules.open.map(userSchedule => (
+						<UserScheduleEditor
+							key={`schedule-${userSchedule.ditch}`}
+							user={user}
+							schedule={open}
+							previous={userSchedule.previous}
+							userSchedule={userSchedule}
+						/>
+					))
+				) : (
+					<MissingUserSchedule schedule={open} />
+				)}
+			</CardContent>
+		</Card>
+	)
+}
+
+function ClosedSchedule({
+	closed,
+	userSchedules,
+	user,
+}: {
+	closed: {
+		date: string
+		start: string | null
+		stop: string | null
+		schedule: string[]
+	}
+	userSchedules: {
+		closed: {
+			ditch: number
+			hours: number | null
+			schedule: string[]
+		}[]
+	}
+	user: {
+		id: string
+		display: string | null
+	}
+}) {
+	return (
+		<Card className="bg-muted">
+			<CardHeader className="flex-col items-center">
+				<CardTitle>Schedule Dated: {closed.date}</CardTitle>
+				{closed.start && closed.stop ? <CardDescription>{closed.schedule.join(' ─ ')}</CardDescription> : null}
+			</CardHeader>
+			<CardContent className="flex-col gap-2">
+				{userSchedules.closed ? (
+					userSchedules.closed.map(userSchedule => (
+						<UserScheduleTimeline key={`timeline-${userSchedule.ditch}`} user={user} userSchedule={userSchedule} />
+					))
+				) : (
+					<MissingUserSchedule schedule={userSchedules.closed} />
+				)}
+			</CardContent>
+		</Card>
+	)
 }
 
 function MissingUserSchedule({

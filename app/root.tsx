@@ -345,8 +345,15 @@ function UserProfile() {
 							</DropdownMenuItem>
 							<DropdownMenuItem asChild>
 								<Link prefetch="intent" to={`/member/${user.username}/irrigation`}>
-									<Icon className="m-2 text-body-md" name="pencil-2">
+									<Icon className="m-2 text-body-md" name="droplets">
 										Irrigation
+									</Icon>
+								</Link>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild>
+								<Link prefetch="intent" to={`/member/${user.username}/transactions`}>
+									<Icon className="m-2 text-body-md" name="reader">
+										Transactions
 									</Icon>
 								</Link>
 							</DropdownMenuItem>

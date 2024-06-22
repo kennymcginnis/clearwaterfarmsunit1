@@ -15,7 +15,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		select: {
 			id: true,
 			member: true,
+			display: true,
 			username: true,
+			quickbooks: true,
 			primaryEmail: true,
 			secondaryEmail: true,
 			phones: {
@@ -71,8 +73,18 @@ export default function ContactRoute() {
 					/>
 					<DisplayField
 						className="col-span-6"
+						labelProps={{ htmlFor: user.display ?? '', children: 'Display Name' }}
+						inputProps={{ defaultValue: user.display ?? '' }}
+					/>
+					<DisplayField
+						className="col-span-6"
 						labelProps={{ htmlFor: user.member ?? '', children: 'Member Name' }}
 						inputProps={{ defaultValue: user.member ?? '' }}
+					/>
+					<DisplayField
+						className="col-span-6"
+						labelProps={{ htmlFor: user.quickbooks ?? '', children: 'Quickbooks Name' }}
+						inputProps={{ defaultValue: user.quickbooks ?? '' }}
 					/>
 					<DisplayField
 						className="col-span-6"

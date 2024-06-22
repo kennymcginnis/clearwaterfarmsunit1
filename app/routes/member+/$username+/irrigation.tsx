@@ -1,18 +1,15 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
-import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node'
-import { useLoaderData, NavLink, Outlet, useFetcher } from '@remix-run/react'
+import { useLoaderData, useFetcher } from '@remix-run/react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary'
 import { Field } from '#app/components/forms.tsx'
-import { Badge } from '#app/components/ui/badge'
-import { Button } from '#app/components/ui/button.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button'
 import { requireSelfOrAdmin, requireUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
-import { cn, getVariantForState, useIsPending } from '#app/utils/misc'
+import { useIsPending, formatHours, formatDates } from '#app/utils/misc'
 import { redirectWithToast } from '#app/utils/toast.server'
 
 const IrrigationDefaultsSchema = z.object({
@@ -33,21 +30,16 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		where: { username },
 	})
 
-	const schedules = await prisma.schedule.findMany({
-		select: {
-			id: true,
-			date: true,
-			deadline: true,
-			source: true,
-			costPerHour: true,
-			state: true,
-		},
-		orderBy: { date: 'desc' },
+	const userSchedule = await prisma.userSchedule.findMany({
+		where: { user: { username }, hours: { gt: 0 } },
+		orderBy: { start: 'desc' },
 	})
 
-	invariantResponse(schedules, 'No schedules found', { status: 404 })
-
-	return json({ user, username, schedules })
+	const userSchedules = userSchedule.map(({ start, stop, ...us }) => ({
+		...us,
+		formatted: formatDates({ start, stop }),
+	}))
+	return json({ user, username, userSchedules })
 }
 
 const updateDefaultsActionIntent = 'update-defaults'
@@ -64,10 +56,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		const { id, defaultHours } = submission.value
 		await prisma.user.update({
 			where: { id },
-			data: {
-				defaultHours,
-				updatedBy: currentUser,
-			},
+			data: { defaultHours, updatedBy: currentUser },
 		})
 
 		return redirectWithToast('', {
@@ -81,10 +70,8 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function NotesRoute() {
-	const { user, schedules } = useLoaderData<typeof loader>()
+	const { user, userSchedules } = useLoaderData<typeof loader>()
 	const isPending = useIsPending()
-	const navLinkDefaultClassName =
-		'line-clamp-2 block rounded-full md:rounded-r-none py-2 pl-8 pr-6 text-base lg:text-xl'
 
 	const fetcher = useFetcher<typeof action>()
 	const [form, fields] = useForm({
@@ -127,9 +114,6 @@ export default function NotesRoute() {
 						}}
 					/>
 					<div className="flex w-full flex-1 flex-row items-end gap-2">
-						<Button form={form.id} variant="destructive" type="reset">
-							Reset
-						</Button>
 						<StatusButton
 							type="submit"
 							name="intent"
@@ -148,28 +132,30 @@ export default function NotesRoute() {
 			</CardHeader>
 			<CardContent className="space-y-2">
 				<main className="flex h-full min-h-[400px] flex-col">
-					<div className="grid w-full grid-cols-1 md:grid-cols-4 md:rounded-lg md:pr-0">
-						<ul className="min-h-[144px] overflow-y-auto overflow-x-hidden md:mt-4 md:pb-12">
-							{schedules.map(schedule => (
-								<li key={schedule.id} className="p-1 md:pr-0">
-									<NavLink
-										to={schedule.date}
-										preventScrollReset
-										prefetch="intent"
-										className={({ isActive }) => cn(navLinkDefaultClassName, isActive && 'bg-accent')}
-									>
-										{schedule.date}
-										<Badge className="ml-2 capitalize" variant={getVariantForState(schedule.state)}>
-											{schedule.state}
-										</Badge>
-									</NavLink>
-								</li>
-							))}
-						</ul>
-						<div className="col-span-1 bg-accent md:col-span-3 md:rounded-lg">
-							<Outlet />
-						</div>
-					</div>
+					<table className="w-full">
+						{userSchedules.map(({ ditch, hours, formatted }, index) => {
+							const [start, stop] = formatted
+							return (
+								<tr
+									key={`userSchedules-${index}`}
+									className="flex w-full flex-row justify-between gap-1 rounded-lg bg-muted p-2"
+								>
+									<td className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
+										Ditch: {ditch}
+									</td>
+									<td className="w-[10%] overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">
+										{formatHours(Number(hours))}
+									</td>
+									<td className="w-[30%] overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
+										{start}
+									</td>
+									<td className="w-[30%] overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
+										{stop}
+									</td>
+								</tr>
+							)
+						})}
+					</table>
 				</main>
 			</CardContent>
 		</Card>
