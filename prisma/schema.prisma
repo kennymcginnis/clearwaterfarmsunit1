@@ -169,7 +169,6 @@ model Timeline {
 }
 
 model UserSchedule {
-  id         String   @id
   user       User     @relation(fields: [userId], references: [id])
   userId     String
   ditch      Int
@@ -184,6 +183,8 @@ model UserSchedule {
 
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
+
+  @@id([userId, ditch, scheduleId])
 }
 
 model Meeting {

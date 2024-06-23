@@ -56,7 +56,7 @@ export default function ScheduleRoute() {
 
 	return (
 		<div className="absolute inset-0 flex flex-col px-10">
-			<h2 className="mb-2 pt-12 text-h2 lg:mb-6">Irrigation Schedule Beginning: {schedule.date}</h2>
+			<h2 className="mb-2 pt-12 text-h2 lg:mb-6">Irrigation Schedule: {schedule.date}</h2>
 			<div className={`${adminUser ? 'pb-24' : 'pb-12'} overflow-y-auto`}>
 				<p className="whitespace-break-spaces text-sm md:text-lg">Deadline for Sign-Up: {schedule.deadline}</p>
 				<p className="whitespace-break-spaces text-sm capitalize md:text-lg">Water source: {schedule.source} Water</p>
@@ -87,16 +87,16 @@ export default function ScheduleRoute() {
 								</Link>
 							</Button>
 						) : null}
-						{timelineLink ? (
+						{canClose ? <DialogCloseSchedule id={schedule.id} /> : null}
+						{canClose ? (
 							<Button asChild variant="default">
-								<NavLink to={`/schedule/${schedule.date}/timeline`}>
-									<Icon name="magnifying-glass" className="scale-125 max-md:scale-150">
-										<span className="max-md:hidden">Timeline</span>
+								<NavLink to={`/schedule/${schedule.date}/generate`}>
+									<Icon name="activity-log" className="scale-125 max-md:scale-150">
+										<span className="max-md:hidden">Generate</span>
 									</Icon>
 								</NavLink>
 							</Button>
 						) : null}
-						{canClose ? <DialogCloseSchedule id={schedule.id} /> : null}
 						{canOpen ? (
 							<ScheduleActionButton
 								id={schedule.id}

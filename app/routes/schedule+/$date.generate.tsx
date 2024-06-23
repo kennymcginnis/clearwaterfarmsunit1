@@ -142,6 +142,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		if (start && start < sideMinimum[side]) sideMinimum[side] = start
 	}
 
+	if (sideMinimum.left.getTime() === new Date(100000000000000).getTime())
+		sideMinimum.left = new Date(new Date().toISOString().slice(0, 10))
+	if (sideMinimum.right.getTime() === new Date(100000000000000).getTime())
+		sideMinimum.right = new Date(new Date().toISOString().slice(0, 10))
+
 	return json({
 		status: 'idle',
 		schedule: { id: schedule.id, date, state: schedule.state },
@@ -152,15 +157,16 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
-	await requireUserWithRole(request, 'admin')
+	const currentUser = await requireUserWithRole(request, 'admin')
 	const formData = await request.formData()
 	const intent = formData.get('intent')
 	const beginning = formData.get('begin')?.toString()
 	switch (intent) {
-		case 'reset':
+		case 'reset': {
 			const scheduleId = formData.get('scheduleId')?.toString()
 			await prisma.timeline.deleteMany({ where: { scheduleId } })
 			break
+		}
 		case 'update-left': {
 			invariantResponse(beginning, 'Invalid Start Time', { status: 400 })
 			const begins = parseISO(beginning)
@@ -173,12 +179,19 @@ export async function action({ request, params }: ActionFunctionArgs) {
 			await updateSection(begins, 'East', [5, 6, 7, 8])
 			break
 		}
+		case 'submit': {
+			const scheduleId = formData.get('scheduleId')?.toString()
+			const timeline = await prisma.timeline.findMany({ where: { scheduleId } })
+			timeline.forEach(async ({ userId, scheduleId, ditch, start, stop }) => {
+				await prisma.userSchedule.update({
+					where: { userId_ditch_scheduleId: { userId, ditch, scheduleId } },
+					data: { start, stop, updatedBy: currentUser },
+				})
+			})
+			break
+		}
 	}
-	return redirectWithToast('.', {
-		type: 'success',
-		title: 'Success',
-		description: 'Timeline reset.',
-	})
+	return redirectWithToast('.', { type: 'success', title: 'Success', description: 'Timeline reset.' })
 
 	async function updateSection(begins: Date, section: string, ditches: number[]) {
 		const timeline = await prisma.timeline.findMany({

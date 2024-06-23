@@ -32,9 +32,9 @@ export default function NotesRoute() {
 	const canCreate = useOptionalAdminUser()
 	const navLinkDefaultClassName = 'line-clamp-2 block rounded-l-full py-2 pl-8 pr-6 text-base lg:text-xl'
 	return (
-		<main className="container mb-6 flex h-full min-h-[400px] px-0 pb-12 md:px-6">
-			<div className="grid w-full grid-cols-4 bg-muted pl-2 md:container md:rounded-3xl md:pr-0">
-				<div className="relative col-span-1 mt-6">
+		<main className="container mb-6 flex h-full px-0 pb-12 md:px-6">
+			<div className="grid min-h-[1000px] w-full grid-cols-8 bg-muted pl-2 md:container md:rounded-3xl md:pr-0">
+				<div className="relative col-span-2 mt-6">
 					<div className="absolute inset-0 flex flex-col">
 						<h1 className="text-center text-base font-bold md:text-lg lg:text-left lg:text-2xl">Schedules:</h1>
 						<Separator className="mb-2 mt-4" />
@@ -64,8 +64,11 @@ export default function NotesRoute() {
 						</ul>
 					</div>
 				</div>
-				<div className="relative col-span-3 bg-accent md:rounded-r-3xl">
+				<div className="relative col-span-5 bg-accent">
 					<Outlet />
+				</div>
+				<div className="relative col-span-1 h-full min-h-[1000px] md:rounded-r-3xl">
+					<img src="/img/workflow.png" className="block h-full w-auto md:rounded-r-3xl" alt="CWF" />
 				</div>
 			</div>
 		</main>
