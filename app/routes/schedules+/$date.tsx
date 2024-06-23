@@ -88,6 +88,15 @@ export default function ScheduleRoute() {
 							</Button>
 						) : null}
 						{canClose ? <DialogCloseSchedule id={schedule.id} /> : null}
+						{timelineLink ? (
+							<Button asChild variant="default">
+								<NavLink to={`/schedule/${schedule.date}/timeline`}>
+									<Icon name="magnifying-glass" className="scale-125 max-md:scale-150">
+										<span className="max-md:hidden">Timeline</span>
+									</Icon>
+								</NavLink>
+							</Button>
+						) : null}
 						{canClose ? (
 							<Button asChild variant="default">
 								<NavLink to={`/schedule/${schedule.date}/generate`}>
