@@ -6,7 +6,6 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Button } from '#app/components/ui/button'
-import { Icon } from '#app/components/ui/icon'
 import { Separator } from '#app/components/ui/separator'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatDates, formatHours } from '#app/utils/misc'
@@ -35,7 +34,6 @@ type UserType = {
 	stop: Date | string | null
 	schedule: string[]
 }
-
 const SearchResultsSchema = z.array(
 	z.object({
 		userId: z.string(),
@@ -43,8 +41,6 @@ const SearchResultsSchema = z.array(
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		section: z.string().nullable(),
-		scheduleId: z.string(),
-		date: z.string(),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
 		start: z.date().nullable(),
 		stop: z.date().nullable(),
@@ -65,11 +61,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		// await prisma.timeline.deleteMany()
 	} else {
 		const rawUsers = await prisma.$queryRaw`
-			SELECT mid.userId, User.display, Port.ditch, Port.position, Port.section, mid.scheduleId, mid.date, mid.hours, mid.start, mid.stop
+			SELECT User.id AS userId, User.display, Port.ditch, Port.position, Port.section, mid.hours, mid.start, mid.stop
 			FROM User
 			INNER JOIN Port ON User.id = Port.userId
-			INNER JOIN (
-				SELECT UserSchedule.scheduleId, Schedule.date, UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
+			LEFT JOIN (
+				SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
 				FROM Schedule
 				INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
 				WHERE Schedule.date = ${date}
@@ -82,6 +78,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 		const result = SearchResultsSchema.safeParse(rawUsers)
 		if (!result.success) {
+			console.error(result.error.message)
 			return json(
 				{
 					status: 'error',
@@ -96,7 +93,15 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		}
 
 		for (let row of result.data) {
-			await prisma.timeline.create({ data: { id: generatePublicId(), ...row, updatedBy: userId } })
+			await prisma.timeline.create({
+				data: {
+					id: generatePublicId(),
+					scheduleId: schedule.id,
+					date,
+					...row,
+					updatedBy: userId,
+				},
+			})
 		}
 		timeline = await prisma.timeline.findMany({ where: { date: params.date } })
 	}
@@ -126,7 +131,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 		// users sorted
 		sorted[side][page][row] = userType
-		
+
 		// ditch totals
 		if (!ditchTotals[ditch]) ditchTotals[ditch] = { hours: 0, irrigators: 0 }
 		if (hours) {
@@ -136,7 +141,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 		if (start && start < sideMinimum[side]) sideMinimum[side] = start
 	}
-	console.dir(sideMinimum)
 
 	return json({
 		status: 'idle',
@@ -154,7 +158,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	const beginning = formData.get('begin')?.toString()
 	switch (intent) {
 		case 'reset':
-			await prisma.timeline.deleteMany()
+			const scheduleId = formData.get('scheduleId')?.toString()
+			await prisma.timeline.deleteMany({ where: { scheduleId } })
 			break
 		case 'update-left': {
 			invariantResponse(beginning, 'Invalid Start Time', { status: 400 })
@@ -186,6 +191,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		let start,
 			stop = begins
 		for (let { id, hours } of ordered) {
+			if (hours === 0) continue
 			start = stop
 			stop = add(start, { hours })
 			await prisma.timeline.update({ data: { start, stop }, where: { id } })
@@ -197,6 +203,10 @@ export default function PrintableTimelineRoute() {
 	const submit = useSubmit()
 	const userIsAdmin = useOptionalAdminUser()
 	const data = useLoaderData<typeof loader>()
+
+	const [showAll, setShowAll] = useState(false)
+	const toggleShowAll = () => setShowAll(!showAll)
+
 	const { status, schedule, users } = data
 	const { id: scheduleId, date: scheduleDate } = schedule
 
@@ -222,52 +232,50 @@ export default function PrintableTimelineRoute() {
 
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
-			<div className="flex w-[90%] flex-row-reverse flex-wrap gap-2 p-0.5">
-				{userIsAdmin ? (
-					<>
+			{userIsAdmin ? (
+				<div className="flex w-[70%] flex-row justify-between gap-2 p-0.5">
+					<Button variant="outline" onClick={toggleShowAll} className="w-[150px] pb-2">
+						Display {showAll ? 'Scheduled' : 'All'}
+					</Button>
+					<div className="flex">
+						<input
+							className="float-right mr-2 rounded-sm bg-secondary p-2 text-body-lg"
+							aria-label="Date and time"
+							type="datetime-local"
+							step="1800"
+							value={(leftdatetime || '').toString().substring(0, 16)}
+							onChange={handleChangeLeft}
+						/>
+						<input
+							className="ml-2 rounded-sm bg-secondary p-2 text-body-lg"
+							aria-label="Date and time"
+							type="datetime-local"
+							step="1800"
+							value={(rightdatetime || '').toString().substring(0, 16)}
+							onChange={handleChangeRight}
+						/>
+					</div>
+					<div className="flex flex-row gap-2">
 						<Form method="post" encType="multipart/form-data">
+							<input type="hidden" name="scheduleId" value={scheduleId} />
 							<Button type="submit" name="intent" value="reset" variant="destructive" className="btn btn-sm">
 								Reset
 							</Button>
 						</Form>
-						<Button>
-							<Link reloadDocument to={`/resources/download-print/${scheduleDate}`}>
-								<Icon name="download">Download</Icon>
-							</Link>
-						</Button>
-					</>
-				) : null}
-			</div>
+						<Form method="post" encType="multipart/form-data">
+							<input type="hidden" name="scheduleId" value={scheduleId} />
+							<Button type="submit" name="intent" value="submit" variant="secondary" className="btn btn-sm">
+								Submit
+							</Button>
+						</Form>
+					</div>
+				</div>
+			) : null}
 			<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
 				<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
-					<table className="mb-4 w-[80%]">
-						<thead>
-							<tr>
-								<td>
-									<input
-										className="float-right mr-2 rounded-sm bg-secondary p-2 text-body-lg"
-										aria-label="Date and time"
-										type="datetime-local"
-										step="1800"
-										value={(leftdatetime || '').toString().substring(0, 16)}
-										onChange={handleChangeLeft}
-									/>
-								</td>
-								<td>
-									<input
-										className="ml-2 rounded-sm bg-secondary p-2 text-body-lg"
-										aria-label="Date and time"
-										type="datetime-local"
-										step="1800"
-										value={(rightdatetime || '').toString().substring(0, 16)}
-										onChange={handleChangeRight}
-									/>
-								</td>
-							</tr>
-						</thead>
-					</table>
 					{Object.keys(users).map(page => (
 						<div key={`${page}`} className="m-auto block overflow-x-auto overflow-y-auto">
+							<Separator className="mb-4 mt-4" />
 							<table className="w-[80%]">
 								<thead>
 									<tr>
@@ -280,16 +288,23 @@ export default function PrintableTimelineRoute() {
 									return (
 										<tr className="w-[100%]" key={`${position}`}>
 											<td className="w-[50%] p-0.5">
-												{left ? <UserCard scheduleDate={scheduleDate} user={left} /> : null}
+												{left && (left.hours || showAll) ? (
+													<UserCard scheduleDate={scheduleDate} user={left} />
+												) : (
+													<div></div>
+												)}
 											</td>
 											<td className="w-[50%] p-0.5">
-												{right ? <UserCard scheduleDate={scheduleDate} user={right} /> : null}
+												{right && (right.hours || showAll) ? (
+													<UserCard scheduleDate={scheduleDate} user={right} />
+												) : (
+													<div></div>
+												)}
 											</td>
 										</tr>
 									)
 								})}
 							</table>
-							<Separator className="mb-8 mt-4" />
 						</div>
 					))}
 				</main>

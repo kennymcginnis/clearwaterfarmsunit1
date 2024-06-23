@@ -169,6 +169,7 @@ model Timeline {
 }
 
 model UserSchedule {
+  id         String?
   user       User     @relation(fields: [userId], references: [id])
   userId     String
   ditch      Int
