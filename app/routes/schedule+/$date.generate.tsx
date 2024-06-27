@@ -92,13 +92,32 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			)
 		}
 
-		for (let row of result.data) {
+		const leftOrRight = (ditch: number, section: string | null) => {
+			if (ditch < 5) return 'left'
+			if (ditch < 9) return 'right'
+			return section === 'West' ? 'left' : 'right'
+		}
+
+		const calcOrder = (ditch: number, position: number) => {
+			if (ditch === 9) return position
+			return ditch * 100 + position
+		}
+
+		for (let { ditch, position, section, ...member } of result.data) {
+			const side = leftOrRight(ditch, section)
+			const order = calcOrder(ditch, position)
+
 			await prisma.timeline.create({
 				data: {
 					id: generatePublicId(),
 					scheduleId: schedule.id,
+					side,
+					order,
 					date,
-					...row,
+					ditch,
+					position,
+					section,
+					...member,
 					updatedBy: userId,
 				},
 			})
@@ -170,13 +189,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		case 'update-left': {
 			invariantResponse(beginning, 'Invalid Start Time', { status: 400 })
 			const begins = parseISO(beginning)
-			await updateSection(begins, 'West', [1, 2, 3, 4])
+			await updateSection(begins, 'left')
 			break
 		}
 		case 'update-right': {
 			invariantResponse(beginning, 'Invalid Start Time', { status: 400 })
 			const begins = parseISO(beginning)
-			await updateSection(begins, 'East', [5, 6, 7, 8])
+			await updateSection(begins, 'right')
 			break
 		}
 		case 'submit': {
@@ -193,17 +212,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	}
 	return redirectWithToast('.', { type: 'success', title: 'Success', description: 'Timeline reset.' })
 
-	async function updateSection(begins: Date, section: string, ditches: number[]) {
-		const timeline = await prisma.timeline.findMany({
-			where: { OR: [{ ditch: 9, section }, { ditch: { in: ditches } }] },
-			orderBy: [{ ditch: 'asc' }, { position: 'asc' }],
-		})
-		const first = timeline.findIndex(a => a.ditch === 9)
-		const ordered = [...timeline.splice(first), ...timeline.splice(0, first)]
+	async function updateSection(begins: Date, side: string) {
+		const timeline = await prisma.timeline.findMany({ where: { side }, orderBy: { order: 'asc' } })
 
 		let start,
 			stop = begins
-		for (let { id, hours } of ordered) {
+		for (let { id, hours } of timeline) {
 			if (hours === 0) continue
 			start = stop
 			stop = add(start, { hours })

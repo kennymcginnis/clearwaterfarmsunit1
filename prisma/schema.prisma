@@ -150,15 +150,18 @@ model Schedule {
 model Timeline {
   id String @id
 
+  scheduleId String
+  side       String?
+  order      Int?
+
+  date String
+
   userId  String
   display String?
 
   ditch    Int
   position Int
   section  String?
-
-  scheduleId String
-  date       String
 
   hours Float
   start DateTime?
