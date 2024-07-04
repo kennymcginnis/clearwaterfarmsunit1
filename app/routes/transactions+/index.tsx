@@ -117,6 +117,8 @@ export default function ViewTransactions() {
 	const baseUrl = '/transactions'
 
 	const Header = ({ header, className }: { header: string; className: string }) => {
+		const isSortingUp = tableParams.sort === header && tableParams.direction === 'asc'
+		const isSortingDown = tableParams.sort === header && tableParams.direction === 'desc'
 		return (
 			<Link
 				key={`header-${header}`}
@@ -127,19 +129,9 @@ export default function ViewTransactions() {
 				to={getNewTableUrl(baseUrl, tableParams, 'sort', header !== 'intent' ? header : undefined)}
 			>
 				{header.toUpperCase()}
-				<Sorting header={header} />
-			</Link>
-		)
-	}
-
-	const Sorting = ({ header }: { header: string }) => {
-		const isSortingUp = tableParams.sort === header && tableParams.direction === 'asc'
-		const isSortingDown = tableParams.sort === header && tableParams.direction === 'desc'
-		return (
-			<>
 				{header !== 'intent' && isSortingUp && <ChevronUpIcon className="ml-auto w-4" />}
 				{header !== 'intent' && isSortingDown && <ChevronDownIcon className="ml-auto w-4" />}
-			</>
+			</Link>
 		)
 	}
 
@@ -213,13 +205,7 @@ export default function ViewTransactions() {
 	return (
 		<Card className="m-auto mt-2 flex w-[90%] flex-col items-center justify-center gap-1 rounded-none bg-accent px-0 pb-4 lg:rounded-3xl">
 			<CardHeader className="flex w-full flex-row flex-wrap gap-2 self-center p-4">
-				<div className="flex gap-2">
-					<Button variant="secondary">
-						<Link className="text-brand-400 hover:text-brand-800 text-sm tracking-wide" to={baseUrl}>
-							Reset Table
-						</Link>
-					</Button>
-				</div>
+				<div></div>
 				<div className="flex flex-col items-center">
 					<CardTitle className="text-3xl">Transactions</CardTitle>
 					<CardDescription>Irrigation Accounts</CardDescription>
@@ -258,18 +244,47 @@ export default function ViewTransactions() {
 			</CardHeader>
 			<CardContent className="w-full space-y-2">
 				<div className="grid grid-cols-12 gap-1">
+					<div className="col-span-1 pr-3">
+						<Button asChild variant="secondary">
+							<Link to={baseUrl}>
+								<Icon name="reset" className="scale-100 max-md:scale-125">
+									<span className="max-md:hidden">Reset Table</span>
+								</Icon>
+							</Link>
+						</Button>
+					</div>
+					<div className="col-span-1 pr-3"></div>
+					<div className="col-span-1 pr-3">
+						<DitchFilters
+							baseUrl={baseUrl}
+							dropdownDefault="All Ditches"
+							ditches={DitchesArray}
+							tableParams={tableParams}
+						/>
+					</div>
+					<div className="col-span-1 pr-3"></div>
+					<div className="col-span-2 pr-3"></div>
+					<div className="col-span-1 w-full">
+						<DateFilters
+							ages={TransactionAges}
+							baseUrl={baseUrl}
+							dropdownDefault="All Dates"
+							filters={filters}
+							tableParams={tableParams}
+						/>
+					</div>
+					<div className="col-span-1 pr-3 text-right"></div>
+					<div className="col-span-1 pr-3 text-right"></div>
+					<div className={`col-span-${toggleEditable ? '2' : '3'} pl-3`}></div>
+					{toggleEditable ? <Header header="intent" className="col-span-1 pl-1.5 text-left" /> : null}
+				</div>
+				<div className="grid grid-cols-12 gap-1">
 					<Header header="id" className="col-span-1 pr-3" />
 					<Header header="scheduleId" className="col-span-1 pr-3" />
-					<DitchFilters baseUrl={baseUrl} dropdownDefault="Ditch" ditches={DitchesArray} tableParams={tableParams} />
+					<Header header="ditch" className="col-span-1 pr-3" />
 					<Header header="userId" className="col-span-1 pr-3" />
 					<Header header="display" className="col-span-2 pr-3" />
-					<DateFilters
-						ages={TransactionAges}
-						baseUrl={baseUrl}
-						dropdownDefault="All Dates"
-						filters={filters}
-						tableParams={tableParams}
-					/>
+					<Header header="date" className="col-span-1 pr-2 text-right" />
 					<Header header="debit" className="col-span-1 pr-3 text-right" />
 					<Header header="credit" className="col-span-1 pr-3 text-right" />
 					<Header header="note" className={`col-span-${toggleEditable ? '2' : '3'} pl-3`} />

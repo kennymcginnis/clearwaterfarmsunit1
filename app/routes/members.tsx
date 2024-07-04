@@ -124,9 +124,20 @@ export default function MembersRoute() {
 				<div className="flex text-nowrap text-h3 md:hidden">CWF Unit 1 Members</div>
 				<div className="flex w-[50%] flex-row gap-2 p-0.5">
 					<SearchBar action="/members" status={status} autoFocus autoSubmit />
+					{userIsAdmin ? (
+						<Button>
+							<Link reloadDocument to={`/transactions`}>
+								<Icon name="reader" size="md">
+									Transactions
+								</Icon>
+							</Link>
+						</Button>
+					) : null}
 					<Button>
 						<Link reloadDocument to={`/resources/download-balances`}>
-							<Icon name="download">Download</Icon>
+							<Icon name="download" size="md">
+								<span className="w-32">Download Balances</span>
+							</Icon>
 						</Link>
 					</Button>
 				</div>

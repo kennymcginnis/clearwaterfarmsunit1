@@ -20,7 +20,7 @@ const DitchDitchs: React.FC<DitchProps> = ({ baseUrl, tableParams, ditches, drop
 	const currentDitch = tableParams.ditch ? `Ditch ${tableParams.ditch}` : 'All Ditches'
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger>
+			<DropdownMenuTrigger className="w-full">
 				<Button variant="secondary">
 					<CalendarIcon className="mr-2 w-4" />
 					{currentDitch}

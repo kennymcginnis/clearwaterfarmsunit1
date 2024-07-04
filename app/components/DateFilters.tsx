@@ -22,7 +22,7 @@ const DateFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, filters, age
 	const currentFilter = tableParams.filter ?? ages.find(a => a.value === tableParams.age)?.label ?? 'Date Filter'
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger>
+			<DropdownMenuTrigger className="w-full">
 				<Button variant="secondary">
 					<CalendarIcon className="mr-2 w-4" />
 					{currentFilter}
