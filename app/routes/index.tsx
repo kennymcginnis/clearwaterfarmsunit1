@@ -5,7 +5,6 @@ import { formatDistanceToNow } from 'date-fns'
 import { z } from 'zod'
 import { DisplayField } from '#app/components/forms'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
-import { Icon } from '#app/components/ui/icon'
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { parseMdx } from '#app/utils/mdx-bundler.server'
@@ -152,7 +151,7 @@ export default function HomeRoute() {
 					Clearwater Farms Unit 1
 				</h2>
 				<div className="mb-0 text-xl">Irrigation Schedules</div>
-				
+
 				{/* 				
 				<div
 					style={{ width: 'clamp(352px, 75%, 720px)' }}
