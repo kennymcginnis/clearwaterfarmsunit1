@@ -77,9 +77,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	const transactions = csvFileToArray(csv)
 	const result = TransactionSchema.safeParse(transactions)
-	if (!result.success) {
-		return json({ status: 'error', error: result.error.message } as const, { status: 400 })
-	}
+	if (!result.success) return json({ status: 'error', error: result.error.message } as const, { status: 400 })
 
 	const missingUsers = []
 	for (let transaction of result.data) {
@@ -119,8 +117,6 @@ export default function ViewTransactions() {
 	const baseUrl = '/transactions'
 
 	const Header = ({ header, className }: { header: string; className: string }) => {
-		const isSortingUp = tableParams.sort === header && tableParams.direction === 'asc'
-		const isSortingDown = tableParams.sort === header && tableParams.direction === 'desc'
 		return (
 			<Link
 				key={`header-${header}`}
@@ -131,9 +127,19 @@ export default function ViewTransactions() {
 				to={getNewTableUrl(baseUrl, tableParams, 'sort', header !== 'intent' ? header : undefined)}
 			>
 				{header.toUpperCase()}
+				<Sorting header={header} />
+			</Link>
+		)
+	}
+
+	const Sorting = ({ header }: { header: string }) => {
+		const isSortingUp = tableParams.sort === header && tableParams.direction === 'asc'
+		const isSortingDown = tableParams.sort === header && tableParams.direction === 'desc'
+		return (
+			<>
 				{header !== 'intent' && isSortingUp && <ChevronUpIcon className="ml-auto w-4" />}
 				{header !== 'intent' && isSortingDown && <ChevronDownIcon className="ml-auto w-4" />}
-			</Link>
+			</>
 		)
 	}
 
@@ -213,19 +219,6 @@ export default function ViewTransactions() {
 							Reset Table
 						</Link>
 					</Button>
-					<DateFilters
-						ages={TransactionAges}
-						baseUrl={baseUrl}
-						dropdownDefault="All Dates"
-						filters={filters}
-						tableParams={tableParams}
-					/>
-					<DitchFilters
-						baseUrl={baseUrl}
-						dropdownDefault="All Ditches"
-						ditches={DitchesArray}
-						tableParams={tableParams}
-					/>
 				</div>
 				<div className="flex flex-col items-center">
 					<CardTitle className="text-3xl">Transactions</CardTitle>
@@ -267,10 +260,16 @@ export default function ViewTransactions() {
 				<div className="grid grid-cols-12 gap-1">
 					<Header header="id" className="col-span-1 pr-3" />
 					<Header header="scheduleId" className="col-span-1 pr-3" />
-					<Header header="ditch" className="col-span-1 pr-3" />
+					<DitchFilters baseUrl={baseUrl} dropdownDefault="Ditch" ditches={DitchesArray} tableParams={tableParams} />
 					<Header header="userId" className="col-span-1 pr-3" />
-					<Header header="username" className="col-span-2 pr-3" />
-					<Header header="date" className="col-span-1 pr-2 text-right" />
+					<Header header="display" className="col-span-2 pr-3" />
+					<DateFilters
+						ages={TransactionAges}
+						baseUrl={baseUrl}
+						dropdownDefault="All Dates"
+						filters={filters}
+						tableParams={tableParams}
+					/>
 					<Header header="debit" className="col-span-1 pr-3 text-right" />
 					<Header header="credit" className="col-span-1 pr-3 text-right" />
 					<Header header="note" className={`col-span-${toggleEditable ? '2' : '3'} pl-3`} />

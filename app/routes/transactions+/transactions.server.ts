@@ -105,15 +105,16 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		return res || []
 	}
 
-	const distinctNotes = async () => {
+	const distinctNoteDates = async () => {
 		const res = await prisma.transactions.findMany({
 			distinct: ['date'],
 			select: { date: true },
+			orderBy: { date: 'desc' },
 		})
 		return res.map(r => r.date)
 	}
 
-	const res = await Promise.all([getCount(), getTransactions(), distinctNotes()])
+	const res = await Promise.all([getCount(), getTransactions(), distinctNoteDates()])
 
 	result.total = res[0]
 	result.transactions = res[1]

@@ -152,6 +152,8 @@ export default function HomeRoute() {
 					Clearwater Farms Unit 1
 				</h2>
 				<div className="mb-0 text-xl">Irrigation Schedules</div>
+				
+				{/* 				
 				<div
 					style={{ width: 'clamp(352px, 75%, 720px)' }}
 					className="m-auto mt-2 rounded-md border-2 border-secondary px-3 py-1 text-center align-bottom"
@@ -160,7 +162,8 @@ export default function HomeRoute() {
 					<strong>Zach Walter</strong>: (623) 256-7077
 					<br />
 					Please call at the time of the problem!
-				</div>
+				</div> 
+				*/}
 
 				{user.restricted ? (
 					<div
