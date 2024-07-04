@@ -31,16 +31,17 @@ type PositionDitchType = {
 	// position - for <tr>
 	[key: number]: {
 		// ditch - for <td>
-		[key: number]: UserType
+		[key: number]: UserScheduleType
 	}
 }
-type UserType = {
+type UserScheduleType = {
 	id: string
 	username: string
 	display: string | null
 	ditch: number
 	position: number
 	hours: number | bigint | null
+	updatedBy: string | null
 }
 
 export const SearchResultsSchema = z.array(
@@ -51,6 +52,7 @@ export const SearchResultsSchema = z.array(
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
+		updatedBy: z.string().nullable(),
 	}),
 )
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -65,12 +67,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 
 	const like = `%${searchTerm ?? ''}%`
-	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, User.display, Port.ditch, Port.position, mid.hours
+	const rawUserSchedules = await prisma.$queryRaw`
+		SELECT User.id, User.username, User.display, Port.ditch, Port.position, mid.hours, mid.updatedBy
 		FROM User
 		INNER JOIN Port ON User.id = Port.userId
     LEFT JOIN (
-      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours
+      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.updatedBy
       FROM Schedule 
       INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
       WHERE Schedule.id = ${schedule?.id}
@@ -82,14 +84,14 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		ORDER BY Port.ditch, Port.position
 	`
 
-	const result = SearchResultsSchema.safeParse(rawUsers)
+	const result = SearchResultsSchema.safeParse(rawUserSchedules)
 	if (!result.success) {
 		return json(
 			{
 				status: 'error',
 				error: result.error.message,
 				schedule: { id: null, date: null, state: null },
-				users: null,
+				userSchedules: null,
 				totals: null,
 				canOpen: false,
 				rows: null,
@@ -100,10 +102,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	}
 
 	const totals: TotalType = {}
-	const users: PositionDitchType = {}
+	const userSchedules: PositionDitchType = {}
 	for (let user of result.data) {
-		if (users[user.position]) users[user.position][user.ditch] = user
-		else users[user.position] = { [user.ditch]: user }
+		if (userSchedules[user.position]) userSchedules[user.position][user.ditch] = user
+		else userSchedules[user.position] = { [user.ditch]: user }
 
 		if (totals[user.ditch]) totals[user.ditch] += user.hours
 		else totals[user.ditch] = user.hours
@@ -111,7 +113,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	return json({
 		status: 'idle',
 		schedule: { id: schedule.id, date: params.date, state: schedule.state },
-		users,
+		userSchedules,
 		totals,
 		error: null,
 	} as const)
@@ -121,7 +123,6 @@ const UploadSignupSchema = z.array(
 	z.object({
 		id: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(99)),
 	}),
 )
@@ -141,11 +142,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
 	const userSchedules = csvFileToArray(csv)
 	const result = UploadSignupSchema.safeParse(userSchedules)
-	if (!result.success) {
-		return json({ status: 'error', error: result.error.message } as const, {
-			status: 400,
-		})
-	}
+	if (!result.success) return json({ status: 'error', error: result.error.message } as const, { status: 400 })
 
 	for (let userSchedule of result.data) {
 		await prisma.userSchedule.upsert({
@@ -177,7 +174,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 export default function ScheduleSignupRoute() {
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
-	const { status, schedule, users, totals, error } = useLoaderData<typeof loader>()
+	const { status, schedule, userSchedules, totals, error } = useLoaderData<typeof loader>()
 	const { id: scheduleId, date: scheduleDate } = schedule
 
 	const nodeRefA = useRef(null)
@@ -195,15 +192,11 @@ export default function ScheduleSignupRoute() {
 
 	useEffect(() => {
 		nodeRefs.forEach(nodeRef => {
-			if (nodeRef?.current) {
-				registerPane(nodeRef.current)
-			}
+			if (nodeRef?.current) registerPane(nodeRef.current)
 		})
 		return () =>
 			nodeRefs.forEach(nodeRef => {
-				if (nodeRef?.current) {
-					unregisterPane(nodeRef.current)
-				}
+				if (nodeRef?.current) unregisterPane(nodeRef.current)
 			})
 	}, [nodeRefs, registerPane, unregisterPane])
 
@@ -214,7 +207,7 @@ export default function ScheduleSignupRoute() {
 	const [showUpload, setShowUpload] = useState(false)
 	const toggleShowUpload = () => setShowUpload(!showUpload)
 
-	if (!scheduleId || !users || !Object.keys(users).length) return null
+	if (!scheduleId || !userSchedules || !Object.keys(userSchedules).length) return null
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
 			<div className="flex w-[63.5%] flex-row flex-wrap gap-2 p-0.5">
@@ -297,18 +290,18 @@ export default function ScheduleSignupRoute() {
 
 			<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
 				{status === 'idle' ? (
-					users ? (
+					userSchedules ? (
 						<div className="m-auto block w-full overflow-x-auto overflow-y-auto" ref={nodeRefB}>
 							<table>
 								<tbody>
-									{Object.keys(users).map(position => (
+									{Object.keys(userSchedules).map(position => (
 										<tr key={`${position}`}>
 											{Object.keys(totals).map(ditch => {
-												const user = users[Number(position)][Number(ditch)]
+												const userSchedule = userSchedules[Number(position)][Number(ditch)]
 												return (
 													<td className="p-0.5" key={`${ditch}${position}`}>
-														{user && (user.hours || showAll) ? (
-															<UserCard scheduleDate={scheduleDate} user={user} />
+														{userSchedule && (userSchedule.hours || showAll) ? (
+															<UserCard scheduleDate={scheduleDate} userSchedule={userSchedule} />
 														) : null}
 													</td>
 												)
@@ -329,17 +322,17 @@ export default function ScheduleSignupRoute() {
 	)
 }
 
-function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType }) {
+function UserCard({ scheduleDate, userSchedule }: { scheduleDate: string; userSchedule: UserScheduleType }) {
 	return (
 		<Link
-			to={`/schedule/${scheduleDate}/${user.username}`}
-			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg  ${user.hours ? 'bg-muted' : 'bg-muted-40'} px-5 py-3`}
+			to={`/schedule/${scheduleDate}/${userSchedule.username}`}
+			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg px-5 py-3 ${userSchedule.hours ? 'bg-muted' : 'bg-muted-40'} ${userSchedule.id === userSchedule.updatedBy && 'border-1 border-primary bg-secondary'}`}
 		>
 			<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-body-sm text-muted-foreground">
-				{user.position}: {user.display}
+				{userSchedule.position}: {userSchedule.display}
 			</span>
 			<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
-				{Number(user.hours)}
+				{Number(userSchedule.hours)}
 			</span>
 		</Link>
 	)

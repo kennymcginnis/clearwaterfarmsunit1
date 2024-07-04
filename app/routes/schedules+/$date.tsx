@@ -35,28 +35,49 @@ export async function loader({ params }: ActionFunctionArgs) {
 	const date = new Date(schedule.updatedAt)
 	const timeAgo = formatDistanceToNow(date)
 
+	const { _min, _max } = await prisma.userSchedule.aggregate({
+		_min: { start: true },
+		_max: { stop: true },
+		where: { scheduleId: schedule.id },
+	})
+
 	return json({
 		schedule,
 		timeAgo,
 		canOpen: !['open', 'closed'].includes(schedule.state) && !anythingOpen,
+		canClose: schedule.state === 'locked' && !!_min.start && !!_max.stop,
 	})
 }
 
 export default function ScheduleRoute() {
-	const { schedule, timeAgo, canOpen } = useLoaderData<typeof loader>()
+	const { schedule, timeAgo, canOpen, canClose } = useLoaderData<typeof loader>()
 	const adminUser = useOptionalAdminUser()
 
 	const state = schedule.state.toLowerCase()
-	const timelineLink = state === 'closed' || state === 'locked'
 	const quickbooksLink = state === 'closed'
 	const canEdit = state !== 'closed'
 	const canDelete = state === 'pending'
 	const canLock = state === 'open'
-	const canClose = state === 'locked'
 
 	return (
 		<div className="absolute inset-0 flex flex-col px-10">
-			<h2 className="mb-2 pt-12 text-h2 lg:mb-6">Irrigation Schedule: {schedule.date}</h2>
+			<div className="mt-6 flex w-full flex-row items-stretch gap-2">
+				<Button asChild variant="outline" className="px-10">
+					<NavLink to={`/schedule/${schedule.date}/signup`}>
+						<Icon name="pencil-2" className="scale-125 max-md:scale-150 mr-1">
+							<span className="max-md:hidden">Sign-up</span>
+						</Icon>
+					</NavLink>
+				</Button>
+				<Button asChild variant="outline" className="px-10">
+					<NavLink to={`/schedule/${schedule.date}/timeline`}>
+						<Icon name="calendar" className="scale-125 max-md:scale-150 mr-1">
+							<span className="max-md:hidden">Timeline</span>
+						</Icon>
+					</NavLink>
+				</Button>
+			</div>
+			<h2 className="mb-2 pt-4 text-h2 lg:mb-6">Irrigation Schedule: {schedule.date}</h2>
 			<div className={`${adminUser ? 'pb-24' : 'pb-12'} overflow-y-auto`}>
 				<p className="whitespace-break-spaces text-sm md:text-lg">Deadline for Sign-Up: {schedule.deadline}</p>
 				<p className="whitespace-break-spaces text-sm capitalize md:text-lg">Water source: {schedule.source} Water</p>
@@ -88,15 +109,6 @@ export default function ScheduleRoute() {
 							</Button>
 						) : null}
 						{canClose ? <DialogCloseSchedule id={schedule.id} /> : null}
-						{timelineLink ? (
-							<Button asChild variant="default">
-								<NavLink to={`/schedule/${schedule.date}/timeline`}>
-									<Icon name="magnifying-glass" className="scale-125 max-md:scale-150">
-										<span className="max-md:hidden">Timeline</span>
-									</Icon>
-								</NavLink>
-							</Button>
-						) : null}
 						{canClose ? (
 							<Button asChild variant="default">
 								<NavLink to={`/schedule/${schedule.date}/generate`}>
@@ -116,22 +128,13 @@ export default function ScheduleRoute() {
 							/>
 						) : null}
 						{canLock ? (
-							<>
-								<Button asChild variant="default">
-									<NavLink to={`/schedule/${schedule.date}/signup`}>
-										<Icon name="magnifying-glass" className="scale-125 max-md:scale-150">
-											<span className="max-md:hidden">Sign-up</span>
-										</Icon>
-									</NavLink>
-								</Button>
-								<ScheduleActionButton
-									id={schedule.id}
-									icon="lock-closed"
-									value="lock-schedule"
-									text="Lock Scheduling"
-									variant="secondary"
-								/>
-							</>
+							<ScheduleActionButton
+								id={schedule.id}
+								icon="lock-closed"
+								value="lock-schedule"
+								text="Lock Scheduling"
+								variant="secondary"
+							/>
 						) : null}
 						{canEdit ? (
 							<Button asChild className="min-[525px]:max-md:aspect-square min-[525px]:max-md:px-0">

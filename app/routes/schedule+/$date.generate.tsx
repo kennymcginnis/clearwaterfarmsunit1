@@ -55,7 +55,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const schedule = await prisma.schedule.findFirst({ select: { id: true, state: true }, where: { date } })
 	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 
-	let timeline = await prisma.timeline.findMany({ where: { date } })
+	let timeline = await prisma.timeline.findMany({ where: { date }, orderBy: { order: 'asc' } })
 
 	if (timeline.length) {
 		// await prisma.timeline.deleteMany()
@@ -122,7 +122,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 				},
 			})
 		}
-		timeline = await prisma.timeline.findMany({ where: { date: params.date } })
+		timeline = await prisma.timeline.findMany({ where: { date: params.date }, orderBy: { order: 'asc' } })
 	}
 
 	type SideSortType = { [key: string]: UserType[][]; left: UserType[][]; right: UserType[][] }
@@ -180,9 +180,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	const formData = await request.formData()
 	const intent = formData.get('intent')
 	const beginning = formData.get('begin')?.toString()
+	const scheduleId = formData.get('scheduleId')?.toString()
+
 	switch (intent) {
 		case 'reset': {
-			const scheduleId = formData.get('scheduleId')?.toString()
 			await prisma.timeline.deleteMany({ where: { scheduleId } })
 			break
 		}
@@ -199,7 +200,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
 			break
 		}
 		case 'submit': {
-			const scheduleId = formData.get('scheduleId')?.toString()
 			const timeline = await prisma.timeline.findMany({ where: { scheduleId } })
 			timeline.forEach(async ({ userId, scheduleId, ditch, start, stop }) => {
 				await prisma.userSchedule.update({
@@ -213,7 +213,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	return redirectWithToast('.', { type: 'success', title: 'Success', description: 'Timeline reset.' })
 
 	async function updateSection(begins: Date, side: string) {
-		const timeline = await prisma.timeline.findMany({ where: { side }, orderBy: { order: 'asc' } })
+		const timeline = await prisma.timeline.findMany({ where: { scheduleId, side }, orderBy: { order: 'asc' } })
 
 		let start,
 			stop = begins
@@ -247,12 +247,12 @@ export default function PrintableTimelineRoute() {
 	const handleChangeLeft = (ev: any) => {
 		const left = getTimestamp(ev)
 		setLeftDatetime(left)
-		submit({ intent: 'update-left', begin: left }, { method: 'post' })
+		submit({ intent: 'update-left', scheduleId, begin: left }, { method: 'post' })
 	}
 	const handleChangeRight = (ev: any) => {
 		const right = getTimestamp(ev)
 		setRightDatetime(right)
-		submit({ intent: 'update-right', begin: right }, { method: 'post' })
+		submit({ intent: 'update-right', scheduleId, begin: right }, { method: 'post' })
 	}
 
 	if (status !== 'idle' || !scheduleId || !users || !Object.keys(users).length) return null

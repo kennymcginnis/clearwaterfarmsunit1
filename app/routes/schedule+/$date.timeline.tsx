@@ -130,7 +130,6 @@ const UploadTimelineSchema = z.array(
 	z.object({
 		id: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(99)),
 		start: z.preprocess(x => (x && typeof x === 'string' ? parseISO(x) : null), z.date().nullable()),
 		stop: z.preprocess(x => (x && typeof x === 'string' ? parseISO(x) : null), z.date().nullable()),

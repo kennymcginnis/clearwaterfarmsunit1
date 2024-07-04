@@ -1,32 +1,27 @@
 import { type UploadHandler } from '@remix-run/node'
 
-export type DateFieldFormats = {
-	fields: string[]
-	format: string
+function matchDatum(row: string): string[] {
+	const matched = row.match(/,?(("(\\"|.)+?")|([^",][^,]*))?/g)
+	if (!matched) return []
+	return matched.map(datum => datum.replace(/^,?"?|"$/g, '').trim())
 }
 
-export const csvFileToArray = (input: string | undefined) => {
-	if (!input) throw 'Empty CSV file'
-	const string = input.replaceAll('\r', '')
-	const csvHeader = string.slice(0, string.indexOf('\n')).split(',')
-
-	const csvRows = string.slice(string.indexOf('\n') + 1).split('\n')
-
-	const rows = csvRows.map((csvRow: string) => {
-		const values = csvRow.split(',')
-		const obj = csvHeader.reduce((agg: { [name: string]: string }, header: string, index: number) => {
-			agg[header] = values[index]
-			return agg
-		}, {})
-		return obj
+export const csvFileToArray = (rawCsvFile: string | undefined) => {
+	if (!rawCsvFile) throw 'Empty CSV file'
+	const array1d = rawCsvFile.match(/((\\\n)|[^\n])+/g)
+	if (!array1d) throw 'Invalid CSV file'
+	const [propsRow, ...array2d]: string[][] = array1d.map(matchDatum)
+	const output: { [name: string]: string }[] = []
+	array2d.forEach(row => {
+		const addMe: { [name: string]: string } = {}
+		row.forEach((datum, j) => (addMe[propsRow[j]] = datum))
+		output.push(addMe)
 	})
-	return rows
+	return output
 }
 
 export const csvUploadHandler: UploadHandler = async ({ name, filename, data, contentType }) => {
-	if (name !== 'selected_csv') {
-		return undefined
-	}
+	if (name !== 'selected_csv') return undefined
 	let chunks = []
 	for await (let chunk of data) {
 		chunks.push(chunk)

@@ -27,11 +27,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 				sections: z.string().array().length(2),
 			})
 			const result = PortSectionSchema.safeParse(await request.json())
-			if (!result.success) {
-				return json({ status: 'error', error: result.error.message } as const, {
-					status: 400,
-				})
-			}
+			if (!result.success) return json({ status: 'error', error: result.error.message }, { status: 400 })
 
 			const { ditch, divisor, sections } = result.data
 			const [left, right] = sections
