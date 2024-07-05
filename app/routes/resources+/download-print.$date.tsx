@@ -82,32 +82,28 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		d = '',
 		e = '',
 		f = '',
-		g = '',
-		h = '',
-		i = ''
+		g = ''
 
 	const output: string[][] = []
 	for (const [pageNumber, page] of Object.entries(users)) {
 		output.push([
-			a,
 			`Ditch ${Number(pageNumber) * 2 - 1}`,
+			b,
 			c,
 			d,
-			e,
+			Number(pageNumber) < 5 ? `Ditch ${Number(pageNumber) * 2}` : e,
 			f,
-			Number(pageNumber) < 5 ? `Ditch ${Number(pageNumber) * 2}` : h,
-			h,
-			i,
+			g,
 		])
 		for (const { left, right } of Object.values(page)) {
 			let row: string[] = []
-			if (left) row.push(`${left.position}`, `"${left.display}"`, formatHours(Number(left.hours)), left.schedule, e)
-			else row.push(a, b, c, d, e)
-			if (right) row.push(`${right.position}`, `"${right.display}"`, formatHours(Number(right.hours)), right.schedule)
-			else row.push(f, g, h, i)
+			if (left) row.push(`"${left.display}"`, formatHours(Number(left.hours)), left.schedule, d)
+			else row.push(a, b, c, d)
+			if (right) row.push(`"${right.display}"`, formatHours(Number(right.hours)), right.schedule)
+			else row.push(e, f, g)
 			output.push(row)
 		}
-		output.push([a, b, c, d, e, f, g, h, i])
+		output.push([a, b, c, d, e, f, g])
 	}
 	const file = createReadableStreamFromReadable(Readable.from([...output.map(row => row.join(','))].join('\n')))
 	return new Response(file, {

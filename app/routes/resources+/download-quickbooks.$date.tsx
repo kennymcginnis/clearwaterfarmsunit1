@@ -23,6 +23,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	})
 
 	const mmDDyyyy = format(parse(params.date, 'yyyy-MM-dd', new Date()), 'MM/dd/yyyy')
+	const yymmDD = format(parse(params.date, 'yyyy-MM-dd', new Date()), 'yyMMdd')
 
 	const file = createReadableStreamFromReadable(
 		Readable.from(
@@ -40,9 +41,9 @@ export async function loader({ params }: LoaderFunctionArgs) {
 					'* Item Amount',
 					'Memo',
 				].join(','),
-				...transactions.map(({ user, ditch, quantity, rate, credit, note }) =>
+				...transactions.map(({ user, ditch, quantity, rate, credit, note }, index) =>
 					[
-						'',
+						`${yymmDD}${`00${index + 1}`.slice(-3)}`,
 						`"${user?.quickbooks ?? ''}"`,
 						mmDDyyyy,
 						mmDDyyyy,
