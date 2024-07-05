@@ -77,6 +77,13 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		}
 	}
 
+	if (tableParams.hide) {
+		filter.where = {
+			...filter.where,
+			[tableParams.hide]: 0,
+		}
+	}
+
 	if (tableParams.sort) {
 		switch (tableParams.sort) {
 			case 'display':

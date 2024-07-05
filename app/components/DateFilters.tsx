@@ -28,7 +28,7 @@ const DateFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, filters, age
 					{currentFilter}
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent>
+			<DropdownMenuContent className="w-full">
 				<Link to={getNewTableUrl(baseUrl, tableParams, 'filter')}>
 					<DropdownMenuItem className="capitalize">{dropdownDefault}</DropdownMenuItem>
 				</Link>
@@ -39,11 +39,13 @@ const DateFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, filters, age
 					</Link>
 				))}
 				<DropdownMenuSeparator />
-				{filters.map((filter, i) => (
-					<Link key={`filter-${i}`} to={getNewTableUrl(baseUrl, tableParams, 'filter', filter)}>
-						<DropdownMenuItem className="capitalize">{filter}</DropdownMenuItem>
-					</Link>
-				))}
+				<div className="max-h-[200px] overflow-auto">
+					{filters.map((filter, i) => (
+						<Link key={`filter-${i}`} to={getNewTableUrl(baseUrl, tableParams, 'filter', filter)}>
+							<DropdownMenuItem className="capitalize">{filter}</DropdownMenuItem>
+						</Link>
+					))}
+				</div>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	)

@@ -10,6 +10,7 @@ export const itemTableSchema = z.object({
 	direction: z.enum(['asc', 'desc']).optional(),
 	//Override these two with an enum of possible keys
 	filter: z.string().optional(),
+	hide: z.string().optional(),
 	sort: z.string().optional(),
 })
 
@@ -28,6 +29,7 @@ export const getItemTableParams = <ZodSchema>(request: Request, schema: z.Schema
 			age: age ? parseInt(age) : null,
 			ditch: ditch ? parseInt(ditch) : null,
 			filter: query.get('filter'),
+			hide: query.get('hide'),
 			sort: query.get('sort'),
 			direction: query.get('direction'),
 		}).filter(([, v]) => v != null),

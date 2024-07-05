@@ -26,7 +26,7 @@ const DitchDitchs: React.FC<DitchProps> = ({ baseUrl, tableParams, ditches, drop
 					{currentDitch}
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent>
+			<DropdownMenuContent className="w-full">
 				<Link to={getNewTableUrl(baseUrl, tableParams, 'ditch')}>
 					<DropdownMenuItem className="capitalize">{dropdownDefault}</DropdownMenuItem>
 				</Link>

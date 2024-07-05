@@ -15,6 +15,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
 import DateFilters from '#app/components/DateFilters'
+import DebitCreditFilters from '#app/components/DebitCreditFilters'
 import DitchFilters from '#app/components/DitchFilters'
 import Dropdown from '#app/components/Dropdown'
 import { PaginationComponent } from '#app/components/pagination'
@@ -273,8 +274,9 @@ export default function ViewTransactions() {
 							tableParams={tableParams}
 						/>
 					</div>
-					<div className="col-span-1 pr-3 text-right"></div>
-					<div className="col-span-1 pr-3 text-right"></div>
+					<div className="col-span-2">
+						<DebitCreditFilters baseUrl={baseUrl} filters={filters} tableParams={tableParams} />
+					</div>
 					<div className={`col-span-${toggleEditable ? '2' : '3'} pl-3`}></div>
 					{toggleEditable ? <Header header="intent" className="col-span-1 pl-1.5 text-left" /> : null}
 				</div>
