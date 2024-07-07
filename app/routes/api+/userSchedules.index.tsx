@@ -1,8 +1,32 @@
-import { json, type ActionFunctionArgs } from '@remix-run/node'
+import { type Prisma } from '@prisma/client'
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node'
 import { z } from 'zod'
 import { prisma } from '#app/utils/db.server.ts'
 import { generatePublicId } from '#app/utils/public-id'
 import { DateSchema } from '#app/utils/user-validation'
+
+export async function loader({ request }: LoaderFunctionArgs) {
+	const query = new URL(request.url).searchParams
+
+	const id = query.get('id')
+	const userId = query.get('userId')
+	const scheduleId = query.get('scheduleId')
+	const ditch = query.get('ditch')
+
+	const where: Prisma.UserScheduleWhereInput = {}
+	if (id) where.id = id
+	if (userId) where.userId = userId
+	if (scheduleId) where.scheduleId = scheduleId
+	if (ditch) where.ditch = Number(ditch)
+	console.dir({ where })
+
+	try {
+		const userSchedules = await prisma.userSchedule.findMany({ where })
+		return json(userSchedules)
+	} catch (error) {
+		return json({ status: 'error', error } as const, { status: 400 })
+	}
+}
 
 export const action = async ({ request }: ActionFunctionArgs) => {
 	const UserScheduleSchema = z
@@ -54,7 +78,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 							updatedAt: new Date(),
 						},
 					})
-					return json({ status: 'created', userschedule: userSchedule })
+					return json({ status: 'created', userSchedule })
 				}
 			} catch (error) {
 				return json({ status: 'error', error } as const, { status: 400 })
@@ -68,7 +92,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 						data: { ...data, updatedAt: new Date() },
 						where: { id },
 					})
-					return json({ status: 'updated', userschedule: userSchedule })
+					return json({ status: 'updated', userSchedule })
 				} else {
 					return json({ status: 'skipped', message: 'No `id` provided, should this be a post?' })
 				}
@@ -84,8 +108,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 				})
 			}
 			try {
-				const userschedule = await prisma.userSchedule.deleteMany({ where: { id: { in: result.data.id } } })
-				return json({ status: 'success', userschedule })
+				const userSchedule = await prisma.userSchedule.deleteMany({ where: { id: { in: result.data.id } } })
+				return json({ status: 'success', userSchedule })
 			} catch (error) {
 				return json({ status: 'error', error } as const, { status: 400 })
 			}
