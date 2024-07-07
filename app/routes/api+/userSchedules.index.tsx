@@ -3,7 +3,6 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-r
 import { z } from 'zod'
 import { prisma } from '#app/utils/db.server.ts'
 import { generatePublicId } from '#app/utils/public-id'
-import { DateSchema } from '#app/utils/user-validation'
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const query = new URL(request.url).searchParams
