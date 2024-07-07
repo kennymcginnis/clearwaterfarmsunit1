@@ -37,8 +37,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 			ditch: z.number().optional(),
 			scheduleId: z.string().optional(),
 			hours: z.number().optional(),
-			start: DateSchema.optional(),
-			stop: DateSchema.optional(),
+			start: z.coerce.date().optional(),
+			stop: z.coerce.date().optional(),
 		})
 		.or(
 			// update
@@ -48,8 +48,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 				ditch: z.number().optional(),
 				scheduleId: z.string().optional(),
 				hours: z.number().optional(),
-				start: DateSchema.optional(),
-				stop: DateSchema.optional(),
+				start: z.coerce.date().optional(),
+				stop: z.coerce.date().optional(),
 			}),
 		)
 
