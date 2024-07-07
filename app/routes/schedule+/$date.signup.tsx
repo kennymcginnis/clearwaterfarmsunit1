@@ -69,19 +69,19 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const like = `%${searchTerm ?? ''}%`
 	const rawUserSchedules = await prisma.$queryRaw`
 		SELECT User.id, User.username, User.display, Port.ditch, Port.position, mid.hours, mid.updatedBy
-		FROM User
-		INNER JOIN Port ON User.id = Port.userId
-    LEFT JOIN (
-      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.updatedBy
-      FROM Schedule 
-      INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
-      WHERE Schedule.id = ${schedule?.id}
-    ) mid
-		ON User.id = mid.userId
-		AND Port.ditch = mid.ditch
-		WHERE User.active
-		AND (User.username LIKE ${like} OR User.member LIKE ${like})
-		ORDER BY Port.ditch, Port.position
+			FROM User
+			INNER JOIN Port ON User.id = Port.userId
+			LEFT JOIN (
+				 SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.updatedBy
+					 FROM Schedule 
+					INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
+					WHERE Schedule.id = ${schedule?.id}
+			) mid
+				 ON User.id = mid.userId
+				AND Port.ditch = mid.ditch
+			WHERE User.active
+				AND (User.username LIKE ${like} OR User.member LIKE ${like})
+			ORDER BY Port.ditch, Port.position
 	`
 
 	const result = SearchResultsSchema.safeParse(rawUserSchedules)

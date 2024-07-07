@@ -19,6 +19,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		},
 		where: {
 			date: params.date,
+			credit: { gt: 0 },
 		},
 	})
 

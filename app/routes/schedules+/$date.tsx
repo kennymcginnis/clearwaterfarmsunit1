@@ -58,6 +58,7 @@ export default function ScheduleRoute() {
 	const canEdit = state !== 'closed'
 	const canDelete = state === 'pending'
 	const canLock = state === 'open'
+	const generateLink = state === 'locked'
 
 	return (
 		<div className="absolute inset-0 flex flex-col px-10">
@@ -109,7 +110,7 @@ export default function ScheduleRoute() {
 							</Button>
 						) : null}
 						{canClose ? <DialogCloseSchedule id={schedule.id} /> : null}
-						{canClose ? (
+						{generateLink ? (
 							<Button asChild variant="default">
 								<NavLink to={`/schedule/${schedule.date}/generate`}>
 									<Icon name="activity-log" className="scale-125 max-md:scale-150">
