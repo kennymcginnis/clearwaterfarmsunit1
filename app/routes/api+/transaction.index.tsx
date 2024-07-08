@@ -27,20 +27,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 			}),
 		)
 
-	const result = TransactionSchema.safeParse(await request.json())
-	if (!result.success) {
-		return json({ status: 'error', error: result.error.message } as const, {
-			status: 400,
-		})
-	}
-	const { id, ...data } = result.data
-
 	// Create - POST
 	// Upsert - PUT
 	// Update - PATCH
 	switch (request.method) {
 		case 'POST':
 			try {
+				const result = TransactionSchema.safeParse(await request.json())
+				if (!result.success) {
+					return json({ status: 'error', error: result.error.message } as const, {
+						status: 400,
+					})
+				}
+				const { id, ...data } = result.data
 				if (id) {
 					return json({ status: 'skipped', message: '`id` provided, should this be a put or patch?' })
 				} else {
@@ -60,6 +59,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 		case 'PUT':
 		case 'PATCH':
 			try {
+				const result = TransactionSchema.safeParse(await request.json())
+				if (!result.success) {
+					return json({ status: 'error', error: result.error.message } as const, {
+						status: 400,
+					})
+				}
+				const { id, ...data } = result.data
 				if (id) {
 					const transaction = await prisma.transactions.update({
 						include: { user: true },
