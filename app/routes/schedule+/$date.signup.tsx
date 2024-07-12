@@ -122,12 +122,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 const UploadSignupSchema = z.array(
 	z.object({
 		id: z.string(),
-		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(99)),
+		ditch: z.coerce.number().int().min(1).max(9),
+		hours: z.coerce.number().multipleOf(0.5).min(0).max(99).nullable(),
 	}),
 )
 export async function action({ request, params }: ActionFunctionArgs) {
-	const userId = await requireUserWithRole(request, 'admin')
+	await requireUserWithRole(request, 'admin')
 	const schedule = await prisma.schedule.findFirst({
 		select: { id: true },
 		where: { date: params.date },
@@ -144,27 +144,38 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	const result = UploadSignupSchema.safeParse(userSchedules)
 	if (!result.success) return json({ status: 'error', error: result.error.message } as const, { status: 400 })
 
-	for (let userSchedule of result.data) {
+	const existing = await prisma.userSchedule.findMany({
+		select: { userId: true, ditch: true, scheduleId: true, hours: true },
+		where: { scheduleId: schedule.id },
+	})
+
+	const existingMap = existing.reduce(
+		(agg, cur) => {
+			if (agg[cur.userId]) agg[cur.userId][cur.ditch] = cur
+			else agg[cur.userId] = { [cur.ditch]: cur }
+			return agg
+		},
+		{} as { [key: string]: { [key: string]: { userId: string; scheduleId: string; ditch: number; hours: number } } },
+	)
+
+	for (let { id, ditch, hours } of result.data) {
+		if (!hours || hours === existingMap?.[id]?.[ditch]?.hours) continue
 		await prisma.userSchedule.upsert({
 			select: { scheduleId: true, ditch: true, userId: true },
 			where: {
-				userId_ditch_scheduleId: { userId: userSchedule.id, ditch: userSchedule.ditch, scheduleId: schedule.id },
+				userId_ditch_scheduleId: { userId: id, ditch, scheduleId: schedule.id },
 			},
 			create: {
-				userId: userSchedule.id,
-				ditch: userSchedule.ditch,
+				userId: id,
+				ditch,
 				scheduleId: schedule.id,
-				hours: userSchedule.hours,
-				updatedBy: userId,
+				hours,
 			},
-			update: {
-				hours: userSchedule.hours,
-				updatedBy: userId,
-			},
+			update: { hours },
 		})
 	}
 
-	return redirectWithToast('.', {
+	return redirectWithToast('', {
 		type: 'success',
 		title: 'Success',
 		description: 'Your schedule has been uploaded.',

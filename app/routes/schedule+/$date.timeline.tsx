@@ -129,14 +129,14 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 const UploadTimelineSchema = z.array(
 	z.object({
 		id: z.string(),
-		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(99)),
+		ditch: z.coerce.number().int().min(1).max(9),
+		hours: z.coerce.number().multipleOf(0.5).min(0).max(99).nullable(),
 		start: z.preprocess(x => (x && typeof x === 'string' ? parseISO(x) : null), z.date().nullable()),
 		stop: z.preprocess(x => (x && typeof x === 'string' ? parseISO(x) : null), z.date().nullable()),
 	}),
 )
 export async function action({ request, params }: ActionFunctionArgs) {
-	const userId = await requireUserWithRole(request, 'admin')
+	await requireUserWithRole(request, 'admin')
 	const schedule = await prisma.schedule.findFirst({
 		select: { id: true },
 		where: { date: params.date },
@@ -155,30 +155,23 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		return json({ status: 'error', error: result.error.message } as const, { status: 400 })
 	}
 
-	for (let userSchedule of result.data) {
+	for (let { id, ditch, hours, start, stop } of result.data) {
+		if (!hours) continue
 		await prisma.userSchedule.upsert({
 			create: {
-				userId: userSchedule.id,
-				ditch: userSchedule.ditch,
+				userId: id,
+				ditch,
 				scheduleId: schedule.id,
-				hours: userSchedule.hours,
-				start: userSchedule.start,
-				stop: userSchedule.stop,
-				updatedBy: userId,
+				hours,
+				start,
+				stop,
 			},
-			update: {
-				hours: userSchedule.hours,
-				start: userSchedule.start,
-				stop: userSchedule.stop,
-				updatedBy: userId,
-			},
-			where: {
-				userId_ditch_scheduleId: { userId: userSchedule.id, ditch: userSchedule.ditch, scheduleId: schedule.id },
-			},
+			update: { hours, start, stop },
+			where: { userId_ditch_scheduleId: { userId: id, ditch, scheduleId: schedule.id } },
 		})
 	}
 
-	return redirectWithToast('.', {
+	return redirectWithToast('', {
 		type: 'success',
 		title: 'Success',
 		description: 'Your timeline has been uploaded.',
