@@ -83,9 +83,9 @@ export async function action({ request }: ActionFunctionArgs) {
 	const missingUsers = []
 	for (let {id, ...transaction} of result.data) {
 		try {
-			if (!id) id = undefined
+			if (!id) id = '__new_transaction__'
 			await prisma.transactions.upsert({
-				where: { id: id ?? '__new_transaction__' },
+				where: { id },
 				create: {
 					id: generatePublicId(),
 					...transaction,

@@ -6,7 +6,6 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Button } from '#app/components/ui/button'
-import { Separator } from '#app/components/ui/separator'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatDates, formatHours } from '#app/utils/misc'
 import { requireUserWithRole } from '#app/utils/permissions.ts'
@@ -46,7 +45,6 @@ const SearchResultsSchema = z.array(
 		stop: z.date().nullable(),
 	}),
 )
-
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const userId = await requireUserWithRole(request, 'admin')
 	const { date } = params
@@ -85,8 +83,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 					error: result.error.message,
 					schedule: { id: null, date: null, state: null },
 					users: null,
-					sideMinimum: null,
-					ditchTotals: null,
+					timelines: null,
 				} as const,
 				{ status: 400 },
 			)
@@ -97,15 +94,14 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			if (ditch < 9) return 'right'
 			return section === 'West' ? 'left' : 'right'
 		}
-
-		const calcOrder = (ditch: number, position: number) => {
+		const sortOrder = (ditch: number, position: number) => {
 			if (ditch === 9) return position
 			return ditch * 100 + position
 		}
 
 		for (let { ditch, position, section, ...member } of result.data) {
 			const side = leftOrRight(ditch, section)
-			const order = calcOrder(ditch, position)
+			const order = sortOrder(ditch, position)
 
 			await prisma.timeline.create({
 				data: {
@@ -134,52 +130,67 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		return { page: 0, row: position < 15 ? position : position - 14, side: section === 'West' ? 'left' : 'right' }
 	}
 
-	const ditchTotals: { [key: number]: { hours: number; irrigators: number } } = {}
-	const sideMinimum: { left: Date; right: Date; [key: string]: Date } = {
-		left: new Date(100000000000000),
-		right: new Date(100000000000000),
+	type SidesType = { begins: Date; ends: Date; hours: number; irrigators: number; [key: string]: Date | number }
+	type TimelinesType = { left: SidesType; right: SidesType; [key: string]: SidesType }
+	const timelines: TimelinesType = {
+		left: {
+			begins: new Date(100000000000000),
+			ends: new Date(0),
+			hours: 0,
+			irrigators: 0,
+		},
+		right: {
+			begins: new Date(100000000000000),
+			ends: new Date(0),
+			hours: 0,
+			irrigators: 0,
+		},
 	}
-	const paged: PositionDitchType = { '0': {}, '1': {}, '2': {}, '3': {}, '4': {} }
+	const groupped: PositionDitchType = { '0': {}, '1': {}, '2': {}, '3': {}, '4': {} }
 	for (let user of timeline) {
 		// user groupings
 		const { start, stop, ditch, position, section, hours } = user
 		const { page, row, side } = cell(ditch, position, section)
 		const userType = { ...user, schedule: formatDates({ start, stop }) }
-		if (!paged[page][row]) paged[page][row] = { [side]: userType }
-		else paged[page][row][side] = userType
+		if (!groupped[page][row]) groupped[page][row] = { [side]: userType }
+		else groupped[page][row][side] = userType
 
 		// users sorted
 		sorted[side][page][row] = userType
 
-		// ditch totals
-		if (!ditchTotals[ditch]) ditchTotals[ditch] = { hours: 0, irrigators: 0 }
 		if (hours) {
-			ditchTotals[ditch].hours += hours
-			ditchTotals[ditch].irrigators += 1
+			timelines[side].hours += hours
+			timelines[side].irrigators += 1
 		}
-
-		if (start && start < sideMinimum[side]) sideMinimum[side] = start
+		if (start && start < timelines[side].begins) timelines[side].begins = start
+		if (stop && stop > timelines[side].ends) timelines[side].ends = stop
 	}
 
-	if (sideMinimum.left.getTime() === new Date(100000000000000).getTime())
-		sideMinimum.left = new Date(new Date().toISOString().slice(0, 10))
-	if (sideMinimum.right.getTime() === new Date(100000000000000).getTime())
-		sideMinimum.right = new Date(new Date().toISOString().slice(0, 10))
+	// if not yet calculated, set default start to today
+	if (timelines.left.begins.getTime() === new Date(100000000000000).getTime())
+		timelines.left.begins = new Date(new Date().toISOString().slice(0, 10))
+	if (timelines.right.begins.getTime() === new Date(100000000000000).getTime())
+		timelines.right.begins = new Date(new Date().toISOString().slice(0, 10))
+	if (timelines.left.ends.getTime() === new Date(0).getTime())
+		timelines.left.ends = add(timelines.left.begins, { hours: timelines.left.hours })
+	if (timelines.right.ends.getTime() === new Date(0).getTime())
+		timelines.right.ends = add(timelines.right.begins, { hours: timelines.right.hours })
 
 	return json({
 		status: 'idle',
 		schedule: { id: schedule.id, date, state: schedule.state },
-		users: paged,
-		sideMinimum,
-		ditchTotals,
+		users: groupped,
+		timelines,
 	} as const)
 }
 
-export async function action({ request, params }: ActionFunctionArgs) {
+export async function action({ request }: ActionFunctionArgs) {
 	const currentUser = await requireUserWithRole(request, 'admin')
 	const formData = await request.formData()
 	const intent = formData.get('intent')
-	const beginning = formData.get('begin')?.toString()
+	const side = formData.get('side')?.toString()
+	const direction = formData.get('direction')?.toString()
+	const timestamp = formData.get('timestamp')?.toString()
 	const scheduleId = formData.get('scheduleId')?.toString()
 
 	switch (intent) {
@@ -187,16 +198,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
 			await prisma.timeline.deleteMany({ where: { scheduleId } })
 			break
 		}
-		case 'update-left': {
-			invariantResponse(beginning, 'Invalid Start Time', { status: 400 })
-			const begins = parseISO(beginning)
-			await updateSection(begins, 'left')
-			break
-		}
-		case 'update-right': {
-			invariantResponse(beginning, 'Invalid Start Time', { status: 400 })
-			const begins = parseISO(beginning)
-			await updateSection(begins, 'right')
+		case 'update': {
+			invariantResponse(timestamp, 'Invalid Timestamp', { status: 400 })
+			const dated = parseISO(timestamp)
+			invariantResponse(direction, 'Invalid Direction', { status: 400 })
+			invariantResponse(side, 'Invalid Side', { status: 400 })
+			await updateSection({ [direction]: dated, side })
 			break
 		}
 		case 'submit': {
@@ -212,16 +219,27 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	}
 	return redirectWithToast('.', { type: 'success', title: 'Success', description: 'Timeline reset.' })
 
-	async function updateSection(begins: Date, side: string) {
+	async function updateSection({ begins, ends, side }: { begins?: Date; ends?: Date; side: string }) {
 		const timeline = await prisma.timeline.findMany({ where: { scheduleId, side }, orderBy: { order: 'asc' } })
 
-		let start,
-			stop = begins
-		for (let { id, hours } of timeline) {
-			if (hours === 0) continue
-			start = stop
-			stop = add(start, { hours })
-			await prisma.timeline.update({ data: { start, stop }, where: { id } })
+		if (begins) {
+			let start,
+				stop = begins
+			for (let { id, hours } of timeline) {
+				if (hours === 0) continue
+				start = stop
+				stop = add(start, { hours })
+				await prisma.timeline.update({ data: { start, stop }, where: { id } })
+			}
+		} else if (ends) {
+			let start = ends,
+				stop
+			for (let { id, hours } of timeline.reverse()) {
+				if (hours === 0) continue
+				stop = start
+				start = add(stop, { hours: -hours })
+				await prisma.timeline.update({ data: { start, stop }, where: { id } })
+			}
 		}
 	}
 }
@@ -234,109 +252,148 @@ export default function PrintableTimelineRoute() {
 	const [showAll, setShowAll] = useState(false)
 	const toggleShowAll = () => setShowAll(!showAll)
 
-	const { status, schedule, users } = data
+	const { status, schedule, users, timelines } = data
 	const { id: scheduleId, date: scheduleDate } = schedule
 
-	const [leftdatetime, setLeftDatetime] = useState(data.sideMinimum?.left ?? '')
-	const [rightdatetime, setRightDatetime] = useState(data.sideMinimum?.right ?? '')
-
+	const [timestamps, setTimestamps] = useState(timelines)
 	const getTimestamp = (ev: any): string => {
 		if (!ev.target['validity'].valid) return ''
 		return ev.target['value'] + ':00Z'
 	}
-	const handleChangeLeft = (ev: any) => {
-		const left = getTimestamp(ev)
-		setLeftDatetime(left)
-		submit({ intent: 'update-left', scheduleId, begin: left }, { method: 'post' })
-	}
-	const handleChangeRight = (ev: any) => {
-		const right = getTimestamp(ev)
-		setRightDatetime(right)
-		submit({ intent: 'update-right', scheduleId, begin: right }, { method: 'post' })
+	const handleChangeTimestamp = (ev: any, side: string, direction: string) => {
+		const timestamp = getTimestamp(ev)
+		const t = { ...timestamps }
+		t[side][direction] = timestamp
+		// @ts-ignore:next-line
+		setTimestamps(t)
+		submit({ intent: 'update', scheduleId, side, direction, timestamp }, { method: 'post' })
 	}
 
 	if (status !== 'idle' || !scheduleId || !users || !Object.keys(users).length) return null
 
 	return (
-		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
-			{userIsAdmin ? (
-				<div className="flex w-[70%] flex-row justify-between gap-2 p-0.5">
-					<Button variant="outline" onClick={toggleShowAll} className="w-[150px] pb-2">
-						Display {showAll ? 'Scheduled' : 'All'}
-					</Button>
-					<div className="flex">
-						<input
-							className="float-right mr-2 rounded-sm bg-secondary p-2 text-body-lg"
-							aria-label="Date and time"
-							type="datetime-local"
-							step="1800"
-							value={(leftdatetime || '').toString().substring(0, 16)}
-							onChange={handleChangeLeft}
-						/>
-						<input
-							className="ml-2 rounded-sm bg-secondary p-2 text-body-lg"
-							aria-label="Date and time"
-							type="datetime-local"
-							step="1800"
-							value={(rightdatetime || '').toString().substring(0, 16)}
-							onChange={handleChangeRight}
-						/>
-					</div>
-					<div className="flex flex-row gap-2">
-						<Form method="post" encType="multipart/form-data">
-							<input type="hidden" name="scheduleId" value={scheduleId} />
-							<Button type="submit" name="intent" value="reset" variant="destructive" className="btn btn-sm">
-								Reset
+		<>
+			<div className="text-align-webkit-center flex w-full flex-col items-center justify-center bg-background">
+				{userIsAdmin ? (
+					<>
+						<div className="flex w-[70%] flex-row justify-between gap-2 p-0.5">
+							<Button variant="outline" onClick={toggleShowAll} className="w-[150px] pb-2">
+								Display {showAll ? 'Scheduled' : 'All'}
 							</Button>
-						</Form>
-						<Form method="post" encType="multipart/form-data">
-							<input type="hidden" name="scheduleId" value={scheduleId} />
-							<Button type="submit" name="intent" value="submit" variant="secondary" className="btn btn-sm">
-								Submit
-							</Button>
-						</Form>
-					</div>
-				</div>
-			) : null}
-			<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
-				<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
-					{Object.keys(users).map(page => (
-						<div key={`${page}`} className="m-auto block overflow-x-auto overflow-y-auto">
-							<Separator className="mb-4 mt-4" />
-							<table className="w-[80%]">
-								<thead>
-									<tr>
-										<td className="text-center text-body-lg">Ditch {page === '0' ? 9 : Number(page)}</td>
-										<td className="text-center text-body-lg">Ditch {page === '0' ? 9 : Number(page) + 4}</td>
-									</tr>
-								</thead>
-								{Object.keys(users[page]).map(position => {
-									const { left, right } = users[page][position]
-									return (
-										<tr className="w-[100%]" key={`${position}`}>
-											<td className="w-[50%] p-0.5">
-												{left && (left.hours || showAll) ? (
-													<UserCard scheduleDate={scheduleDate} user={left} />
-												) : (
-													<div></div>
-												)}
+							<div className="flex flex-row gap-2">
+								<Form method="post" encType="multipart/form-data">
+									<input type="hidden" name="scheduleId" value={scheduleId} />
+									<Button type="submit" name="intent" value="reset" variant="destructive" className="btn btn-sm">
+										Reset
+									</Button>
+								</Form>
+								<Form method="post" encType="multipart/form-data">
+									<input type="hidden" name="scheduleId" value={scheduleId} />
+									<Button type="submit" name="intent" value="submit" variant="secondary" className="btn btn-sm">
+										Submit
+									</Button>
+								</Form>
+							</div>
+						</div>
+						<div className="flex w-[72%] flex-row flex-wrap place-content-center">
+							<div className="justify-content-right flex w-[50%] flex-row flex-wrap">
+								<div className="min-w-[300px] max-w-[50%] p-2">
+									<div className="flex pl-2 text-body-lg font-semibold">Starts:</div>
+									<input
+										className="float-right w-full rounded-sm bg-secondary p-2 text-body-lg"
+										aria-label="Date and time"
+										type="datetime-local"
+										step="1800"
+										value={(timelines.left.begins || '').toString().substring(0, 16)}
+										onChange={ev => handleChangeTimestamp(ev, 'left', 'begins')}
+									/>
+									<div className="float-left pl-2 text-body-md">Total Hours: {timelines.left.hours}</div>
+								</div>
+								<div className="min-w-[300px] max-w-[50%] border-r p-2">
+									<div className="flex pl-2 text-body-lg font-semibold">Ends:</div>
+									<input
+										className="float-right w-full rounded-sm bg-secondary p-2 text-body-lg"
+										aria-label="Date and time"
+										type="datetime-local"
+										step="1800"
+										value={(timelines.left.ends || '').toString().substring(0, 16)}
+										onChange={ev => handleChangeTimestamp(ev, 'left', 'ends')}
+									/>
+									<div className="float-left pl-2 text-body-md">Irrigators: {timelines.left.irrigators}</div>
+								</div>
+							</div>
+							<div className="flex w-[50%] flex-row flex-wrap">
+								<div className="min-w-[300px] max-w-[50%] border-l p-2">
+									<div className="flex pl-2 text-body-lg font-semibold">Starts:</div>
+									<input
+										className="float-right w-full rounded-sm bg-secondary p-2 text-body-lg"
+										aria-label="Date and time"
+										type="datetime-local"
+										step="1800"
+										value={(timelines.right.begins || '').toString().substring(0, 16)}
+										onChange={ev => handleChangeTimestamp(ev, 'right', 'begins')}
+									/>
+									<div className="float-left pl-2 text-body-md">Total Hours: {timelines.right.hours}</div>
+								</div>
+								<div className="min-w-[300px] max-w-[50%] p-2">
+									<div className="flex pl-2 text-body-lg font-semibold">Ends:</div>
+									<input
+										className="float-right w-full rounded-sm bg-secondary p-2 text-body-lg"
+										aria-label="Date and time"
+										type="datetime-local"
+										step="1800"
+										value={(timelines.right.ends || '').toString().substring(0, 16)}
+										onChange={ev => handleChangeTimestamp(ev, 'right', 'ends')}
+									/>
+									<div className="float-left pl-2 text-body-md">Irrigators: {timelines.right.irrigators}</div>
+								</div>
+							</div>
+						</div>
+					</>
+				) : null}
+				<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
+					<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
+						{Object.keys(users).map(page => (
+							<div key={`${page}`} className="m-auto block overflow-x-auto overflow-y-auto">
+								<table className="w-[80%] border-t-2">
+									<thead>
+										<tr>
+											<td className="border-r border-t-2 pb-2 pt-4 text-center text-body-lg">
+												Ditch {page === '0' ? 9 : Number(page)}
 											</td>
-											<td className="w-[50%] p-0.5">
-												{right && (right.hours || showAll) ? (
-													<UserCard scheduleDate={scheduleDate} user={right} />
-												) : (
-													<div></div>
-												)}
+											<td className="border-l border-t-2 pb-2 pt-4 text-center text-body-lg">
+												Ditch {page === '0' ? 9 : Number(page) + 4}
 											</td>
 										</tr>
-									)
-								})}
-							</table>
-						</div>
-					))}
-				</main>
+									</thead>
+									{Object.keys(users[page]).map(position => {
+										const { left, right } = users[page][position]
+										return (
+											<tr className="w-[100%]" key={`${position}`}>
+												<td className="w-[50%] border-r px-1 py-0.5">
+													{left && (left.hours || showAll) ? (
+														<UserCard scheduleDate={scheduleDate} user={left} />
+													) : (
+														<div></div>
+													)}
+												</td>
+												<td className="w-[50%] border-l px-1 py-0.5">
+													{right && (right.hours || showAll) ? (
+														<UserCard scheduleDate={scheduleDate} user={right} />
+													) : (
+														<div></div>
+													)}
+												</td>
+											</tr>
+										)
+									})}
+								</table>
+							</div>
+						))}
+					</main>
+				</div>
 			</div>
-		</div>
+		</>
 	)
 }
 
