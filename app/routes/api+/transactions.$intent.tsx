@@ -37,6 +37,10 @@ export const action = async ({ params }: ActionFunctionArgs) => {
 
 			return `Complete. ${transactions.length} updated.`
 		}
+		case 'empty-id': {
+			const deleted = await prisma.transactions.delete({ where: { id: '' } })
+			return `Complete. ${deleted ? 1 : 0} updated.`
+		}
 		default:
 			invariantResponse(params.intent, `Intent not handled.`, { status: 404 })
 			break

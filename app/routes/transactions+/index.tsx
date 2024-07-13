@@ -81,10 +81,11 @@ export async function action({ request }: ActionFunctionArgs) {
 	if (!result.success) return json({ status: 'error', error: result.error.message } as const, { status: 400 })
 
 	const missingUsers = []
-	for (let transaction of result.data) {
+	for (let {id, ...transaction} of result.data) {
 		try {
+			if (!id) id = undefined
 			await prisma.transactions.upsert({
-				where: { id: transaction.id ?? '__new_transaction__' },
+				where: { id: id ?? '__new_transaction__' },
 				create: {
 					id: generatePublicId(),
 					...transaction,
