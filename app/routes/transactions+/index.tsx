@@ -60,7 +60,7 @@ const TransactionSchema = z.array(
 		id: z.string().optional(),
 		userId: z.string().optional(),
 		scheduleId: z.string().optional(),
-		ditch: z.number().optional(),
+		ditch: z.preprocess(x => (x ? x : null), z.coerce.number()).optional(),
 		date: DateSchema,
 		debit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
 		credit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
