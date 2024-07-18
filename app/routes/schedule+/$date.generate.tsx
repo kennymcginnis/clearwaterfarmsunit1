@@ -59,17 +59,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		// await prisma.timeline.deleteMany()
 	} else {
 		const rawUsers = await prisma.$queryRaw`
-			SELECT User.id AS userId, User.display, Port.ditch, Port.position, Port.section, mid.hours, mid.start, mid.stop
+			SELECT User.id AS userId, User.display, Port.ditch, Port.position, Port.section, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
 			FROM User
 			INNER JOIN Port ON User.id = Port.userId
-			LEFT JOIN (
-				SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
-				FROM Schedule
-				INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
-				WHERE Schedule.date = ${date}
-			) mid
-			ON User.id = mid.userId
-			AND Port.ditch = mid.ditch
+			LEFT JOIN UserSchedule
+			ON User.id = UserSchedule.userId
+			AND Port.ditch = UserSchedule.ditch
+			AND UserSchedule.scheduleId = ${schedule.id}
 			WHERE User.active
 			ORDER BY Port.ditch, Port.position
 		`
@@ -193,10 +189,13 @@ export async function action({ request }: ActionFunctionArgs) {
 	const timestamp = formData.get('timestamp')?.toString()
 	const scheduleId = formData.get('scheduleId')?.toString()
 
+	const schedule = await prisma.schedule.findFirst({ select: { date: true }, where: { id: scheduleId } })
+	invariantResponse(schedule?.date, 'Schedule Not found', { status: 404 })
+
 	switch (intent) {
 		case 'reset': {
 			await prisma.timeline.deleteMany({ where: { scheduleId } })
-			break
+			return redirectWithToast('.', { type: 'success', title: 'Success', description: 'Timeline reset.' })
 		}
 		case 'update': {
 			invariantResponse(timestamp, 'Invalid Timestamp', { status: 400 })
@@ -204,20 +203,24 @@ export async function action({ request }: ActionFunctionArgs) {
 			invariantResponse(direction, 'Invalid Direction', { status: 400 })
 			invariantResponse(side, 'Invalid Side', { status: 400 })
 			await updateSection({ [direction]: dated, side })
-			break
+			return redirectWithToast('.', { type: 'success', title: 'Success', description: 'Timeline updated.' })
 		}
 		case 'submit': {
-			const timeline = await prisma.timeline.findMany({ where: { scheduleId } })
+			const timeline = await prisma.timeline.findMany({ where: { scheduleId, hours: { gt: 0 } } })
 			timeline.forEach(async ({ userId, scheduleId, ditch, start, stop }) => {
 				await prisma.userSchedule.update({
 					where: { userId_ditch_scheduleId: { userId, ditch, scheduleId } },
 					data: { start, stop, updatedBy: currentUser },
 				})
 			})
-			break
+
+			return redirectWithToast(`/schedule/${schedule.date}/timeline`, {
+				type: 'success',
+				title: 'Success',
+				description: 'Timeline Submitted.',
+			})
 		}
 	}
-	return redirectWithToast('.', { type: 'success', title: 'Success', description: 'Timeline reset.' })
 
 	async function updateSection({ begins, ends, side }: { begins?: Date; ends?: Date; side: string }) {
 		const timeline = await prisma.timeline.findMany({ where: { scheduleId, side }, orderBy: { order: 'asc' } })

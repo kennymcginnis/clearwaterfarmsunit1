@@ -252,6 +252,13 @@ export default function ScheduleTimelineRoute() {
 									</Icon>
 								</NavLink>
 							</Button>
+							<Button asChild variant="default">
+								<NavLink to={`/schedule/${schedule.date}/generate`}>
+									<Icon name="calendar" className="scale-100 max-md:scale-125">
+										<span className="max-md:hidden">Generate</span>
+									</Icon>
+								</NavLink>
+							</Button>
 							<Button>
 								<Link reloadDocument to={`/resources/download-timeline/${scheduleDate}`}>
 									<Icon name="download">Download</Icon>
