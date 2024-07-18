@@ -54,7 +54,7 @@ export default function ScheduleRoute() {
 	const adminUser = useOptionalAdminUser()
 
 	const state = schedule.state.toLowerCase()
-	const quickbooksLink = state === 'closed'
+	const isClosed = state === 'closed'
 	const canEdit = state !== 'closed'
 	const canDelete = state === 'pending'
 	const canLock = state === 'open'
@@ -65,14 +65,14 @@ export default function ScheduleRoute() {
 			<div className="mt-6 flex w-full flex-row items-stretch gap-2">
 				<Button asChild variant="outline" className="px-10">
 					<NavLink to={`/schedule/${schedule.date}/signup`}>
-						<Icon name="pencil-2" className="scale-125 max-md:scale-150 mr-1">
+						<Icon name="pencil-2" className="mr-1 scale-125 max-md:scale-150">
 							<span className="max-md:hidden">Sign-up</span>
 						</Icon>
 					</NavLink>
 				</Button>
 				<Button asChild variant="outline" className="px-10">
 					<NavLink to={`/schedule/${schedule.date}/timeline`}>
-						<Icon name="calendar" className="scale-125 max-md:scale-150 mr-1">
+						<Icon name="calendar" className="mr-1 scale-125 max-md:scale-150">
 							<span className="max-md:hidden">Timeline</span>
 						</Icon>
 					</NavLink>
@@ -102,12 +102,19 @@ export default function ScheduleRoute() {
 								variant="destructive"
 							/>
 						) : null}
-						{quickbooksLink ? (
-							<Button>
-								<Link reloadDocument to={`/resources/download-quickbooks/${schedule.date}`}>
-									<Icon name="download">Quickbooks</Icon>
-								</Link>
-							</Button>
+						{isClosed ? (
+							<>
+								<Button>
+									<Link reloadDocument to={`/resources/download-crossovers/${schedule.date}`}>
+										<Icon name="download">Crossovers</Icon>
+									</Link>
+								</Button>
+								<Button>
+									<Link reloadDocument to={`/resources/download-quickbooks/${schedule.date}`}>
+										<Icon name="download">Quickbooks</Icon>
+									</Link>
+								</Button>
+							</>
 						) : null}
 						{canClose ? <DialogCloseSchedule id={schedule.id} /> : null}
 						{generateLink ? (

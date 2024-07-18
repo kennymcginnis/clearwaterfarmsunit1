@@ -16,9 +16,7 @@ const UserSearchResultSchema = z.object({
 const UserSearchResultsSchema = z.array(UserSearchResultSchema)
 
 export async function loader({ params }: LoaderFunctionArgs) {
-	if (!params?.date) {
-		return redirect('/schedules')
-	}
+	if (!params?.date) return redirect('/schedules')
 
 	const rawUsers = await prisma.$queryRaw`
 		SELECT User.id, User.display, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.start, UserSchedule.stop

@@ -4,9 +4,8 @@ import { format, parse } from 'date-fns'
 import { prisma } from '#app/utils/db.server.ts'
 
 export async function loader({ params }: LoaderFunctionArgs) {
-	if (!params?.date) {
-		return redirect('/schedules')
-	}
+	const { date } = params
+	if (!date) return redirect('/schedules')
 
 	const transactions = await prisma.transactions.findMany({
 		select: {
@@ -17,14 +16,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			credit: true,
 			note: true,
 		},
-		where: {
-			date: params.date,
-			credit: { gt: 0 },
-		},
+		where: { date, credit: { gt: 0 } },
 	})
 
-	const mmDDyyyy = format(parse(params.date, 'yyyy-MM-dd', new Date()), 'MM/dd/yyyy')
-	const yymmDD = format(parse(params.date, 'yyyy-MM-dd', new Date()), 'yyMMdd')
+	const mmDDyyyy = format(parse(date, 'yyyy-MM-dd', new Date()), 'MM/dd/yyyy')
+	const yymmDD = format(parse(date, 'yyyy-MM-dd', new Date()), 'yyMMdd')
 
 	const file = createReadableStreamFromReadable(
 		Readable.from(
