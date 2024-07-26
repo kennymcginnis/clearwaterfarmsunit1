@@ -1,6 +1,7 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
 import { useLoaderData, type MetaFunction } from '@remix-run/react'
+import { format } from 'date-fns'
 import { useState } from 'react'
 import { Button } from '#app/components/ui/button.tsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
@@ -20,6 +21,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			transactions: {
 				select: {
 					date: true,
+					waterStart: true,
 					debit: true,
 					credit: true,
 					note: true,
@@ -57,6 +59,7 @@ export default function TransactionsRoute() {
 			credit: 0,
 			debit: 0,
 			date: '2024-01-01',
+			waterStart: null,
 			note: '2024 Starting Balance',
 		})
 	}
@@ -93,17 +96,29 @@ export default function TransactionsRoute() {
 					/>
 					<Input id="balance" readOnly={true} className="col-span-3" defaultValue="Current Balance" />
 
-					<Separator className="col-span-6 mb-1 mt-1 border-b-2 border-t-2" />
+					<Separator className="col-span-7 mb-1 mt-1 border-b-2 border-t-2" />
 
 					<>
-						<Label htmlFor="Date" children="Date" className="col-span-1 m-1 pr-3 text-right" />
+						<Label htmlFor="Schedule Date" children="Schedule Date" className="col-span-1 m-1 pr-3 text-right" />
+						<Label htmlFor="Water Date" children="Water Date" className="col-span-1 m-1 pr-3 text-right" />
 						<Label htmlFor="Date" children="Debit (Incoming)" className="col-span-1 m-1 pr-3 text-right" />
 						<Label htmlFor="Date" children="Credit (Outgoing)" className="col-span-1 m-1 pr-3 text-right" />
 						<Label htmlFor="Date" children="Note" className="col-span-3 m-1 pl-3" />
 					</>
 					{transactions.map((lineItem, i) => (
 						<>
-							<Input id="date" readOnly={true} className="col-span-1 text-right" defaultValue={lineItem.date} />
+							<Input
+								id="Schedule Date"
+								readOnly={true}
+								className="col-span-1 text-right"
+								defaultValue={lineItem.date}
+							/>
+							<Input
+								id="Water Date"
+								readOnly={true}
+								className="col-span-1 text-right"
+								defaultValue={lineItem.waterStart ? format(new Date(lineItem.waterStart), 'MMM dd, h:mmaaa') : ''}
+							/>
 							<Input
 								id="debit"
 								readOnly={true}

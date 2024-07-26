@@ -4,6 +4,17 @@ import { prisma } from '#app/utils/db.server.ts'
 
 export const action = async ({ params }: ActionFunctionArgs) => {
 	switch (params.intent) {
+		case 'water-dates': {
+			const results = await prisma.$executeRaw`
+				 UPDATE Transactions
+				    SET waterStart = UserSchedule.start
+				   FROM UserSchedule 
+				  WHERE Transactions.userId = UserSchedule.userId
+				    AND Transactions.ditch = UserSchedule.ditch
+				    AND Transactions.scheduleId = UserSchedule.scheduleId
+			`
+			return `Complete. ${results} updated.`
+		}
 		case 'positive-credits': {
 			const transactions = await prisma.transactions.findMany({
 				where: { credit: { lt: 0 } },

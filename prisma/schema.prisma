@@ -123,6 +123,7 @@ model Transactions {
   userId     String?
   scheduleId String?
   ditch      Int?
+  waterStart DateTime?
 
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt

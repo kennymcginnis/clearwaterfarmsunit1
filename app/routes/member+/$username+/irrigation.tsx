@@ -138,7 +138,7 @@ export default function NotesRoute() {
 							return (
 								<tr
 									key={`userSchedules-${index}`}
-									className="flex w-full flex-row justify-between gap-1 rounded-lg bg-muted p-2"
+									className="flex w-full flex-row justify-between gap-1 rounded-lg bg-muted p-2 mb-1"
 								>
 									<td className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
 										Ditch: {ditch}
