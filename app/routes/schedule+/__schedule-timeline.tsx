@@ -19,7 +19,7 @@ export function UserScheduleTimeline({
 		? userSchedule.schedule
 		: ['You did not sign up for Irrigation', 'on this schedule.']
 	return (
-		<Card>
+		<Card className="mb-1">
 			<CardHeader>
 				<CardTitle>Ditch {userSchedule.ditch}</CardTitle>
 				<CardDescription>

@@ -340,24 +340,6 @@ export type UserSchedule = {
 }
 export type UserSchedules = UserSchedule[]
 
-export function formatSchedule(
-	schedule: {
-		id: string
-		date: string
-		deadline: string
-		source: string
-		costPerHour: number
-		state: string
-		start: Date | null
-		stop: Date | null
-		userSchedules?: { ditch: number; start: Date | null; stop: Date | null; hours: number }[]
-	} | null,
-) {
-	return schedule && schedule.start && schedule.stop
-		? { ...schedule, schedule: formatDates({ start: schedule.start, stop: schedule.stop }) }
-		: null
-}
-
 export function formatUserSchedule(
 	user: {
 		ports: { ditch: number }[]
@@ -401,7 +383,13 @@ export function formatDay(deadline: string): string {
 	return format(deadlineDate, 'eeee')
 }
 
-export function formatDates({ start, stop }: { start: Date | null; stop: Date | null }): string[] {
+export function formatDates({
+	start,
+	stop,
+}: {
+	start: Date | null | undefined
+	stop: Date | null | undefined
+}): string[] {
 	if (!start || !stop) return ['', '']
 	if (start.getDay() === stop.getDay()) {
 		return [format(start, 'eee, MMM do'), `${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}`]

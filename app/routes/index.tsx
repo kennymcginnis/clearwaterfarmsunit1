@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { parseMdx } from '#app/utils/mdx-bundler.server'
-import { formatDay, formatSchedule, formatUserSchedule } from '#app/utils/misc'
+import { formatDay, formatDates, formatUserSchedule } from '#app/utils/misc'
 import AnnouncementsComponent from './_marketing+/announcements'
 import { UserScheduleEditor, action } from './schedule+/__schedule-editor'
 import { UserScheduleTimeline } from './schedule+/__schedule-timeline'
@@ -84,12 +84,21 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			where: { userId },
 		}
 
-		const closed = await prisma.schedule.findFirst({
+		const allSchedules = await prisma.schedule.findMany({
 			select: { ...select, userSchedules },
 			where: { state: 'closed' },
-			orderBy: { date: 'desc' },
+			orderBy: { date: 'asc' },
 		})
-		const closedSchedules = formatSchedule(closed)
+
+		// find the next future dated schedule for the user
+		let closed = allSchedules.find(s => s.userSchedules.some(us => us?.start && us.start > new Date()))
+		// if none, then use the most recently closed schedule
+		if (!closed) closed = allSchedules.pop()
+		invariantResponse(closed, 'No Closed Schedules Found', { status: 404 })
+		const closedSchedules = {
+			...closed,
+			schedule: formatDates({ start: closed?.start ?? null, stop: closed?.stop ?? null }),
+		}
 		const closedUserSchedules = formatUserSchedule(user, closed?.userSchedules)
 
 		const open = await prisma.schedule.findFirst({
@@ -125,7 +134,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			where: { state: 'closed' },
 			orderBy: { date: 'desc' },
 		})
-		const closedSchedules = formatSchedule(closed)
+		const closedSchedules = {
+			...closed,
+			schedule: formatDates({ start: closed?.start ?? null, stop: closed?.stop ?? null }),
+		}
 		return json({
 			type,
 			document,
@@ -310,7 +322,7 @@ function ClosedSchedule({
 				<CardTitle>Schedule Dated: {closed.date}</CardTitle>
 				{closed.start && closed.stop ? <CardDescription>{closed.schedule.join(' ─ ')}</CardDescription> : null}
 			</CardHeader>
-			<CardContent className="flex-col gap-2">
+			<CardContent className="flex-col">
 				{userSchedules.closed ? (
 					userSchedules.closed.map(userSchedule => (
 						<UserScheduleTimeline key={`timeline-${userSchedule.ditch}`} user={user} userSchedule={userSchedule} />
