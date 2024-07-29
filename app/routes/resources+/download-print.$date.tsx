@@ -3,10 +3,11 @@ import { Readable } from 'node:stream'
 import { json, redirect, createReadableStreamFromReadable, type LoaderFunctionArgs } from '@remix-run/node'
 import { z } from 'zod'
 import { prisma } from '#app/utils/db.server.ts'
-import { formatPrintableDates, formatHours } from '#app/utils/misc'
+import { formatPrintableDates, formatHrs, formatBalance } from '#app/utils/misc'
 
 const UserSearchResultSchema = z.object({
 	id: z.string(),
+	balance: z.preprocess(x => (x ? x : 0), z.coerce.number()),
 	display: z.string(),
 	ditch: z.number(),
 	position: z.number(),
@@ -21,19 +22,25 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	if (!params?.date) return redirect('/schedules')
 
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.display, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
-		FROM User
-		INNER JOIN Port ON User.id = Port.userId
-    LEFT JOIN (
-      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
-      FROM Schedule 
-      INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
-      WHERE Schedule.date = ${params.date}
-    ) UserSchedule
-		ON User.id = UserSchedule.userId
-		AND Port.ditch = UserSchedule.ditch
-		WHERE User.active
-		ORDER BY Port.ditch, Port.position
+		SELECT User.id, agg.balance, User.display, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
+		  FROM User
+		 INNER JOIN Port ON User.id = Port.userId
+		  LEFT JOIN (
+				SELECT userId, SUM(debit - credit) as balance
+					FROM Transactions 
+				 GROUP BY userId
+			   ) agg
+		    ON User.id = agg.userId
+      LEFT JOIN (
+				SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
+					FROM Schedule 
+				 INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
+				 WHERE Schedule.date = ${params.date}
+         ) UserSchedule
+		    ON User.id = UserSchedule.userId
+		   AND Port.ditch = UserSchedule.ditch
+		 WHERE User.active
+		 ORDER BY Port.ditch, Port.position
 	`
 
 	const result = UserSearchResultsSchema.safeParse(rawUsers)
@@ -57,6 +64,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	}
 	type UserType = {
 		id: string
+		balance: number
 		display: string
 		ditch: number
 		position: number
@@ -82,28 +90,34 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		d = '',
 		e = '',
 		f = '',
-		g = ''
+		g = '',
+		h = '',
+		i = ''
 
 	const output: string[][] = []
 	for (const [pageNumber, page] of Object.entries(users)) {
 		output.push([
+			a,
 			`Ditch ${Number(pageNumber) * 2 - 1}`,
-			b,
 			c,
 			d,
-			Number(pageNumber) < 5 ? `Ditch ${Number(pageNumber) * 2}` : e,
+			e,
 			f,
-			g,
+			Number(pageNumber) < 5 ? `Ditch ${Number(pageNumber) * 2}` : h,
+			h,
+			i,
 		])
 		for (const { left, right } of Object.values(page)) {
 			let row: string[] = []
-			if (left) row.push(`"${left.display}"`, formatHours(Number(left.hours)), left.schedule, d)
-			else row.push(a, b, c, d)
-			if (right) row.push(`"${right.display}"`, formatHours(Number(right.hours)), right.schedule)
-			else row.push(e, f, g)
+			if (left)
+				row.push(formatBalance(left.balance), `"${left.display}"`, formatHrs(Number(left.hours)), left.schedule, e)
+			else row.push(a, b, c, d, e)
+			if (right)
+				row.push(formatBalance(right.balance), `"${right.display}"`, formatHrs(Number(right.hours)), right.schedule)
+			else row.push(f, g, h, i)
 			output.push(row)
 		}
-		output.push([a, b, c, d, e, f, g])
+		output.push([a, b, c, d, e, f, g, h, i])
 	}
 	const file = createReadableStreamFromReadable(Readable.from([...output.map(row => row.join(','))].join('\n')))
 	return new Response(file, {

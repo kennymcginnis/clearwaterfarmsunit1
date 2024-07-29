@@ -401,9 +401,11 @@ export function formatDates({
 export function formatPrintableDates({ start, stop }: { start: Date | null; stop: Date | null }): string {
 	if (!start || !stop) return ''
 	if (start.getDay() === stop.getDay()) {
-		return `"${format(start, 'eee, MMM do')}, ${format(start, 'h:mmaaa')} - ${format(stop, 'h:mmaaa')}"`
+		return `"${format(start, 'eee, MMM do')}
+${format(start, 'h:mmaaa')} - ${format(stop, 'h:mmaaa')}"`
 	} else {
-		return `"${format(start, 'eee, MMM dd, h:mmaaa')} - ${format(stop, 'eee, MMM dd, h:mmaaa')}"`
+		return `"${format(start, 'eee, MMM dd, h:mmaaa')} -
+${format(stop, 'eee, MMM dd, h:mmaaa')}"`
 	}
 }
 
@@ -438,3 +440,7 @@ export function getVariantForState(
 
 export const formatHours = (hours: number | null) =>
 	!hours ? '' : hours === 1 ? '1-hour' : hours % 1 === 0 ? `${hours}-hours` : `${hours}-hrs`
+
+export const formatHrs = (hours: number | null) => (!hours ? '' : hours === 1 ? '1-hr' : `${hours}-hrs`)
+
+export const formatBalance = (balance: number): string => (!balance ? '' : balance % 1 === 0 ? `$${balance}` : `$${balance}0`)
