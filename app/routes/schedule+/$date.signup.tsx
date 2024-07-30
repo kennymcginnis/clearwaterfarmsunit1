@@ -335,8 +335,8 @@ export default function ScheduleSignupRoute() {
 
 function UserCard({ scheduleDate, userSchedule }: { scheduleDate: string; userSchedule: UserScheduleType }) {
 	return (
-		<Link
-			to={`/schedule/${scheduleDate}/${userSchedule.username}`}
+		<div
+			// to={`/schedule/${scheduleDate}/${userSchedule.username}`}
 			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg px-5 py-3 ${userSchedule.hours ? 'bg-muted' : 'bg-muted-40'} ${userSchedule.id === userSchedule.updatedBy && 'border-1 border-primary bg-secondary'}`}
 		>
 			<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-body-sm text-muted-foreground">
@@ -345,7 +345,7 @@ function UserCard({ scheduleDate, userSchedule }: { scheduleDate: string; userSc
 			<span className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
 				{Number(userSchedule.hours)}
 			</span>
-		</Link>
+		</div>
 	)
 }
 
