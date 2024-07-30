@@ -122,24 +122,28 @@ export default function MembersRoute() {
 			<header className="sticky top-0 m-auto flex w-full flex-col items-center gap-6 bg-background text-foreground">
 				<div className="flex text-nowrap text-h2 max-md:hidden lg:text-h1">Clearwater Farms Unit 1 Members</div>
 				<div className="flex text-nowrap text-h3 md:hidden">CWF Unit 1 Members</div>
-				<div className="flex w-[50%] flex-row gap-2 p-0.5">
-					<SearchBar action="/members" status={status} autoFocus autoSubmit />
-					{userIsAdmin ? (
+				<div className="flex w-[63.5%] flex-row flex-wrap gap-2 space-x-2 p-0.5">
+					<div className="my-1 min-w-[300px] flex-grow">
+						<SearchBar action="/members" status={status} autoFocus autoSubmit />
+					</div>
+					<div className="my-1 flex flex-row space-x-2">
+						{userIsAdmin ? (
+							<Button>
+								<Link reloadDocument to={`/transactions`}>
+									<Icon name="reader" size="md">
+										Transactions
+									</Icon>
+								</Link>
+							</Button>
+						) : null}
 						<Button>
-							<Link reloadDocument to={`/transactions`}>
-								<Icon name="reader" size="md">
-									Transactions
+							<Link reloadDocument to={`/resources/download-balances`}>
+								<Icon name="download" size="md">
+									<span className="w-32">Download Balances</span>
 								</Icon>
 							</Link>
 						</Button>
-					) : null}
-					<Button>
-						<Link reloadDocument to={`/resources/download-balances`}>
-							<Icon name="download" size="md">
-								<span className="w-32">Download Balances</span>
-							</Icon>
-						</Link>
-					</Button>
+					</div>
 				</div>
 				<div className="m-auto block w-[90%] overflow-x-auto bg-background text-foreground" ref={nodeRefA}>
 					<table>

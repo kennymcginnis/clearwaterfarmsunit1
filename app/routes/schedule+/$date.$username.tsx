@@ -3,16 +3,17 @@ import { useLoaderData } from '@remix-run/react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Card, CardContent } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon'
+import { requireSelfOrAdmin } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatDates } from '#app/utils/misc'
 import { UserScheduleEditor, action } from './__schedule-editor'
 import { UserScheduleTimeline } from './__schedule-timeline'
 
 export { action }
-export async function loader({ params }: LoaderFunctionArgs) {
-	if (!params?.date) {
-		return redirect('/schedules')
-	}
+export async function loader({ request, params }: LoaderFunctionArgs) {
+	const { date, username } = params
+	if (date || username) return redirect('/schedules')
+		await requireSelfOrAdmin({ request, params }, { redirectTo: `/schedule/${date}` })
 
 	const user = await prisma.user.findFirstOrThrow({
 		select: {
@@ -30,9 +31,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 				},
 			},
 		},
-		where: {
-			username: params.username,
-		},
+		where: { username },
 	})
 
 	const schedule = await prisma.schedule.findFirstOrThrow({
@@ -41,7 +40,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			state: true,
 			source: true,
 		},
-		where: { date: params.date },
+		where: { date },
 	})
 
 	const userSchedule = await prisma.userSchedule.findMany({
@@ -52,7 +51,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			stop: true,
 		},
 		where: {
-			user: { username: params.username },
+			user: { username },
 			scheduleId: schedule.id,
 		},
 	})
