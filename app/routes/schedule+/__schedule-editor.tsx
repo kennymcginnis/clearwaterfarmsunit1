@@ -98,7 +98,7 @@ export function UserScheduleEditor({
 		if (Number(value) >= 0) setHoursValue(Number(value))
 	}
 
-	const [hoursValue, setHoursValue] = useState(userSchedule.hours || 0)
+	const [hoursValue, setHoursValue] = useState(userSchedule.hours)
 
 	return (
 		<Card key={userSchedule.ditch}>
@@ -127,7 +127,7 @@ export function UserScheduleEditor({
 								step: 0.5,
 								min: 0,
 								max: 12,
-								value: hoursValue,
+								value: hoursValue || '',
 								onChange: handleHoursChanged,
 							}}
 						/>
