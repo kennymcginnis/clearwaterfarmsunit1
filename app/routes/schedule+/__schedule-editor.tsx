@@ -1,10 +1,11 @@
-import { parse } from '@conform-to/zod'
+import { useForm } from '@conform-to/react'
+import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { json, type ActionFunctionArgs } from '@remix-run/node'
-import { Form } from '@remix-run/react'
+import { useFetcher } from '@remix-run/react'
 import { type SetStateAction, useState } from 'react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
-import { Field } from '#app/components/forms.tsx'
+import { ErrorList, Field } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button'
 import { Card, CardHeader, CardFooter, CardContent, CardTitle, CardDescription } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
@@ -28,9 +29,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	await validateCSRF(formData, request.headers)
 
 	const submission = await parse(formData, { schema: UserScheduleEditorSchema, async: true })
-	if (submission.intent !== 'submit') {
-		return json({ status: 'idle', submission } as const)
-	}
+	if (submission.intent !== 'submit') return json({ status: 'idle', submission })
 
 	if (submission.value) {
 		const { userId, ditch, scheduleId, hours } = submission.value
@@ -56,6 +55,8 @@ export async function action({ request }: ActionFunctionArgs) {
 			title: 'Success',
 			description: `${hours} hours saved for ditch ${ditch}.`,
 		})
+	} else {
+		return json({ status: 'error', submission } as const, { status: 400 })
 	}
 }
 
@@ -82,6 +83,7 @@ export function UserScheduleEditor({
 	}
 	previous?: number | null
 }) {
+	const scheduleEditor = useFetcher<typeof action>()
 	const isPending = useIsPending()
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
@@ -100,9 +102,19 @@ export function UserScheduleEditor({
 
 	const [hoursValue, setHoursValue] = useState(userSchedule.hours)
 
+	const [form, fields] = useForm({
+		id: 'signup-form',
+		constraint: getFieldsetConstraint(UserScheduleEditorSchema),
+		lastSubmission: scheduleEditor.data?.submission,
+		onValidate({ formData }) {
+			return parse(formData, { schema: UserScheduleEditorSchema })
+		},
+		shouldRevalidate: 'onBlur',
+	})
+
 	return (
 		<Card key={userSchedule.ditch}>
-			<Form method="POST">
+			<scheduleEditor.Form method="POST" {...form.props}>
 				<AuthenticityTokenInput />
 				<input type="hidden" name="userId" value={user.id} />
 				<input type="hidden" name="scheduleId" value={schedule.id} />
@@ -130,7 +142,9 @@ export function UserScheduleEditor({
 								value: hoursValue || '',
 								onChange: handleHoursChanged,
 							}}
+							errors={fields.hours.errors}
 						/>
+						<ErrorList errors={form.errors} id={form.errorId} />
 					</div>
 				</CardContent>
 				{canEdit ? (
@@ -152,7 +166,7 @@ export function UserScheduleEditor({
 						</StatusButton>
 					</CardFooter>
 				) : null}
-			</Form>
+			</scheduleEditor.Form>
 		</Card>
 	)
 }
