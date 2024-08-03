@@ -128,21 +128,30 @@ export default function MembersRoute() {
 					</div>
 					<div className="my-1 flex flex-row space-x-2">
 						{userIsAdmin ? (
-							<Button>
-								<Link reloadDocument to={`/transactions`}>
-									<Icon name="reader" size="md">
-										Transactions
-									</Icon>
-								</Link>
-							</Button>
+							<>
+								<Button>
+									<Link reloadDocument to={`/transactions`}>
+										<Icon name="reader" size="md">
+											Transactions
+										</Icon>
+									</Link>
+								</Button>
+								<Button>
+									<Link reloadDocument to={`/resources/download-balances`}>
+										<Icon name="download" size="md">
+											Balances
+										</Icon>
+									</Link>
+								</Button>
+								<Button>
+									<Link reloadDocument to={`/resources/download-contacts`}>
+										<Icon name="download" size="md">
+											Contacts
+										</Icon>
+									</Link>
+								</Button>
+							</>
 						) : null}
-						<Button>
-							<Link reloadDocument to={`/resources/download-balances`}>
-								<Icon name="download" size="md">
-									<span className="w-32">Download Balances</span>
-								</Icon>
-							</Link>
-						</Button>
 					</div>
 				</div>
 				<div className="m-auto block w-[90%] overflow-x-auto bg-background text-foreground" ref={nodeRefA}>
@@ -206,24 +215,24 @@ export default function MembersRoute() {
 	)
 }
 
-function UserCard({ user }: { user: UserType }) {
+function UserCard({
+	user: { id, display, ditch, imageId, member, position, username, currentBalance },
+}: {
+	user: UserType
+}) {
 	return (
 		<>
-			<img
-				alt={user.member ?? user.username}
-				src={getUserImgSrc(user.imageId, user.id)}
-				className="h-16 w-16 rounded-full"
-			/>
-			{user.member ? (
+			<img alt={member ?? username} src={getUserImgSrc(imageId, id)} className="h-16 w-16 rounded-full" />
+			{member ? (
 				<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md">
-					{user.display}
+					{display}
 				</span>
 			) : null}
 			<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">
-				Ditch: {user.ditch} Pos: {user.position}
+				Ditch: {ditch} Pos: {position}
 			</span>
 			<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">
-				Balance: ${formatCurrency(user.currentBalance)}
+				Balance: ${formatCurrency(currentBalance)}
 			</span>
 		</>
 	)

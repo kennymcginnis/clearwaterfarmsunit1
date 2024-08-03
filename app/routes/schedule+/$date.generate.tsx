@@ -400,20 +400,26 @@ export default function PrintableTimelineRoute() {
 	)
 }
 
-function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType }) {
+function UserCard({
+	scheduleDate,
+	user: { display, hours, position, schedule },
+}: {
+	scheduleDate: string
+	user: UserType
+}) {
 	return (
 		<Link
-			to={`/timeline/${scheduleDate}/${user.display}`}
-			className={`flex rounded-lg ${user.hours ? 'bg-muted' : 'bg-muted-40'} p-2`}
+			to={`/timeline/${scheduleDate}/${display}`}
+			className={`flex rounded-lg ${hours ? 'bg-muted' : 'bg-muted-40'} p-2`}
 		>
 			<div className="flex w-full flex-row justify-between gap-1">
 				<span className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
-					{user.position}: {user.display}
+					{position}: {display}
 				</span>
 				<span className="w-[10%] overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">
-					{formatHours(Number(user.hours))}
+					{formatHours(Number(hours))}
 				</span>
-				{user.schedule.map((row, r) => (
+				{schedule.map((row, r) => (
 					<span
 						key={`row-${r}`}
 						className="w-[30%] overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground"

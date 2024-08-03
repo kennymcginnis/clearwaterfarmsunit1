@@ -1,32 +1,32 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
-import { invariantResponse } from '@epic-web/invariant'
 import { type SEOHandle } from '@nasa-gcn/remix-seo'
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node'
-import { Link, useFetcher, useLoaderData } from '@remix-run/react'
+import { json, type LoaderFunctionArgs } from '@remix-run/node'
+import { type MetaFunction, useFetcher, Link, useLoaderData } from '@remix-run/react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
-import { z } from 'zod'
-import { ErrorList, Field } from '#app/components/forms.tsx'
+import { Field, ErrorList } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
-import { Icon } from '#app/components/ui/icon.tsx'
-import { StatusButton } from '#app/components/ui/status-button.tsx'
-import { requireUserId, sessionKey } from '#app/utils/auth.server.ts'
-import { validateCSRF } from '#app/utils/csrf.server.ts'
+import { Icon } from '#app/components/ui/icon'
+import { StatusButton } from '#app/components/ui/status-button'
+import {
+	action,
+	CreatePhone,
+	ProfileFormSchema,
+	profileUpdateActionIntent,
+	signOutOfSessionsActionIntent,
+	UpdatePhone,
+	type profileUpdateAction,
+	type signOutOfSessionsAction,
+} from '#app/routes/member+/$username+/_edit'
+import { requireUserId } from '#app/utils/auth.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
-import { getUserImgSrc, useDoubleCheck } from '#app/utils/misc.tsx'
-import { authSessionStorage } from '#app/utils/session.server.ts'
-import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { EmailSchema, NameSchema, UsernameSchema } from '#app/utils/user-validation.ts'
+import { useDoubleCheck, getUserImgSrc } from '#app/utils/misc'
+
+export { action }
 
 export const handle: SEOHandle = {
 	getSitemapEntries: () => null,
 }
-
-const ProfileFormSchema = z.object({
-	member: NameSchema.optional(),
-	username: UsernameSchema,
-	secondaryEmail: EmailSchema.optional(),
-})
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await requireUserId(request)
@@ -38,6 +38,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
 			username: true,
 			primaryEmail: true,
 			secondaryEmail: true,
+			phones: {
+				select: {
+					id: true,
+					type: true,
+					number: true,
+					primary: true,
+				},
+				orderBy: {
+					primary: 'desc',
+				},
+			},
 			image: { select: { id: true } },
 			_count: {
 				select: {
@@ -52,35 +63,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	})
 
 	return json({ user })
-}
-
-type ProfileActionArgs = {
-	request?: Request
-	userId: string
-	formData: FormData
-}
-const profileUpdateActionIntent = 'update-profile'
-const signOutOfSessionsActionIntent = 'sign-out-of-sessions'
-const deleteDataActionIntent = 'delete-data'
-
-export async function action({ request }: ActionFunctionArgs) {
-	const userId = await requireUserId(request)
-	const formData = await request.formData()
-	await validateCSRF(formData, request.headers)
-	const intent = formData.get('intent')
-	switch (intent) {
-		case profileUpdateActionIntent:
-			return profileUpdateAction({ userId, formData })
-
-		case signOutOfSessionsActionIntent:
-			return signOutOfSessionsAction({ request, userId, formData })
-
-		case deleteDataActionIntent:
-			return deleteDataAction({ userId, formData })
-
-		default:
-			throw new Response(`Invalid intent "${intent}"`, { status: 400 })
-	}
 }
 
 export default function EditUserProfile() {
@@ -110,55 +92,14 @@ export default function EditUserProfile() {
 
 			<div className="col-span-6 my-4 h-1 border-b-[1.5px] border-foreground" />
 			<div className="col-span-full flex flex-col gap-6">
-				<div>
-					<Link to={'password'}>
-						<Icon name="dots-horizontal">Change Password</Icon>
-					</Link>
-				</div>
-				<div>
-					<Link reloadDocument download="my-epic-notes-data.json" to="/resources/download-user-data">
-						<Icon name="download">Download your data</Icon>
-					</Link>
-				</div>
+				<Link reloadDocument download="my-epic-notes-data.json" to="/resources/download-user-data">
+					<Icon name="download">Download your data</Icon>
+				</Link>
 				<SignOutOfSessions />
 				{/* <DeleteData /> */}
 			</div>
 		</div>
 	)
-}
-
-async function profileUpdateAction({ userId, formData }: ProfileActionArgs) {
-	const submission = await parse(formData, {
-		async: true,
-		schema: ProfileFormSchema.superRefine(async ({ username }, ctx) => {
-			const existingUsername = await prisma.user.findUnique({
-				where: { username },
-				select: { id: true },
-			})
-			if (existingUsername && existingUsername.id !== userId) {
-				ctx.addIssue({
-					path: ['username'],
-					code: z.ZodIssueCode.custom,
-					message: 'A user already exists with this username',
-				})
-			}
-		}),
-	})
-	if (submission.intent !== 'submit') {
-		return json({ status: 'idle', submission } as const)
-	}
-	if (!submission.value) {
-		return json({ status: 'error', submission } as const, { status: 400 })
-	}
-
-	const data = submission.value
-	await prisma.user.update({
-		select: { username: true },
-		where: { id: userId },
-		data,
-	})
-
-	return json({ status: 'success', submission } as const)
 }
 
 function UpdateProfile() {
@@ -183,20 +124,27 @@ function UpdateProfile() {
 	return (
 		<fetcher.Form method="POST" {...form.props}>
 			<AuthenticityTokenInput />
-			<div className="grid grid-cols-6 gap-x-10">
+			<div className="grid grid-cols-6 gap-2">
 				<Field
-					className="col-span-3"
+					className="col-span-2"
 					labelProps={{ htmlFor: fields.username.id, children: 'Username' }}
 					inputProps={conform.input(fields.username)}
 					errors={fields.username.errors}
 				/>
+				<div className="col-span-4 content-end">
+					<Button variant="outline" className="pb-2 bg-muted border-secondary">
+						<Link to={'password'}>
+							<Icon name="dots-horizontal">Change Password</Icon>
+						</Link>
+					</Button>
+				</div>
 				<Field
-					className="col-span-3"
+					className="col-span-6"
 					labelProps={{ htmlFor: fields.member.id, children: 'Member Name' }}
 					inputProps={conform.input(fields.member)}
 					errors={fields.member.errors}
 				/>
-				<div className="col-span-6 pb-4">
+				<div className="col-span-3 pb-4">
 					<label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
 						Primary Email
 					</label>
@@ -212,7 +160,7 @@ function UpdateProfile() {
 				</div>
 
 				<Field
-					className="col-span-6"
+					className="col-span-3"
 					labelProps={{ htmlFor: fields.secondaryEmail.id, children: 'Secondary Email' }}
 					inputProps={conform.input(fields.secondaryEmail)}
 					errors={fields.secondaryEmail.errors}
@@ -220,8 +168,7 @@ function UpdateProfile() {
 			</div>
 
 			<ErrorList errors={form.errors} id={form.errorId} />
-
-			<div className="mt-8 flex justify-center">
+			<div className="mt-4 flex justify-center">
 				<StatusButton
 					type="submit"
 					size="wide"
@@ -229,24 +176,17 @@ function UpdateProfile() {
 					value={profileUpdateActionIntent}
 					status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
 				>
-					Save changes
+					Save Changes
 				</StatusButton>
 			</div>
+			<div className="col-span-6 my-4 h-1 border-b-[1.5px] border-foreground" />
+
+			{data.user.phones.map(phone => (
+				<UpdatePhone key={phone.id} userId={data.user.id} phone={phone} />
+			))}
+			<CreatePhone userId={data.user.id} />
 		</fetcher.Form>
 	)
-}
-
-async function signOutOfSessionsAction({ request, userId }: ProfileActionArgs) {
-	const authSession = await authSessionStorage.getSession(request?.headers.get('cookie'))
-	const sessionId = authSession.get(sessionKey)
-	invariantResponse(sessionId, 'You must be authenticated to sign out of other sessions')
-	await prisma.session.deleteMany({
-		where: {
-			userId,
-			id: { not: sessionId },
-		},
-	})
-	return json({ status: 'success' } as const)
 }
 
 function SignOutOfSessions() {
@@ -277,11 +217,13 @@ function SignOutOfSessions() {
 	)
 }
 
-async function deleteDataAction({ userId }: ProfileActionArgs) {
-	await prisma.user.delete({ where: { id: userId } })
-	return redirectWithToast('/', {
-		type: 'success',
-		title: 'Data Deleted',
-		description: 'All of your data has been deleted',
-	})
+export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
+	const displayName = data?.user.member ?? params.username
+	return [
+		{ title: `Profile | ${displayName}` },
+		{
+			name: 'description',
+			content: `Profile Details for ${displayName} Clearwater Farms 1`,
+		},
+	]
 }

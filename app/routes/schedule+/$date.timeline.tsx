@@ -349,26 +349,30 @@ export default function ScheduleTimelineRoute() {
 	)
 }
 
-function UserCard({ userSchedule }: { userSchedule: UserScheduleType }) {
+function UserCard({
+	userSchedule: { id, display, position, hours, schedule, updatedBy },
+}: {
+	userSchedule: UserScheduleType
+}) {
 	return (
 		<div
 			// to={`/schedule/${scheduleDate}/${user.username}`}
 			className={`flex h-[82px] w-48 flex-col rounded-lg p-2
-				${userSchedule.hours ? 'bg-muted' : 'bg-muted-40'} 
-				${userSchedule.id === userSchedule.updatedBy && 'border-1 border-primary bg-secondary'}`}
+				${hours ? 'bg-muted' : 'bg-muted-40'} 
+				${id === updatedBy && 'border-1 border-primary bg-secondary'}`}
 		>
 			<div
 				className={`flex w-full flex-row justify-between gap-1 border-b
-				${userSchedule.id === userSchedule.updatedBy ? 'border-primary' : 'border-secondary'}`}
+				${id === updatedBy ? 'border-primary' : 'border-secondary'}`}
 			>
 				<span className="overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
-					{userSchedule.position}: {userSchedule.display}
+					{position}: {display}
 				</span>
 				<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">
-					{formatHours(Number(userSchedule.hours))}
+					{formatHours(Number(hours))}
 				</span>
 			</div>
-			{userSchedule.schedule.map((row, r) => (
+			{schedule.map((row, r) => (
 				<span key={`row-${r}`} className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
 					{row}
 				</span>
