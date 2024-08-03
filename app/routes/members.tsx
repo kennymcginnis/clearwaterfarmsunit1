@@ -151,7 +151,7 @@ export default function MembersRoute() {
 							<tr>
 								{Object.keys(totals || {}).map(ditch => (
 									<th className="sticky top-0 p-0.5" key={`ditch-${ditch}`}>
-										<p className="mb-1 flex w-44 rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
+										<p className="mb-1 flex w-48 rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
 											Ditch {ditch}
 										</p>
 									</th>
@@ -177,12 +177,12 @@ export default function MembersRoute() {
 															userIsAdmin ? (
 																<Link
 																	to={`/member/${user.username}/contact`}
-																	className="flex h-36 w-44 flex-col items-center justify-center rounded-lg bg-muted px-3"
+																	className="flex h-36 w-48 flex-col items-center justify-center rounded-lg bg-muted px-3"
 																>
 																	<UserCard user={user} />
 																</Link>
 															) : (
-																<div className="flex h-36 w-44 flex-col items-center justify-center rounded-lg bg-muted px-3">
+																<div className="flex h-36 w-48 flex-col items-center justify-center rounded-lg bg-muted px-3">
 																	<UserCard user={user} />
 																</div>
 															)

@@ -181,7 +181,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-	const currentUser = await requireUserWithRole(request, 'admin')
+	await requireUserWithRole(request, 'admin')
 	const formData = await request.formData()
 	const intent = formData.get('intent')
 	const side = formData.get('side')?.toString()
@@ -210,7 +210,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			timeline.forEach(async ({ userId, scheduleId, ditch, start, stop }) => {
 				await prisma.userSchedule.update({
 					where: { userId_ditch_scheduleId: { userId, ditch, scheduleId } },
-					data: { start, stop, updatedBy: currentUser },
+					data: { start, stop },
 				})
 			})
 

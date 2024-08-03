@@ -33,10 +33,10 @@ type PositionDitchType = {
 	// position - for <tr>
 	[key: number]: {
 		// ditch - for <td>
-		[key: number]: UserType
+		[key: number]: UserScheduleType
 	}
 }
-type UserType = {
+type UserScheduleType = {
 	id: string
 	username: string
 	display: string
@@ -46,6 +46,7 @@ type UserType = {
 	start: Date | string | null
 	stop: Date | string | null
 	schedule: string[]
+	updatedBy: string | null
 }
 
 const SearchResultsSchema = z.array(
@@ -58,6 +59,7 @@ const SearchResultsSchema = z.array(
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
 		start: z.date().nullable(),
 		stop: z.date().nullable(),
+		updatedBy: z.string().nullable(),
 	}),
 )
 
@@ -74,11 +76,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, User.display, Port.ditch, Port.position, mid.hours, mid.start, mid.stop
+		SELECT User.id, User.username, User.display, Port.ditch, Port.position, mid.hours, mid.start, mid.stop, mid.updatedBy
 		FROM User
 		INNER JOIN Port ON User.id = Port.userId
     LEFT JOIN (
-      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
+      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop, UserSchedule.updatedBy
       FROM Schedule 
       INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
       WHERE Schedule.id = ${schedule?.id}
@@ -97,7 +99,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 				status: 'error',
 				error: result.error.message,
 				schedule: { id: null, date: null, state: null },
-				users: null,
+				userSchedules: null,
 				totals: null,
 				rows: null,
 				cols: null,
@@ -107,20 +109,20 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	}
 
 	const totals: TotalType = {}
-	const users: PositionDitchType = {}
-	for (let user of result.data) {
-		const { start, stop } = user
-		const userType = { ...user, schedule: formatDates({ start, stop }) }
-		if (users[user.position]) users[user.position][user.ditch] = userType
-		else users[user.position] = { [user.ditch]: userType }
+	const userSchedules: PositionDitchType = {}
+	for (let userSchedule of result.data) {
+		const { start, stop } = userSchedule
+		const userType = { ...userSchedule, schedule: formatDates({ start, stop }) }
+		if (userSchedules[userSchedule.position]) userSchedules[userSchedule.position][userSchedule.ditch] = userType
+		else userSchedules[userSchedule.position] = { [userSchedule.ditch]: userType }
 
-		if (totals[user.ditch]) totals[user.ditch] += user.hours
-		else totals[user.ditch] = user.hours
+		if (totals[userSchedule.ditch]) totals[userSchedule.ditch] += userSchedule.hours
+		else totals[userSchedule.ditch] = userSchedule.hours
 	}
 	return json({
 		status: 'idle',
 		schedule: { id: schedule.id, date: params.date, state: schedule.state },
-		users,
+		userSchedules,
 		totals,
 		error: null,
 	} as const)
@@ -181,7 +183,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 export default function ScheduleTimelineRoute() {
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
-	const { status, schedule, users, totals, error } = useLoaderData<typeof loader>()
+	const { status, schedule, userSchedules, totals, error } = useLoaderData<typeof loader>()
 	const { id: scheduleId, date: scheduleDate } = schedule
 
 	const nodeRefA = useRef(null)
@@ -218,7 +220,7 @@ export default function ScheduleTimelineRoute() {
 	const [showUpload, setShowUpload] = useState(false)
 	const toggleShowUpload = () => setShowUpload(!showUpload)
 
-	if (!scheduleId || !users || !Object.keys(users).length) return null
+	if (!scheduleId || !userSchedules || !Object.keys(userSchedules).length) return null
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
 			<div className="flex w-[63.5%] flex-row flex-wrap gap-2 p-0.5">
@@ -300,7 +302,7 @@ export default function ScheduleTimelineRoute() {
 								{Object.entries(totals).map(([ditch, hours]) => (
 									<th className="sticky top-0 p-0.5" key={`ditch-${ditch}`}>
 										{hours > 0 || showAll ? (
-											<p className="mb-1 flex w-44 flex-col rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
+											<p className="mb-1 flex w-48 flex-col rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
 												Ditch {ditch}
 												<p className="mb-2 w-full text-center text-body-md">{hours} hours</p>
 											</p>
@@ -315,18 +317,18 @@ export default function ScheduleTimelineRoute() {
 
 			<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
 				{status === 'idle' ? (
-					users ? (
+					userSchedules ? (
 						<div className="m-auto block w-full overflow-x-auto overflow-y-auto" ref={nodeRefB}>
 							<table>
 								<tbody>
-									{Object.keys(users).map(position => (
+									{Object.keys(userSchedules).map(position => (
 										<tr key={`${position}`}>
 											{Object.keys(totals).map(ditch => {
-												const user = users[Number(position)][Number(ditch)]
+												const userSchedule = userSchedules[Number(position)][Number(ditch)]
 												return (
 													<td className="p-0.5" key={`${ditch}${position}`}>
-														{user && (user.hours || showAll) ? (
-															<UserCard scheduleDate={scheduleDate} user={user} />
+														{userSchedule && (userSchedule.hours || showAll) ? (
+															<UserCard userSchedule={userSchedule} />
 														) : null}
 													</td>
 												)
@@ -347,21 +349,26 @@ export default function ScheduleTimelineRoute() {
 	)
 }
 
-function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType }) {
+function UserCard({ userSchedule }: { userSchedule: UserScheduleType }) {
 	return (
 		<div
 			// to={`/schedule/${scheduleDate}/${user.username}`}
-			className={`flex h-[82px] w-44 flex-col rounded-lg ${user.hours ? 'bg-muted' : 'bg-muted-40'} p-2`}
+			className={`flex h-[82px] w-48 flex-col rounded-lg p-2
+				${userSchedule.hours ? 'bg-muted' : 'bg-muted-40'} 
+				${userSchedule.id === userSchedule.updatedBy && 'border-1 border-primary bg-secondary'}`}
 		>
-			<div className="flex w-full flex-row justify-between gap-1 border-b-2">
+			<div
+				className={`flex w-full flex-row justify-between gap-1 border-b
+				${userSchedule.id === userSchedule.updatedBy ? 'border-primary' : 'border-secondary'}`}
+			>
 				<span className="overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
-					{user.position}: {user.display}
+					{userSchedule.position}: {userSchedule.display}
 				</span>
 				<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">
-					{formatHours(Number(user.hours))}
+					{formatHours(Number(userSchedule.hours))}
 				</span>
 			</div>
-			{user.schedule.map((row, r) => (
+			{userSchedule.schedule.map((row, r) => (
 				<span key={`row-${r}`} className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground">
 					{row}
 				</span>
