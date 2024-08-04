@@ -7,6 +7,7 @@ export function ClosedScheduleEmail({
 }: {
 	schedules: {
 		ditch: number
+		hours: string
 		schedule: string
 	}[]
 	emailSubject: string
@@ -69,9 +70,11 @@ export function ClosedScheduleEmail({
 								We recently closed the irrigation schedule that starts on Friday.
 							</E.Heading>
 							<E.Text style={{ fontSize: 16 }}>Here is your upcoming watering schedule:</E.Text>
-							{schedules.map(({ ditch, schedule }) => (
+							{schedules.map(({ ditch, hours, schedule }) => (
 								<E.Text key={ditch} style={{ fontSize: 16, marginTop: -5 }}>
-									<b>Ditch {ditch}: </b>
+									<b>
+										Ditch {ditch}:&nbsp;({hours}):&nbsp;
+									</b>
 									{schedule}
 								</E.Text>
 							))}

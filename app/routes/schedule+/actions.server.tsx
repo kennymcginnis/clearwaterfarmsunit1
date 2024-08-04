@@ -6,7 +6,7 @@ import { ClosedScheduleEmail } from '#app/components/ClosedScheduleEmail'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { sendEmail } from '#app/utils/email.server.ts'
-import { formatDatesOneLiner } from '#app/utils/misc'
+import { formatDatesOneLiner, formatHours } from '#app/utils/misc'
 import { requireUserWithRole } from '#app/utils/permissions.ts'
 import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
@@ -183,6 +183,7 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 						emailSubject: true,
 					},
 				},
+				hours: true,
 				ditch: true,
 				start: true,
 				stop: true,
@@ -193,19 +194,20 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 		type EmailType = {
 			[key: string]: {
 				emailSubject: string | null
-				schedules: { ditch: number; schedule: string }[]
+				schedules: { ditch: number; hours: string; schedule: string }[]
 			}
 		}
 		const emails: EmailType = {}
 		for (const {
 			ditch,
+			hours,
 			start,
 			stop,
 			user: { emailSubject, primaryEmail },
 		} of userSchedules) {
 			if (start && stop) {
 				if (primaryEmail) {
-					const schedule = { ditch, schedule: formatDatesOneLiner({ start, stop }) }
+					const schedule = { ditch, hours: formatHours(hours), schedule: formatDatesOneLiner({ start, stop }) }
 					if (emails[primaryEmail]) emails[primaryEmail].schedules.push(schedule)
 					else emails[primaryEmail] = { emailSubject, schedules: [schedule] }
 				}
