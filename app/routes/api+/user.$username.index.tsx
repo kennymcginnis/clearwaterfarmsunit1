@@ -11,18 +11,20 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			defaultHours: true,
 			active: true,
 			restricted: true,
-			userAddress: {
-				select: {
-					id: true,
-					address: { select: { id: true, address: true, parcelAndLot: { select: { parcel: true, lot: true } } } },
-				},
-			},
+			restriction: true,
+			emailSubject: true,
 			primaryEmail: true,
 			secondaryEmail: true,
 			phones: {
 				select: {
 					type: true,
 					number: true,
+				},
+			},
+			userAddress: {
+				select: {
+					id: true,
+					address: { select: { id: true, address: true, parcelAndLot: { select: { parcel: true, lot: true } } } },
 				},
 			},
 			ports: {

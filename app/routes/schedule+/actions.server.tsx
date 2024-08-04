@@ -212,17 +212,25 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 			}
 		}
 
+		let count = 0
+		const output: string[] = []
 		for (const [primaryEmail, { emailSubject, schedules }] of Object.entries(emails)) {
-			sendEmail({
+			const response = await sendEmail({
 				to: primaryEmail,
 				subject: `Clearwater Farms 1 Schedule Closed`,
 				react: <ClosedScheduleEmail emailSubject={emailSubject ?? ''} schedules={schedules} />,
 			})
+			if (response.status === 'success') {
+				count++
+			} else {
+				output.push(response.error.message)
+				return json({ status: 'error', submission } as const, { status: 500 })
+			}
 		}
 		return redirectWithToast(`.`, {
 			type: 'success',
 			title: 'Success',
-			description: `${Object.keys(emails).length} Emails sent.`,
+			description: `${count} Emails sent successfully. Errors: ${output.join(`;`)}`,
 		})
 	} else {
 		return json({ status: 'error', submission } as const, { status: 400 })
