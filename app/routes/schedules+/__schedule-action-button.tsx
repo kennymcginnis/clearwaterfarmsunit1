@@ -15,7 +15,7 @@ export function ScheduleActionButton({
 	variant,
 }: {
 	id: string
-	icon: 'trash' | 'lock-open-1' | 'lock-closed'
+	icon: 'trash' | 'lock-open-1' | 'lock-closed' | 'envelope-closed'
 	value: string
 	text: string
 	variant: 'default' | 'destructive' | 'secondary'

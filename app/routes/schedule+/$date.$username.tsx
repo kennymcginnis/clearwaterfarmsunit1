@@ -12,7 +12,7 @@ import { UserScheduleTimeline } from './__schedule-timeline'
 export { action }
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const { date, username } = params
-	if (date || username) return redirect('/schedules')
+	if (!date || !username) return redirect('/schedules')
 		await requireSelfOrAdmin({ request, params }, { redirectTo: `/schedule/${date}` })
 
 	const user = await prisma.user.findFirstOrThrow({

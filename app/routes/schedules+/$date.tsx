@@ -114,6 +114,13 @@ export default function ScheduleRoute() {
 										<Icon name="download">Quickbooks</Icon>
 									</Link>
 								</Button>
+								<ScheduleActionButton
+									id={schedule.id}
+									icon="envelope-closed"
+									value="closed-emails"
+									text="Send Emails"
+									variant="default"
+								/>
 							</>
 						) : null}
 						{canClose ? <DialogCloseSchedule id={schedule.id} /> : null}

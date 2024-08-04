@@ -279,14 +279,14 @@ export default function ScheduleSignupRoute() {
 				</div>
 			) : null}
 			<header className="sticky top-0 m-auto flex w-full flex-col items-center gap-6 bg-background text-foreground">
-				<div className="m-auto block w-[90%] overflow-x-auto bg-background text-foreground" ref={nodeRefA}>
+				<div className="m-auto block w-full overflow-x-auto bg-background text-foreground" ref={nodeRefA}>
 					<table>
 						<thead>
 							<tr>
 								{Object.entries(totals).map(([ditch, hours]) => (
 									<th className="sticky top-0 p-0.5" key={`ditch-${ditch}`}>
 										{hours > 0 || showAll ? (
-											<p className="mb-1 flex w-48 flex-col rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
+											<p className="mb-1 flex w-44 flex-col rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
 												Ditch {ditch}
 												<p className="mb-2 w-full text-center text-body-md">{hours} hours</p>
 											</p>
@@ -299,7 +299,7 @@ export default function ScheduleSignupRoute() {
 				</div>
 			</header>
 
-			<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
+			<main className="m-auto w-full" style={{ height: 'fill-available' }}>
 				{status === 'idle' ? (
 					userSchedules ? (
 						<div className="m-auto block w-full overflow-x-auto overflow-y-auto" ref={nodeRefB}>
@@ -337,7 +337,7 @@ function UserCard({ userSchedule }: { userSchedule: UserScheduleType }) {
 	return (
 		<div
 			// to={`/schedule/${scheduleDate}/${userSchedule.username}`}
-			className={`grid w-48 grid-cols-4 items-center justify-end rounded-lg px-5 py-3 
+			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg px-5 py-3 
 				${userSchedule.hours ? 'bg-muted' : 'bg-muted-40'}
 				${userSchedule.id === userSchedule.updatedBy && 'border-1 border-primary bg-secondary'}`}
 		>

@@ -2,8 +2,11 @@ import { parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type ActionFunctionArgs } from '@remix-run/node'
 import { z } from 'zod'
+import { ClosedScheduleEmail } from '#app/components/ClosedScheduleEmail'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
+import { sendEmail } from '#app/utils/email.server.ts'
+import { formatDatesOneLiner } from '#app/utils/misc'
 import { requireUserWithRole } from '#app/utils/permissions.ts'
 import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
@@ -49,6 +52,9 @@ export async function action({ request }: ActionFunctionArgs) {
 
 		case 'close-schedule':
 			return await closeScheduleAction(actionArgs)
+
+		case 'closed-emails':
+			return await closedEmailsAction(actionArgs)
 
 		default:
 			throw new Response(`Invalid intent "${intent}"`, { status: 400 })
@@ -113,27 +119,27 @@ async function deleteScheduleAction({ formData, schedule }: ScheduleActionArgs) 
 
 async function closeScheduleAction({ userId, schedule, formData }: ScheduleActionArgs) {
 	const submission = parse(formData, { schema: ActionFormSchema })
+	const { id: scheduleId, date, costPerHour } = schedule
 
 	if (submission.value) {
 		const userSchedules = await prisma.userSchedule.findMany({
 			select: { userId: true, hours: true, ditch: true, start: true },
-			where: { scheduleId: schedule.id },
+			where: { scheduleId },
 		})
-
-		for (const userSchedule of userSchedules) {
-			if (userSchedule.hours > 0) {
+		for (const { userId, ditch, hours, start } of userSchedules) {
+			if (start && hours) {
 				await prisma.transactions.create({
 					data: {
 						id: generatePublicId(),
-						scheduleId: schedule.id,
-						userId: userSchedule.userId,
-						ditch: userSchedule.ditch,
-						credit: userSchedule.hours * schedule.costPerHour,
-						date: schedule.date,
-						waterStart: userSchedule.start,
-						quantity: userSchedule.hours,
-						rate: schedule.costPerHour,
-						note: `${userSchedule.hours} hours at $${schedule.costPerHour} per hour`,
+						scheduleId,
+						userId,
+						ditch,
+						credit: hours * costPerHour,
+						date,
+						waterStart: start,
+						quantity: hours,
+						rate: costPerHour,
+						note: `${hours} hours at $${costPerHour} per hour`,
 						updatedBy: userId,
 					},
 				})
@@ -158,6 +164,65 @@ async function closeScheduleAction({ userId, schedule, formData }: ScheduleActio
 			type: 'success',
 			title: 'Success',
 			description: `${userSchedules.length} Debits created. Schedule closed.`,
+		})
+	} else {
+		return json({ status: 'error', submission } as const, { status: 400 })
+	}
+}
+
+async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
+	const submission = parse(formData, { schema: ActionFormSchema })
+	const { id: scheduleId } = schedule
+
+	if (submission.value) {
+		const userSchedules = await prisma.userSchedule.findMany({
+			select: {
+				user: {
+					select: {
+						primaryEmail: true,
+						emailSubject: true,
+					},
+				},
+				ditch: true,
+				start: true,
+				stop: true,
+			},
+			where: { scheduleId, user: { roles: { some: { name: 'admin' } } } },
+		})
+
+		type EmailType = {
+			[key: string]: {
+				emailSubject: string | null
+				schedules: { ditch: number; schedule: string }[]
+			}
+		}
+		const emails: EmailType = {}
+		for (const {
+			ditch,
+			start,
+			stop,
+			user: { emailSubject, primaryEmail },
+		} of userSchedules) {
+			if (start && stop) {
+				if (primaryEmail) {
+					const schedule = { ditch, schedule: formatDatesOneLiner({ start, stop }) }
+					if (emails[primaryEmail]) emails[primaryEmail].schedules.push(schedule)
+					else emails[primaryEmail] = { emailSubject, schedules: [schedule] }
+				}
+			}
+		}
+
+		for (const [primaryEmail, { emailSubject, schedules }] of Object.entries(emails)) {
+			sendEmail({
+				to: primaryEmail,
+				subject: `Clearwater Farms 1 Schedule Closed`,
+				react: <ClosedScheduleEmail emailSubject={emailSubject ?? ''} schedules={schedules} />,
+			})
+		}
+		return redirectWithToast(`.`, {
+			type: 'success',
+			title: 'Success',
+			description: `${Object.keys(emails).length} Emails sent.`,
 		})
 	} else {
 		return json({ status: 'error', submission } as const, { status: 400 })

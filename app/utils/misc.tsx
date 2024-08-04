@@ -409,6 +409,15 @@ ${format(stop, 'eee, MMM dd, h:mmaaa')}"`
 	}
 }
 
+export function formatDatesOneLiner({ start, stop }: { start: Date | null; stop: Date | null }): string {
+	if (!start || !stop) return ''
+	if (start.getDay() === stop.getDay()) {
+		return `${format(start, 'eee, MMM do')}, ${format(start, 'h:mmaaa')} ─ ${format(stop, 'h:mmaaa')}`
+	} else {
+		return `${format(start, 'eee, MMM dd, h:mmaaa')} ─ ${format(stop, 'eee, MMM dd, h:mmaaa')}`
+	}
+}
+
 export const formatCurrency = (n: number | null): string =>
 	n ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'
 
@@ -443,4 +452,13 @@ export const formatHours = (hours: number | null) =>
 
 export const formatHrs = (hours: number | null) => (!hours ? '' : hours === 1 ? '1-hr' : `${hours}-hrs`)
 
-export const formatBalance = (balance: number): string => (!balance ? '' : balance % 1 === 0 ? `$${balance}` : `$${balance}0`)
+export const formatBalance = (balance: number): string =>
+	!balance ? '' : balance % 1 === 0 ? `$${balance}` : `$${balance}0`
+
+export const formatSubject = (member: string | null) => {
+	if (!member) return ''
+	const splitAtComma = member.split(', ')
+	const secondElement = splitAtComma[splitAtComma.length > 1 ? 1 : 0]
+	const beforeTheSpace = secondElement.split(' ')[0]
+	return beforeTheSpace.replaceAll('?', '')
+}

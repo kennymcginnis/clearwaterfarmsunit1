@@ -21,6 +21,7 @@ model User {
 
   userAddress UserAddress[]
 
+  emailSubject   String?
   primaryEmail   String? @unique
   secondaryEmail String?
 
