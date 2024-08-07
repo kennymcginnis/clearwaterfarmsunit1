@@ -8,7 +8,7 @@ const UserSearchResultSchema = z.object({
 	id: z.string(),
 	username: z.string(),
 	display: z.string(),
-	member: z.string().nullable(),
+	quickbooks: z.string().nullable(),
 	ditch: z.number(),
 	position: z.number(),
 	currentBalance: z.number().nullable(),
@@ -18,7 +18,7 @@ const UserSearchResultsSchema = z.array(UserSearchResultSchema)
 
 export async function loader() {
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, User.display, User.member,
+		SELECT User.id, User.username, User.display, User.quickbooks,
 			Port.ditch, Port.position,
 			SUM(debit - credit) AS currentBalance
 		FROM User
@@ -40,9 +40,9 @@ export async function loader() {
 	const file = createReadableStreamFromReadable(
 		Readable.from(
 			[
-				['id', 'username', 'display', 'member', 'ditch', 'position', 'currentBalance'].join(','),
-				...result.data.map(({ id, username, display, member, ditch, position, currentBalance }) =>
-					[id, username, `"${display}"`, `"${member}"`, ditch, position, currentBalance].join(','),
+				['id', 'username', 'display', 'quickbooks', 'ditch', 'position', 'currentBalance'].join(','),
+				...result.data.map(({ id, username, display, quickbooks, ditch, position, currentBalance }) =>
+					[id, username, `"${display}"`, `"${quickbooks}"`, ditch, position, currentBalance].join(','),
 				),
 			].join('\n'),
 		),

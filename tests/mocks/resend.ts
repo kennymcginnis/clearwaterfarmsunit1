@@ -19,4 +19,11 @@ export const handlers: Array<HttpHandler> = [
 			created_at: new Date().toISOString(),
 		})
 	}),
+	http.post(`https://api.resend.com/emails/batch`, async ({ request }) => {
+		requireHeader(request.headers, 'Authorization')
+		// @ts-ignore
+		const body: any[] = await request.json()
+		console.info('🔶 mocked email contents:', body)
+		return json({ data: 'success', error: null })
+	}),
 ]

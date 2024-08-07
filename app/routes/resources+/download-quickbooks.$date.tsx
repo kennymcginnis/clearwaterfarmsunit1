@@ -7,6 +7,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	const { date } = params
 	if (!date) return redirect('/schedules')
 
+	const { id: scheduleId } = await prisma.schedule.findFirstOrThrow({ select: { id: true }, where: { date } })
+
 	const transactions = await prisma.transactions.findMany({
 		select: {
 			user: { select: { quickbooks: true } },
@@ -16,7 +18,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			credit: true,
 			note: true,
 		},
-		where: { date, credit: { gt: 0 } },
+		where: { scheduleId, credit: { gt: 0 } },
 	})
 
 	const mmDDyyyy = format(parse(date, 'yyyy-MM-dd', new Date()), 'MM/dd/yyyy')

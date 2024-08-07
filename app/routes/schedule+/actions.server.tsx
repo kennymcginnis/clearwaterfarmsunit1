@@ -2,11 +2,11 @@ import { parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type ActionFunctionArgs } from '@remix-run/node'
 import { format } from 'date-fns'
+import { Resend } from 'resend'
 import { z } from 'zod'
 import { ClosedScheduleEmail } from '#app/components/ClosedScheduleEmail'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
-import { sendEmail } from '#app/utils/email.server.ts'
 import { formatDatesOneLiner, formatHours } from '#app/utils/misc'
 import { requireUserWithRole } from '#app/utils/permissions.ts'
 import { generatePublicId } from '#app/utils/public-id'
@@ -215,32 +215,32 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 			}
 		}
 
-		let count = 0
-		const output: string[] = []
-		for (const [primaryEmail, { emailSubject, schedules }] of Object.entries(emails)) {
-			const response = await sendEmail({
-				to: primaryEmail,
-				subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
-				react: (
-					<ClosedScheduleEmail
-						date={format(date, 'eeee, MMM do')}
-						emailSubject={emailSubject ?? ''}
-						schedules={schedules}
-					/>
-				),
+		const scheduleDate = format(date, 'eeee, MMM do')
+		const batchEmails = Object.entries(emails).map(([primaryEmail, { emailSubject, schedules }]) => ({
+			from: 'clearwat@clearwaterfarmsunit1.com',
+			to: primaryEmail,
+			subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
+			react: (
+				<ClosedScheduleEmail
+					date={scheduleDate}
+					emailSubject={emailSubject ?? primaryEmail}
+					schedules={schedules}
+				/>
+			),
+		}))
+
+		const resend = new Resend(process.env.RESEND_API_KEY)
+		const { data, error } = await resend.batch.send(batchEmails)
+
+		if (error) {
+			return json({ status: 'error', submission } as const, { status: 500 })
+		} else {
+			return redirectWithToast(`.`, {
+				type: 'success',
+				title: 'Success',
+				description: `${data}`,
 			})
-			if (response.status === 'success') {
-				count++
-			} else {
-				output.push(response.error.message)
-				return json({ status: 'error', submission } as const, { status: 500 })
-			}
 		}
-		return redirectWithToast(`.`, {
-			type: 'success',
-			title: 'Success',
-			description: `${count} Emails sent successfully. Errors: ${output.join(`;`)}`,
-		})
 	} else {
 		return json({ status: 'error', submission } as const, { status: 400 })
 	}
