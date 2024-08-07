@@ -2,9 +2,11 @@ import * as E from '@react-email/components'
 
 const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://fly.clearwaterfarmsunit1.com/'
 export function ClosedScheduleEmail({
+	date,
 	schedules,
 	emailSubject,
 }: {
+	date: string
 	schedules: {
 		ditch: number
 		hours: string
@@ -67,7 +69,7 @@ export function ClosedScheduleEmail({
 									textAlign: 'center',
 								}}
 							>
-								We recently closed the irrigation schedule that starts on Friday.
+								We recently closed the irrigation schedule that starts on {date}.
 							</E.Heading>
 							<E.Text style={{ fontSize: 16 }}>Here is your upcoming watering schedule:</E.Text>
 							{schedules.map(({ ditch, hours, schedule }) => (

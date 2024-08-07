@@ -1,7 +1,7 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
 import { useLoaderData, type MetaFunction } from '@remix-run/react'
-import { format } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import { useState } from 'react'
 import { Button } from '#app/components/ui/button.tsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
@@ -117,7 +117,9 @@ export default function TransactionsRoute() {
 								id="Water Date"
 								readOnly={true}
 								className="col-span-1 text-right"
-								defaultValue={lineItem.waterStart ? format(new Date(lineItem.waterStart), 'MMM dd, h:mmaaa') : ''}
+								defaultValue={
+									lineItem.waterStart ? formatInTimeZone(lineItem.waterStart, 'Etc/UTC', 'MMM dd, h:mmaaa', { timeZone: 'Etc/UTC' }) : ''
+								}
 							/>
 							<Input
 								id="debit"

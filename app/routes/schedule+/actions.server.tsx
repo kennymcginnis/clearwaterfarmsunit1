@@ -1,6 +1,7 @@
 import { parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type ActionFunctionArgs } from '@remix-run/node'
+import { format } from 'date-fns'
 import { z } from 'zod'
 import { ClosedScheduleEmail } from '#app/components/ClosedScheduleEmail'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
@@ -172,7 +173,7 @@ async function closeScheduleAction({ userId, schedule, formData }: ScheduleActio
 
 async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 	const submission = parse(formData, { schema: ActionFormSchema })
-	const { id: scheduleId } = schedule
+	const { id: scheduleId, date } = schedule
 
 	if (submission.value) {
 		const userSchedules = await prisma.userSchedule.findMany({
@@ -219,8 +220,14 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 		for (const [primaryEmail, { emailSubject, schedules }] of Object.entries(emails)) {
 			const response = await sendEmail({
 				to: primaryEmail,
-				subject: `Clearwater Farms 1 Schedule Closed`,
-				react: <ClosedScheduleEmail emailSubject={emailSubject ?? ''} schedules={schedules} />,
+				subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
+				react: (
+					<ClosedScheduleEmail
+						date={format(date, 'eeee, MMM do')}
+						emailSubject={emailSubject ?? ''}
+						schedules={schedules}
+					/>
+				),
 			})
 			if (response.status === 'success') {
 				count++
