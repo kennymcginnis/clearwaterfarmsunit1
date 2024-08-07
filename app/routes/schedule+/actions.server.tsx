@@ -174,12 +174,14 @@ async function closeScheduleAction({ userId, schedule, formData }: ScheduleActio
 async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 	const submission = parse(formData, { schema: ActionFormSchema })
 	const { id: scheduleId, date } = schedule
+	const scheduleDate = format(date, 'eeee, MMM do')
 
 	if (submission.value) {
 		const userSchedules = await prisma.userSchedule.findMany({
 			select: {
 				user: {
 					select: {
+						id: true,
 						primaryEmail: true,
 						emailSubject: true,
 					},
@@ -188,8 +190,9 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 				ditch: true,
 				start: true,
 				stop: true,
+				updatedBy: true,
 			},
-			where: { scheduleId, user: { roles: { some: { name: 'admin' } } } },
+			where: { scheduleId, start: { not: null }, stop: { not: null }, user: { primaryEmail: { not: null } } },
 		})
 
 		type EmailType = {
@@ -199,33 +202,21 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 			}
 		}
 		const emails: EmailType = {}
-		for (const {
-			ditch,
-			hours,
-			start,
-			stop,
-			user: { emailSubject, primaryEmail },
-		} of userSchedules) {
-			if (start && stop) {
+		userSchedules
+			.filter(us => us.updatedBy === us.user.id)
+			.forEach(({ ditch, hours, start, stop, user: { emailSubject, primaryEmail } }) => {
 				if (primaryEmail) {
 					const schedule = { ditch, hours: formatHours(hours), schedule: formatDatesOneLiner({ start, stop }) }
 					if (emails[primaryEmail]) emails[primaryEmail].schedules.push(schedule)
 					else emails[primaryEmail] = { emailSubject, schedules: [schedule] }
 				}
-			}
-		}
-
-		const scheduleDate = format(date, 'eeee, MMM do')
+			})
 		const batchEmails = Object.entries(emails).map(([primaryEmail, { emailSubject, schedules }]) => ({
 			from: 'clearwat@clearwaterfarmsunit1.com',
 			to: primaryEmail,
 			subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
 			react: (
-				<ClosedScheduleEmail
-					date={scheduleDate}
-					emailSubject={emailSubject ?? primaryEmail}
-					schedules={schedules}
-				/>
+				<ClosedScheduleEmail date={scheduleDate} emailSubject={emailSubject ?? primaryEmail} schedules={schedules} />
 			),
 		}))
 
