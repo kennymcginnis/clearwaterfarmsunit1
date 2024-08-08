@@ -149,10 +149,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	)
 	const closed = await time(
 		() =>
-			prisma.schedule.findFirst({
+			prisma.schedule.findMany({
 				select: { date: true },
 				where: { state: 'closed' },
 				orderBy: { date: 'desc' },
+				take: 2
 			}),
 		{
 			timings,

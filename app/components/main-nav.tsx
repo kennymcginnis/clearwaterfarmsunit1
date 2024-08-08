@@ -14,13 +14,7 @@ import {
 
 const iconStyle = 'mr-1 mt-0.5 w-5 h-5 md:max-2xl:hidden max-md:w-6 max-md:h-6'
 
-export function MainNavigationMenu({
-	open,
-	closed,
-}: {
-	open: { date: string } | null
-	closed: { date: string } | null
-}) {
+export function MainNavigationMenu({ open, closed }: { open: { date: string } | null; closed: { date: string }[] }) {
 	const userIsAdmin = useOptionalAdminUser()
 	return (
 		<NavigationMenu>
@@ -117,9 +111,8 @@ export function IrrigationNavigationMenu({
 	closed,
 }: {
 	open: { date: string } | null
-	closed: { date: string } | null
+	closed: { date: string }[]
 }) {
-	const userIsAdmin = useOptionalAdminUser()
 	return (
 		<NavigationMenu>
 			<NavigationMenuList>
@@ -132,7 +125,7 @@ export function IrrigationNavigationMenu({
 						<ul className="grid w-[300px] grid-cols-1 gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
 							<li className="row-span-3">
 								<NavigationMenuLink asChild>
-									<Link to="/schedules" className={userIsAdmin ? '' : 'pointer-events-none'}>
+									<Link to="/schedules">
 										<div className="z-1 flex h-full w-full select-none flex-col items-center justify-center rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md">
 											<div className="flex flex-row">
 												<Icon name="droplet" className="h-8 w-8" aria-hidden="true" />
@@ -144,25 +137,33 @@ export function IrrigationNavigationMenu({
 									</Link>
 								</NavigationMenuLink>
 							</li>
+							{/* 
 							<Link to="/irrigation-information">
 								<NavigationSubMenuItem key="irrigation-information" title="Irrigation Info">
 									<div className="mb-2 mt-4 text-sm font-medium">Basic Irrigation Information</div>
 								</NavigationSubMenuItem>
-							</Link>
+							</Link> 
+							*/}
 							<Link to={`/schedule/${open?.date}/signup`} className={open ? '' : 'pointer-events-none'}>
 								<NavigationSubMenuItem key="signup" title="Sign Up">
-									<div className="mb-2 mt-4 text-sm font-medium">
-										Sign Up or modify schedule {open ? `for ${open.date}` : ''}
-									</div>
+									<div className="mb-2 mt-4 text-sm font-medium">{open ? 'Sign Up or modify schedule for:' : '- No Schedules Currently Open'}</div>
+									<div className="mb-2 ml-2 text-sm font-bold">{open ? `- ${open.date}` : ''}</div>
 								</NavigationSubMenuItem>
 							</Link>
-							<Link to={`/schedule/${closed?.date}/timeline`} className={closed ? '' : 'pointer-events-none'}>
-								<NavigationSubMenuItem key="schedule" title="Timeline">
-									<div className="mb-2 mt-4 text-sm font-medium">
-										View the current schedule {closed ? `for ${closed.date}` : ''}
-									</div>
-								</NavigationSubMenuItem>
-							</Link>
+							{closed.map(({ date }, index) => (
+								<Link
+									key={`closed-${date}`}
+									to={`/schedule/${date}/timeline`}
+									className={closed ? '' : 'pointer-events-none'}
+								>
+									<NavigationSubMenuItem key="schedule" title={`${index ? 'Previous' : 'Current'} Timeline`}>
+										<div className="mb-2 mt-4 text-sm font-medium">
+											View the {index ? 'previous' : 'current'} schedule for:
+										</div>
+										<div className="mb-2 ml-2 text-sm font-bold">- {date}</div>
+									</NavigationSubMenuItem>
+								</Link>
+							))}
 						</ul>
 					</NavigationMenuContent>
 				</NavigationMenuItem>
