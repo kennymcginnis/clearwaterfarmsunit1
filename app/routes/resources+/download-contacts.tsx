@@ -35,12 +35,6 @@ export async function loader() {
 		const ditchesString = ports.map(port => `${port.ditch}`).join(' & ')
 		const phonesString = phones.filter(p => p.number && p.number !== 'N/A').map(p => `${p.type}: ${p.number}`).join(`
 `)
-		const emailsString = `${primaryEmail ? `primary: ${primaryEmail}` : ''} ${
-			secondaryEmail
-				? `
-secondary: ${secondaryEmail}`
-				: ''
-		}`
 
 		const parcelString = userAddress.map(
 			ua =>
@@ -64,7 +58,8 @@ secondary: ${secondaryEmail}`
 			`"${userAddressString}"`,
 			`"${ditchesString}"`,
 			`"${phonesString}"`,
-			`"${emailsString}"`,
+			`"${primaryEmail ?? ''}"`,
+			`"${secondaryEmail ?? ''}"`,
 			`"${parcelString}"`,
 			`"${lotString}"`,
 			`"${updatedAtString}"`,
@@ -81,7 +76,8 @@ secondary: ${secondaryEmail}`
 					'Physical Address',
 					'Ditch Numbers',
 					'Phone Numbers',
-					'Email Addresses',
+					'Primary Email',
+					'Secondary Email',
 					'Parcels',
 					'Lots',
 					'Last Updated',

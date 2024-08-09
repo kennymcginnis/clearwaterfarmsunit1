@@ -88,7 +88,7 @@ export const links: LinksFunction = () => {
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
 	return [
 		{ title: data ? 'Clearwater Farms 1' : 'Error | Clearwater Farms 1' },
-		{ name: 'description', content: `Your own captain's log` },
+		{ name: 'description', content: `Irrigation Management - Clearwater Farms Unit 1` },
 	]
 }
 
