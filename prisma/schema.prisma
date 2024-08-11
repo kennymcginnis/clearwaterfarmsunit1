@@ -21,9 +21,10 @@ model User {
 
   userAddress UserAddress[]
 
-  emailSubject   String?
-  primaryEmail   String? @unique
-  secondaryEmail String?
+  emailSubject     String?
+  primaryEmail     String? @unique
+  secondarySubject String?
+  secondaryEmail   String?
 
   phones UserPhone[]
 
@@ -120,7 +121,7 @@ model Transactions {
   rate     Int?
   note     String?
 
-  user       User?   @relation(fields: [userId], references: [id])
+  user       User?     @relation(fields: [userId], references: [id])
   userId     String?
   scheduleId String?
   ditch      Int?

@@ -29,16 +29,7 @@ export function MainNavigationMenu({ open, closed }: { open: { date: string } | 
 				</NavigationMenuItem>
 				<IrrigationNavigationMenu open={open} closed={closed} />
 				<DocumentsNavigationMenu />
-				{userIsAdmin ? (
-					<NavigationMenuItem>
-						<Link to="/members">
-							<NavigationMenuLink className={navigationMenuTriggerStyle()}>
-								<ToolTipIcon className={iconStyle} name="person" tooltip="Members" aria-hidden="true" />
-								<p className="max-md:hidden">Members</p>
-							</NavigationMenuLink>
-						</Link>
-					</NavigationMenuItem>
-				) : null}
+				{userIsAdmin ? <MembersNavigationMenu /> : null}
 				<NavigationMenuItem>
 					<Link to="/trade-list">
 						<NavigationMenuLink className={navigationMenuTriggerStyle()}>
@@ -146,7 +137,9 @@ export function IrrigationNavigationMenu({
 							*/}
 							<Link to={`/schedule/${open?.date}/signup`} className={open ? '' : 'pointer-events-none'}>
 								<NavigationSubMenuItem key="signup" title="Sign Up">
-									<div className="mb-2 mt-4 text-sm font-medium">{open ? 'Sign Up or modify schedule for:' : '- No Schedules Currently Open'}</div>
+									<div className="mb-2 mt-4 text-sm font-medium">
+										{open ? 'Sign Up or modify schedule for:' : '- No Schedules Currently Open'}
+									</div>
 									<div className="mb-2 ml-2 text-sm font-bold">{open ? `- ${open.date}` : ''}</div>
 								</NavigationSubMenuItem>
 							</Link>
@@ -164,6 +157,53 @@ export function IrrigationNavigationMenu({
 									</NavigationSubMenuItem>
 								</Link>
 							))}
+						</ul>
+					</NavigationMenuContent>
+				</NavigationMenuItem>
+			</NavigationMenuList>
+		</NavigationMenu>
+	)
+}
+
+function MembersNavigationMenu() {
+	return (
+		<NavigationMenu>
+			<NavigationMenuList>
+				<NavigationMenuItem>
+					<NavigationMenuTrigger>
+						<ToolTipIcon className={iconStyle} name="users" tooltip="Members" aria-hidden="true" />
+						<p className="max-md:hidden">Members</p>
+					</NavigationMenuTrigger>
+					<NavigationMenuContent className="hover:z-10">
+						<ul className="grid w-[300px] grid-cols-1 gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+							<li className="row-span-3">
+								<NavigationMenuLink asChild>
+									<Link to="/members">
+										<div className="z-1 flex h-full w-full select-none flex-col items-center justify-center rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md">
+											<div className="flex flex-row">
+												<Icon name="user-search" className="h-8 w-8" aria-hidden="true" />
+											</div>
+											<div className="mb-2 mt-4 text-lg font-medium">Members</div>
+											<p className="text-sm leading-tight text-muted-foreground">Balances</p>
+										</div>
+									</Link>
+								</NavigationMenuLink>
+							</li>
+							<Link to="/members/transactions">
+								<NavigationSubMenuItem key="members-transactions" title="Transactions">
+									<div className="mb-2 mt-4 text-sm font-medium">Members' Transactions</div>
+								</NavigationSubMenuItem>
+							</Link>
+							<Link to="/members/contacts">
+								<NavigationSubMenuItem key="members-contacts" title="Contact List">
+									<div className="mb-2 mt-4 text-sm font-medium">Members' Contact Information</div>
+								</NavigationSubMenuItem>
+							</Link>
+							<Link to="/members/restrictions">
+								<NavigationSubMenuItem key="members-restrictions" title="Restrictions">
+									<div className="mb-2 mt-4 text-sm font-medium">Restriction Information</div>
+								</NavigationSubMenuItem>
+							</Link>
 						</ul>
 					</NavigationMenuContent>
 				</NavigationMenuItem>

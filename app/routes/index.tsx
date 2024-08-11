@@ -179,18 +179,24 @@ export default function HomeRoute() {
 				{user.restricted ? (
 					<div
 						style={{ width: 'clamp(352px, 75%, 720px)' }}
-						className="m-auto mt-2 flex flex-col rounded-md border border-destructive px-3 py-2"
+						className="m-auto mt-2 flex flex-col rounded-md border-2 border-destructive px-3 py-2"
 					>
-						<div className="text-md text-center uppercase text-foreground-destructive">User Account Restricted</div>
-						<div className="text-center text-sm text-foreground-destructive">{user.restriction}</div>
+						<div className="text-center text-xl font-semibold uppercase text-foreground-destructive">
+							User Account Restricted
+						</div>
+						<div className="text-center text-lg text-foreground-destructive">{user.restriction}</div>
 					</div>
 				) : null}
 				{balance ? (
 					<div
 						style={{ width: 'clamp(352px, 75%, 720px)' }}
-						className="m-auto mt-2 flex flex-col rounded-md border border-blue-700 px-3 py-2"
+						className={`m-auto mt-2 flex flex-col rounded-md border-2 ${balance < 0 ? 'border-destructive' : 'border-green-900'} px-3 py-2`}
 					>
-						<div className="text-center text-lg text-blue-700">Irrigation Balance: {USDollar.format(balance)}</div>
+						<div
+							className={`text-center text-xl font-semibold ${balance < 0 ? 'text-foreground-destructive' : 'text-green-900'}`}
+						>
+							Irrigation Balance: {USDollar.format(balance)}
+						</div>
 					</div>
 				) : null}
 

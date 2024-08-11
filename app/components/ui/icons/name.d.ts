@@ -39,3 +39,5 @@ export type IconName =
 	| 'trash'
 	| 'update'
 	| 'upload'
+	| 'user-search'
+	| 'users'

@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream'
 import { createReadableStreamFromReadable, type LoaderFunctionArgs } from '@remix-run/node'
-import { getFilteredTransactions } from '../transactions+/transactions.server'
+import { getFilteredTransactions } from '#app/routes/members+/transactions+/transactions.server'
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const data = await getFilteredTransactions(request)
