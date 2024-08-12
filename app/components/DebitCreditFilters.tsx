@@ -1,7 +1,7 @@
 import { Link } from '@remix-run/react'
 import React from 'react'
 import { ToggleGroup, ToggleGroupItem } from '#app/components/ui/toggle-group'
-import { type ItemTableParams, getNewTableUrl } from '#app/utils/pagination/itemTable'
+import { type ItemTableParams, getNewTableUrl } from '#app/utils/pagination/transactions'
 
 interface FilterProps {
 	baseUrl: string

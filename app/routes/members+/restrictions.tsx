@@ -1,7 +1,7 @@
 import { parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { type ActionFunctionArgs, json, type LoaderFunctionArgs, redirect } from '@remix-run/node'
-import { Form, useLoaderData, useSubmit } from '@remix-run/react'
+import { useLoaderData, useSubmit } from '@remix-run/react'
 import { z } from 'zod'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
 import { Input } from '#app/components/ui/input.tsx'
@@ -33,6 +33,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		balance: number
 	}
 	const userMap = results.reduce(
+		// eslint-disable-next-line no-sequences
 		(agg, cur): UserMapType => ((agg[cur.id] = { ...cur, balance: 0 }), agg),
 		{} as UserMapType,
 	)
@@ -127,7 +128,7 @@ export default function TransactionsRoute() {
 					<span className="text-nowrap text-green-900">Not Restricted</span>
 				</div>
 			</CardHeader>
-			<CardContent className="max-h-[600px] space-y-2 overflow-auto">
+			<CardContent className="space-y-2 overflow-auto">
 				<div className="grid grid-cols-12 gap-1">
 					<Label className="col-span-2 m-1" htmlFor="User Id" children="User Id" />
 					<Label className="col-span-3 m-1" htmlFor="Member" children="Member" />
@@ -146,13 +147,11 @@ export default function TransactionsRoute() {
 							defaultValue={USDollar.format(balance)}
 						/>
 						<div className="col-span-4 flex items-center space-x-2">
-							<Form method="POST" className="w-full">
-								<Input
-									id="restriction"
-									defaultValue={restriction ?? ''}
-									onChange={e => handleRestrictionChange({ userId, restriction: e.currentTarget.value })}
-								/>
-							</Form>
+							<Input
+								id="restriction"
+								defaultValue={restriction ?? ''}
+								onChange={e => handleRestrictionChange({ userId, restriction: e.currentTarget.value })}
+							/>
 						</div>
 						<div className="col-span-1 flex items-center space-x-2">
 							<Switch

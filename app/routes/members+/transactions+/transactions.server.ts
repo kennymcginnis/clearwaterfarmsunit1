@@ -1,7 +1,7 @@
 import { type Prisma } from '@prisma/client'
 import { prisma } from '#app/utils/db.server.ts'
-import { getItemTableParams } from '#app/utils/pagination/itemTable'
 import {
+	getItemTableParams,
 	transactionsPaginationSchema,
 	type TransactionData,
 	type Transactions,

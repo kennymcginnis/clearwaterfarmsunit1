@@ -26,8 +26,8 @@ import { Input } from '#app/components/ui/input'
 import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper'
 import { prisma } from '#app/utils/db.server'
 import { cn } from '#app/utils/misc.tsx'
-import { itemTableSchema, getNewTableUrl } from '#app/utils/pagination/itemTable'
 import {
+	getNewTableUrl,
 	TransactionAges,
 	type TransactionData,
 	type Transaction,
@@ -38,17 +38,6 @@ import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server'
 import { DateSchema } from '#app/utils/user-validation'
 import { getPaginatedTransactions } from './transactions.server'
-
-export const ordersPaginationSchema = itemTableSchema.merge(
-	z.object({
-		search: z
-			.string()
-			.optional()
-			.refine(data => !data || !isNaN(parseInt(data)), 'Must search by number'),
-		filter: z.enum(['created', 'picked', 'printed', 'shipped', 'cancelled']).optional(), //Zod types suck here so I can't use the arrays OrderFilters / OrderHeaders
-		sort: z.enum(['order', 'total', 'status', 'placed on']).optional(),
-	}),
-)
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	await requireUserWithRole(request, 'admin')

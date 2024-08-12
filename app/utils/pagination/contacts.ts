@@ -1,6 +1,27 @@
 import { z } from 'zod'
 
-//ZOD gives you nice types to work with
+export type Contacts = Contact[]
+export type Contact = {
+	id: string
+	display: string
+	quickbooks: string
+	emailSubject?: string
+	primaryEmail?: string
+	secondarySubject?: string
+	secondaryEmail?: string
+	phones: { id: string; type: string; number: string }[]
+}
+
+export interface ContactData {
+	contacts: Contact[]
+	tableParams: ContactTableParams
+	filters: string[]
+	total: number
+}
+
+export type ContactHeader = 'userId' | 'display' | 'quickbooks'
+export const ContactHeaders: ContactHeader[] = ['userId', 'display', 'quickbooks']
+
 export const itemTableSchema = z.object({
 	page: z.number().min(1),
 	items: z.number().min(1),
@@ -14,22 +35,26 @@ export const itemTableSchema = z.object({
 	sort: z.string().optional(),
 })
 
+export const contactsPaginationSchema = itemTableSchema.merge(
+	z.object({
+		search: z.string().optional(),
+		sort: z.enum(['userId', 'display', 'quickbooks']).optional(),
+	}),
+)
+
+export type ContactTableParams = z.infer<typeof contactsPaginationSchema>
+
 export type ItemTableParams = z.infer<typeof itemTableSchema>
 
 export const getItemTableParams = <ZodSchema>(request: Request, schema: z.Schema<ZodSchema>) => {
 	const query = new URL(request.url).searchParams
-	const age = query.get('age')
-	const ditch = query.get('ditch')
 
 	const params = Object.fromEntries(
 		Object.entries({
 			page: parseInt(query.get('page') || '1'),
 			items: parseInt(query.get('items') || '10'),
 			search: query.get('search'),
-			age: age ? parseInt(age) : null,
-			ditch: ditch ? parseInt(ditch) : null,
 			filter: query.get('filter'),
-			hide: query.get('hide'),
 			sort: query.get('sort'),
 			direction: query.get('direction'),
 		}).filter(([, v]) => v != null),

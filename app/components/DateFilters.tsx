@@ -7,7 +7,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '#app/components/ui/dropdown-menu'
-import { getNewTableUrl, type ItemTableParams } from '#app/utils/pagination/itemTable'
+import { getNewTableUrl, type ItemTableParams } from '#app/utils/pagination/transactions'
 import { Button } from './ui/button'
 
 interface FilterProps {
