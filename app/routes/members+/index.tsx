@@ -46,7 +46,7 @@ const UserSearchResultsSchema = z.array(UserSearchResultSchema)
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const searchTerm = new URL(request.url).searchParams.get('search')
-	if (searchTerm === '') return redirect('/members/balances')
+	if (searchTerm === '') return redirect('/members')
 
 	await requireUserWithRole(request, 'admin')
 
@@ -122,7 +122,7 @@ export default function MembersRoute() {
 				<div className="flex text-nowrap text-h3 md:hidden">CWF Unit 1 Members</div>
 				<div className="flex w-[63.5%] flex-row flex-wrap gap-2 space-x-2 p-0.5">
 					<div className="my-1 min-w-[300px] flex-grow">
-						<SearchBar action="/members/balances" status={status} autoFocus autoSubmit />
+						<SearchBar action="/members" status={status} autoFocus autoSubmit />
 					</div>
 					<div className="my-1 flex flex-row space-x-2">
 						<Button>
