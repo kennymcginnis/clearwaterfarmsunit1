@@ -16,6 +16,7 @@ import { useState } from 'react'
 import { z } from 'zod'
 import DateFilters from '#app/components/DateFilters'
 import DebitCreditFilters from '#app/components/DebitCreditFilters'
+import DisplayFilters from '#app/components/DisplayFilters'
 import DitchFilters from '#app/components/DitchFilters'
 import Dropdown from '#app/components/Dropdown'
 import { PaginationComponent } from '#app/components/pagination'
@@ -99,7 +100,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function ViewTransactions() {
-	const { transactions, tableParams, filters, total } = useLoaderData<TransactionData>()
+	const { transactions, tableParams, filters, total, displays } = useLoaderData<TransactionData>()
 	const toggleEditable = false
 	const [editing, setEditing] = useState<string | null>(null)
 	const [showUpload, setShowUpload] = useState(false)
@@ -236,8 +237,8 @@ export default function ViewTransactions() {
 			</CardHeader>
 			<CardContent className="w-full space-y-2">
 				<div className="grid grid-cols-12 gap-1">
-					<div className="col-span-1 pr-3">
-						<Button asChild variant="secondary">
+					<div className="col-span-1">
+						<Button asChild variant="secondary" className="w-full">
 							<Link to={baseUrl}>
 								<Icon name="reset" className="scale-100 max-md:scale-125">
 									<span className="max-md:hidden">Reset Table</span>
@@ -245,8 +246,8 @@ export default function ViewTransactions() {
 							</Link>
 						</Button>
 					</div>
-					<div className="col-span-1 pr-3"></div>
-					<div className="col-span-1 pr-3">
+					<div className="col-span-1"></div>
+					<div className="col-span-1">
 						<DitchFilters
 							baseUrl={baseUrl}
 							dropdownDefault="All Ditches"
@@ -254,9 +255,16 @@ export default function ViewTransactions() {
 							tableParams={tableParams}
 						/>
 					</div>
-					<div className="col-span-1 pr-3"></div>
-					<div className="col-span-2 pr-3"></div>
-					<div className="col-span-1 w-full">
+					<div className="col-span-1"></div>
+					<div className="col-span-2">
+						<DisplayFilters 
+							baseUrl={baseUrl}
+							dropdownDefault="All Members"
+							displays={displays}
+							tableParams={tableParams}						
+						/>
+					</div>
+					<div className="col-span-1">
 						<DateFilters
 							ages={TransactionAges}
 							baseUrl={baseUrl}

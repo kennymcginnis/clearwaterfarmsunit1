@@ -18,6 +18,7 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 
 	let result: TransactionData = {
 		transactions: [],
+		displays: [],
 		filters: [],
 		tableParams,
 		total: 0,
@@ -54,6 +55,13 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		filter.where = {
 			...filter.where,
 			ditch: tableParams.ditch,
+		}
+	}
+
+	if (tableParams.display) {
+		filter.where = {
+			...filter.where,
+			user: { display: tableParams.display },
 		}
 	}
 
@@ -112,6 +120,16 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		return res || []
 	}
 
+	const distinctDisplays = async () => {
+		// @ts-ignore
+		const res = await prisma.user.findMany({
+			distinct: ['display'],
+			select: { display: true },
+			orderBy: { display: 'asc' },
+		})
+		return res.map(r => r.display)
+	}
+
 	const distinctNoteDates = async () => {
 		const res = await prisma.transactions.findMany({
 			distinct: ['date'],
@@ -121,12 +139,14 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		return res.map(r => r.date)
 	}
 
-	const res = await Promise.all([getCount(), getTransactions(), distinctNoteDates()])
+	const res = await Promise.all([getCount(), getTransactions(), distinctDisplays(), distinctNoteDates()])
 
 	result.total = res[0]
 	result.transactions = res[1]
 	// @ts-ignore
-	result.filters = res[2]
+	result.displays = res[2]
+	// @ts-ignore
+	result.filters = res[3]
 
 	return result
 }

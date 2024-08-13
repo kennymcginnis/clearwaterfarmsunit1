@@ -23,12 +23,12 @@ const DateFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, filters, age
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger className="w-full">
-				<Button variant="secondary">
+				<Button variant="secondary" className="w-full">
 					<CalendarIcon className="mr-2 w-4" />
 					{currentFilter}
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent className="w-full">
+			<DropdownMenuContent align="start" style={{ width: 'var(--radix-popper-anchor-width)'}}>
 				<Link to={getNewTableUrl(baseUrl, tableParams, 'filter')}>
 					<DropdownMenuItem className="capitalize">{dropdownDefault}</DropdownMenuItem>
 				</Link>

@@ -14,6 +14,7 @@ export type Transaction = {
 
 export interface TransactionData {
 	transactions: Transaction[]
+	displays: string[]
 	tableParams: TransactionTableParams
 	filters: string[]
 	total: number
@@ -70,6 +71,7 @@ export const itemTableSchema = z.object({
 	search: z.string().optional(),
 	age: z.number().min(0).optional(),
 	ditch: z.number().min(1).max(9).optional(),
+	display: z.string().optional(),
 	direction: z.enum(['asc', 'desc']).optional(),
 	//Override these two with an enum of possible keys
 	filter: z.string().optional(),
@@ -100,6 +102,7 @@ export const getItemTableParams = <ZodSchema>(request: Request, schema: z.Schema
 			search: query.get('search'),
 			age: age ? parseInt(age) : null,
 			ditch: ditch ? parseInt(ditch) : null,
+			display: query.get('display'),
 			filter: query.get('filter'),
 			hide: query.get('hide'),
 			sort: query.get('sort'),
@@ -156,6 +159,7 @@ export const getNewTableUrl = (
 				params.set('page', '1')
 				break
 			case 'ditch':
+			case 'display':
 				params.set(newKey, newValue)
 				params.set('page', '1')
 				break

@@ -1,4 +1,3 @@
-import { CalendarIcon } from '@heroicons/react/24/outline'
 import { Link } from '@remix-run/react'
 import {
 	DropdownMenu,
@@ -8,36 +7,39 @@ import {
 } from '#app/components/ui/dropdown-menu'
 import { getNewTableUrl, type ItemTableParams } from '#app/utils/pagination/transactions'
 import { Button } from './ui/button'
+import { Icon } from './ui/icon'
 
-interface DitchProps {
+interface FilterProps {
 	baseUrl: string
 	dropdownDefault: string
-	ditches: string[]
+	displays: string[]
 	tableParams: ItemTableParams
 }
 
-const DitchDitchs: React.FC<DitchProps> = ({ baseUrl, tableParams, ditches, dropdownDefault }) => {
-	const currentDitch = tableParams.ditch ? `Ditch ${tableParams.ditch}` : 'All Ditches'
+const DisplayFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, displays, dropdownDefault }) => {
+	const currentFilter = tableParams.filter ?? displays.find(d => d === tableParams.display) ?? 'Display Name Filter'
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger className="w-full">
 				<Button variant="secondary" className="w-full">
-					<CalendarIcon className="mr-2 w-4" />
-					{currentDitch}
+				<Icon name="users" className="mr-2 w-4" />
+					{currentFilter}
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent className="w-full" style={{ width: 'var(--radix-popper-anchor-width)'}}>
-				<Link to={getNewTableUrl(baseUrl, tableParams, 'ditch')}>
+				<Link to={getNewTableUrl(baseUrl, tableParams, 'display')}>
 					<DropdownMenuItem className="capitalize">{dropdownDefault}</DropdownMenuItem>
 				</Link>
-				{ditches.map(ditch => (
-					<Link key={`ditch-${ditch}`} to={getNewTableUrl(baseUrl, tableParams, 'ditch', ditch)}>
-						<DropdownMenuItem className="capitalize">Ditch {ditch}</DropdownMenuItem>
-					</Link>
-				))}
+				<div className="max-h-[420px] overflow-auto">
+					{displays.map((display, i) => (
+						<Link key={`display-${i}`} to={getNewTableUrl(baseUrl, tableParams, 'display', display)}>
+							<DropdownMenuItem>{display}</DropdownMenuItem>
+						</Link>
+					))}
+				</div>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	)
 }
 
-export default DitchDitchs
+export default DisplayFilters
