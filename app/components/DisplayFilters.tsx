@@ -17,16 +17,16 @@ interface FilterProps {
 }
 
 const DisplayFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, displays, dropdownDefault }) => {
-	const currentFilter = tableParams.filter ?? displays.find(d => d === tableParams.display) ?? 'Display Name Filter'
+	const currentFilter = tableParams.display ?? displays.find(d => d === tableParams.display) ?? 'Display Name Filter'
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger className="w-full">
 				<Button variant="secondary" className="w-full">
-				<Icon name="users" className="mr-2 w-4" />
+					<Icon name="users" className="mr-2 w-4" />
 					{currentFilter}
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent className="w-full" style={{ width: 'var(--radix-popper-anchor-width)'}}>
+			<DropdownMenuContent className="w-full" style={{ width: 'var(--radix-popper-anchor-width)' }}>
 				<Link to={getNewTableUrl(baseUrl, tableParams, 'display')}>
 					<DropdownMenuItem className="capitalize">{dropdownDefault}</DropdownMenuItem>
 				</Link>
