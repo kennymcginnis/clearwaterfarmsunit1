@@ -1,19 +1,9 @@
-import { invariantResponse } from '@epic-web/invariant'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
-import {
-	type ActionFunctionArgs,
-	type UploadHandler,
-	json,
-	type LoaderFunctionArgs,
-	unstable_composeUploadHandlers as composeUploadHandlers,
-	unstable_createMemoryUploadHandler as createMemoryUploadHandler,
-	unstable_parseMultipartFormData as parseMultipartFormData,
-} from '@remix-run/node'
-import { Form, Link, useLoaderData, useLocation } from '@remix-run/react'
+import { json, type LoaderFunctionArgs } from '@remix-run/node'
+import { Form, Link, useFetcher, useLoaderData, useLocation, useSubmit } from '@remix-run/react'
 import clsx from 'clsx'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, X } from 'lucide-react'
 import { useState } from 'react'
-import { z } from 'zod'
 import DateFilters from '#app/components/DateFilters'
 import DebitCreditFilters from '#app/components/DebitCreditFilters'
 import DisplayFilters from '#app/components/DisplayFilters'
@@ -24,9 +14,8 @@ import { Button } from '#app/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon'
 import { Input } from '#app/components/ui/input'
-import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper'
-import { prisma } from '#app/utils/db.server'
-import { cn } from '#app/utils/misc.tsx'
+import { StatusButton } from '#app/components/ui/status-button'
+import { cn, useDoubleCheck } from '#app/utils/misc.tsx'
 import {
 	getNewTableUrl,
 	TransactionAges,
@@ -35,10 +24,8 @@ import {
 	DitchesArray,
 } from '#app/utils/pagination/transactions'
 import { requireUserWithRole } from '#app/utils/permissions'
-import { generatePublicId } from '#app/utils/public-id'
-import { redirectWithToast } from '#app/utils/toast.server'
-import { DateSchema } from '#app/utils/user-validation'
-import { getPaginatedTransactions } from './transactions.server'
+import { action, getPaginatedTransactions } from './transactions.server'
+export { action }
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	await requireUserWithRole(request, 'admin')
@@ -46,68 +33,29 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	return json(data)
 }
 
-const TransactionSchema = z.array(
-	z.object({
-		id: z.string().optional(),
-		userId: z.string().optional(),
-		scheduleId: z.string().optional(),
-		ditch: z.preprocess(x => (x ? x : null), z.coerce.number()).optional(),
-		date: DateSchema,
-		debit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
-		credit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
-		note: z.string().optional(),
-	}),
-)
-export async function action({ request }: ActionFunctionArgs) {
-	const currentUser = await requireUserWithRole(request, 'admin')
-
-	const uploadHandler: UploadHandler = composeUploadHandlers(csvUploadHandler, createMemoryUploadHandler())
-	const formData = await parseMultipartFormData(request, uploadHandler)
-
-	const csv = formData.get('selected_csv')
-	invariantResponse(typeof csv === 'string', 'selected_csv filename must be a string')
-
-	const transactions = csvFileToArray(csv)
-	const result = TransactionSchema.safeParse(transactions)
-	if (!result.success) return json({ status: 'error', error: result.error.message } as const, { status: 400 })
-
-	const missingUsers = []
-	for (let { id, ...transaction } of result.data) {
-		try {
-			if (!id) id = '__new_transaction__'
-			await prisma.transactions.upsert({
-				where: { id },
-				create: {
-					id: generatePublicId(),
-					...transaction,
-					updatedBy: currentUser,
-				},
-				update: {
-					...transaction,
-					updatedBy: currentUser,
-				},
-			})
-		} catch (error) {
-			console.error(JSON.stringify({ error, transaction }, null, 2))
-			missingUsers.push(transaction.userId)
-		}
-	}
-	return redirectWithToast('.', {
-		type: 'success',
-		title: 'Success',
-		description: JSON.stringify(missingUsers),
-	})
+type ChangesType = {
+	id: string
+	intent: string
+	scheduleId?: string
+	ditch?: string
+	userId?: string
+	userDisplay?: string
+	date?: string
+	debit?: string
+	credit?: string
+	note?: string
 }
 
 export default function ViewTransactions() {
 	const { transactions, tableParams, filters, total, displays } = useLoaderData<TransactionData>()
-	const toggleEditable = false
-	const [editing, setEditing] = useState<string | null>(null)
 	const [showUpload, setShowUpload] = useState(false)
 	const toggleShowUpload = () => setShowUpload(!showUpload)
 
 	const location = useLocation()
 	const baseUrl = '/members/transactions'
+
+	const fetcher = useFetcher()
+	const handleChange = (changes: ChangesType) => fetcher.submit(changes, { method: 'POST' })
 
 	const Header = ({ header, className }: { header: string; className: string }) => {
 		const isSortingUp = tableParams.sort === header && tableParams.direction === 'asc'
@@ -130,68 +78,51 @@ export default function ViewTransactions() {
 
 	const ItemRow = ({ id, scheduleId, ditch, user, date, debit, credit, note }: Transaction) => {
 		return (
-			<Form method="POST" key={`row-${id}`} className="grid grid-cols-12 gap-1 disabled:cursor-default">
+			<div key={`row-${id}`} className="grid grid-cols-12 gap-1 disabled:cursor-default">
 				<button type="submit" className="hidden" />
 				<Input id="id" disabled={true} className="col-span-1 disabled:cursor-default" value={id} />
-				<Input id="scheduleId" disabled={true} className="col-span-1 disabled:cursor-default" value={scheduleId} />
-				<Input id="ditch" disabled={true} className="col-span-1 disabled:cursor-default" value={ditch} />
+				<Input
+					id="scheduleId"
+					className="col-span-1 disabled:cursor-default"
+					defaultValue={scheduleId}
+					onBlur={e => handleChange({ id, intent: 'scheduleId', scheduleId: e.currentTarget.value })}
+				/>
+				<Input
+					id="ditch"
+					className="col-span-1 disabled:cursor-default"
+					defaultValue={ditch}
+					onBlur={e => handleChange({ id, intent: 'ditch', ditch: e.currentTarget.value ?? '' })}
+				/>
 				<Input id="userId" disabled={true} className="col-span-1 disabled:cursor-default" value={user.id} />
 				<Input id="username" disabled={true} className="col-span-2 disabled:cursor-default" value={user.display} />
-				<Input id="date" disabled={true} className="col-span-1 text-right disabled:cursor-default" value={date} />
+				<Input
+					id="date"
+					className="col-span-1 text-right disabled:cursor-default"
+					defaultValue={date}
+					onBlur={e => handleChange({ id, intent: 'date', date: e.currentTarget.value })}
+				/>
 				<Input
 					id="debit"
-					disabled={editing !== id}
 					className="col-span-1 text-right disabled:cursor-default"
-					{...(editing === id
-						? { defaultValue: debit.toString() ?? '' }
-						: { disabled: true, value: debit.toString() ?? '' })}
+					defaultValue={debit.toString() ?? ''}
+					onBlur={e => handleChange({ id, intent: 'debit', debit: e.currentTarget.value })}
 				/>
 				<Input
 					id="credit"
-					disabled={editing !== id}
 					className="col-span-1 text-right disabled:cursor-default"
-					{...(editing === id
-						? { defaultValue: credit.toString() ?? '' }
-						: { disabled: true, value: credit.toString() ?? '' })}
+					defaultValue={credit.toString() ?? ''}
+					onBlur={e => handleChange({ id, intent: 'credit', credit: e.currentTarget.value })}
 				/>
-				<Input
-					id="note"
-					className={`col-span-${toggleEditable ? '2' : '3'}`}
-					{...(editing === id ? { defaultValue: note ?? '' } : { disabled: true, value: note ?? '' })}
-				/>
-				{toggleEditable ? (
-					<div className="flex flex-row items-center gap-1">
-						{editing === id ? (
-							<>
-								<Button
-									type="submit"
-									name="intent"
-									value="save"
-									variant="outline"
-									size="sm"
-									className="h-10 w-10"
-									onClick={() => setEditing(null)}
-								>
-									<Icon name="check" className="scale-125 text-green-900 max-md:scale-150" />
-								</Button>
-								<Button
-									type="reset"
-									size="sm"
-									variant="outline"
-									className="peer-invalid:hidden"
-									onClick={() => setEditing(null)}
-								>
-									<Icon name="reset" className="scale-125 text-blue-900 max-md:scale-150" />
-								</Button>
-							</>
-						) : (
-							<Button variant="outline" size="sm" className="h-10 w-10" onClick={() => setEditing(id)}>
-								<Icon name="pencil-1" className="scale-125 text-blue-900 max-md:scale-150" />
-							</Button>
-						)}
-					</div>
-				) : null}
-			</Form>
+				<div className="rlex-row col-span-3 flex">
+					<Input
+						id="note"
+						className="mr-1"
+						defaultValue={note ?? ''}
+						onBlur={e => handleChange({ id, intent: 'note', note: e.currentTarget.value })}
+					/>
+					<DeleteButton id={id} />
+				</div>
+			</div>
 		)
 	}
 
@@ -228,7 +159,7 @@ export default function ViewTransactions() {
 					<div className="mt-2 flex w-full flex-row justify-end space-x-2">
 						<Form method="post" encType="multipart/form-data">
 							<input aria-label="File" type="file" accept=".csv" name="selected_csv" />
-							<Button type="submit" name="intent" value="upload-timeline" className="btn btn-sm">
+							<Button type="submit" name="intent" value="upload-transactions" className="btn btn-sm">
 								Upload CSV
 							</Button>
 						</Form>
@@ -257,11 +188,11 @@ export default function ViewTransactions() {
 					</div>
 					<div className="col-span-1"></div>
 					<div className="col-span-2">
-						<DisplayFilters 
+						<DisplayFilters
 							baseUrl={baseUrl}
 							dropdownDefault="All Members"
 							displays={displays}
-							tableParams={tableParams}						
+							tableParams={tableParams}
 						/>
 					</div>
 					<div className="col-span-1">
@@ -276,8 +207,7 @@ export default function ViewTransactions() {
 					<div className="col-span-2">
 						<DebitCreditFilters baseUrl={baseUrl} filters={filters} tableParams={tableParams} />
 					</div>
-					<div className={`col-span-${toggleEditable ? '2' : '3'} pl-3`}></div>
-					{toggleEditable ? <Header header="intent" className="col-span-1 pl-1.5 text-left" /> : null}
+					<div className="col-span-3"></div>
 				</div>
 				<div className="grid grid-cols-12 gap-1">
 					<Header header="id" className="col-span-1 pr-3" />
@@ -288,8 +218,7 @@ export default function ViewTransactions() {
 					<Header header="date" className="col-span-1 pr-2 text-right" />
 					<Header header="debit" className="col-span-1 pr-3 text-right" />
 					<Header header="credit" className="col-span-1 pr-3 text-right" />
-					<Header header="note" className={`col-span-${toggleEditable ? '2' : '3'} pl-3`} />
-					{toggleEditable ? <Header header="intent" className="col-span-1 pl-1.5 text-left" /> : null}
+					<Header header="note" className="col-span-3 pl-3" />
 				</div>
 				{transactions && transactions.length ? (
 					transactions.map(ItemRow)
@@ -335,5 +264,33 @@ export default function ViewTransactions() {
 				</div>
 			</CardFooter>
 		</Card>
+	)
+}
+
+function DeleteButton({ id }: { id: string }) {
+	const fetcher = useFetcher<typeof action>()
+	const dc = useDoubleCheck()
+	return (
+		<fetcher.Form method="POST" key={`delete-${id}`}>
+			<input type="hidden" name="id" value={id} />
+			<StatusButton
+				{...dc.getButtonProps({
+					type: 'submit',
+					name: 'intent',
+					value: 'delete-transaction',
+				})}
+				className={`w-[120px] ${dc.doubleCheck ? 'text-primary' : 'text-destructive'}`}
+				variant={dc.doubleCheck ? 'destructive' : 'default'}
+				status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
+			>
+				{dc.doubleCheck ? (
+					`Are you sure?`
+				) : (
+					<Icon name="trash" className="h-4 w-4 text-destructive">
+						Delete
+					</Icon>
+				)}
+			</StatusButton>
+		</fetcher.Form>
 	)
 }

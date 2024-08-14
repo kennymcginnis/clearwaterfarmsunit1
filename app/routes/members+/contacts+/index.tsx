@@ -2,22 +2,25 @@ import { useForm, conform } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
-import { Link, useLoaderData, useSubmit, useFetcher } from '@remix-run/react'
+import { Link, useLoaderData, useFetcher } from '@remix-run/react'
 import clsx from 'clsx'
 import { type FormEvent } from 'react'
 import { z } from 'zod'
 import Dropdown from '#app/components/Dropdown/Dropdown'
 import { PaginationComponent } from '#app/components/pagination'
+import { Button } from '#app/components/ui/button'
 import { Card, CardContent, CardTitle, CardHeader, CardFooter } from '#app/components/ui/card'
+import { Icon } from '#app/components/ui/icon'
 import { Input } from '#app/components/ui/input.tsx'
 import { Label } from '#app/components/ui/label.tsx'
 import { Separator } from '#app/components/ui/separator'
+import { StatusButton } from '#app/components/ui/status-button'
 import { type createPhoneAction, CreatePhoneSchema } from '#app/routes/member+/$username+/_edit'
 import { action, getPaginatedContacts } from '#app/routes/members+/contacts+/contacts.server'
-import { cn } from '#app/utils/misc'
+import { cn, useDoubleCheck } from '#app/utils/misc'
 import { getNewTableUrl } from '#app/utils/pagination/contacts'
 import { requireUserWithRole } from '#app/utils/permissions'
-import { EmailSchema, PhoneNumberSchema } from '#app/utils/user-validation'
+import { PhoneNumberSchema } from '#app/utils/user-validation'
 
 export { action }
 
@@ -40,24 +43,12 @@ type ChangesType = {
 	phoneType?: string
 	phoneNumber?: string
 }
-export const ThemeFormSchema = z.object({
-	userId: z.string(),
-	intent: z.string(),
-	display: z.string().optional(),
-	quickbooks: z.string().optional(),
-	emailSubject: z.string().optional(),
-	primaryEmail: EmailSchema.optional(),
-	secondaryEmail: EmailSchema.optional(),
-	phoneId: z.string().optional(),
-	phoneType: z.string().optional(),
-	phoneNumber: PhoneNumberSchema.optional(),
-})
 
 export default function ContactsRoute() {
 	const { contacts, tableParams, total } = useLoaderData<typeof loader>()
-	const submit = useSubmit()
+	const fetcher = useFetcher()
 
-	const handleChange = (changes: ChangesType) => submit(changes, { method: 'POST' })
+	const handleChange = (changes: ChangesType) => fetcher.submit(changes, { method: 'POST' })
 	const Header = ({ header, className }: { header: string; className: string }) => {
 		return (
 			<div
@@ -96,6 +87,13 @@ export default function ContactsRoute() {
 		<Card className="container mb-6 rounded-none bg-muted p-1 px-0 pb-12 xl:rounded-3xl">
 			<CardHeader>
 				<CardTitle>Member Contact List</CardTitle>
+				<Button>
+					<Link reloadDocument to={`/resources/download-contacts`}>
+						<Icon name="download" size="md">
+							Contacts
+						</Icon>
+					</Link>
+				</Button>
 			</CardHeader>
 			<div className="grid w-full grid-cols-12 gap-1 border-b-2 p-2 pb-0">
 				<Header header="id" className="col-span-1" />
@@ -150,17 +148,20 @@ export default function ContactsRoute() {
 												handleChange({ userId, intent: 'phone-type', phoneId, phoneType: e.currentTarget.value })
 											}
 										/>
-										<Input
-											id="number"
-											className="col-span-3 rounded-l-none"
-											defaultValue={number ?? ''}
-											onBlur={e =>
-												handleChange({ userId, intent: 'phone-number', phoneId, phoneNumber: e.currentTarget.value })
-											}
-										/>
+										<div key={number} className="col-span-3 flex flex-row">
+											<Input
+												id="number"
+												className="rounded-none"
+												defaultValue={number ?? ''}
+												onBlur={e =>
+													handleChange({ userId, intent: 'phone-number', phoneId, phoneNumber: e.currentTarget.value })
+												}
+											/>
+											<DeletePhone phoneId={phoneId} />
+										</div>
 									</div>
 								))}
-								<CreatePhone userId={userId} />
+								<CreatePhone key={`create-${userId}-${phones.length}`} userId={userId} index={phones.length} />
 							</div>
 							<div className="col-span-3 flex flex-col">
 								<div className="grid grid-cols-4">
@@ -244,7 +245,7 @@ export default function ContactsRoute() {
 	)
 }
 
-function CreatePhone({ userId }: { userId: string }) {
+function CreatePhone({ userId, index }: { userId: string; index: number }) {
 	const fetcher = useFetcher<typeof createPhoneAction>()
 	const [form, fields] = useForm({
 		id: `create-phone-${userId}`,
@@ -265,7 +266,7 @@ function CreatePhone({ userId }: { userId: string }) {
 		if (fetcher.data?.submission.error) return
 		fetcher.submit(event.currentTarget)
 	}
-
+	
 	return (
 		<fetcher.Form method="POST" {...form.props} className="grid grid-cols-4" onBlur={handleSubmit}>
 			<input type="hidden" name="userId" value={userId} />
@@ -273,7 +274,42 @@ function CreatePhone({ userId }: { userId: string }) {
 			<Label className="col-span-1 m-1" htmlFor="emailSubject" children="Type" />
 			<Label className="col-span-3 m-1" htmlFor="primaryEmail" children="Phone Number" />
 			<Input id="type" className="col-span-1 rounded-r-none capitalize" {...conform.input(fields.phoneType)} />
-			<Input id="number" className="col-span-3 rounded-l-none" {...conform.input(fields.phoneNumber)} />
+
+			<div key={`create-${index}`} className="col-span-3 flex flex-row">
+				<Input id="number" className="col-span-3 rounded-none" {...conform.input(fields.phoneNumber)} />
+				<StatusButton
+					type="submit"
+					name="intent"
+					value="create-phone"
+					className="rounded-l-none pt-1 "
+					variant="outline"
+					status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
+				>
+					<Icon name="pencil-2" className="h-4 w-4 text-green-900"></Icon>
+				</StatusButton>
+			</div>
+		</fetcher.Form>
+	)
+}
+
+function DeletePhone({ phoneId }: { phoneId: string }) {
+	const fetcher = useFetcher<typeof action>()
+	const dc = useDoubleCheck()
+	return (
+		<fetcher.Form method="POST" key={`delete-${phoneId}`}>
+			<input type="hidden" name="phoneId" value={phoneId} />
+			<StatusButton
+				{...dc.getButtonProps({
+					type: 'submit',
+					name: 'intent',
+					value: 'delete-phone',
+				})}
+				className={`rounded-l-none ${dc.doubleCheck ? 'text-primary' : 'text-destructive'}`}
+				variant={dc.doubleCheck ? 'destructive' : 'outline'}
+				status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
+			>
+				<Icon name="trash" className="h-4 w-4 text-destructive"></Icon>
+			</StatusButton>
 		</fetcher.Form>
 	)
 }

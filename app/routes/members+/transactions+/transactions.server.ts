@@ -1,11 +1,123 @@
+import { parse } from '@conform-to/zod'
+import { invariantResponse } from '@epic-web/invariant'
 import { type Prisma } from '@prisma/client'
-import { prisma } from '#app/utils/db.server.ts'
+import {
+	type ActionFunctionArgs,
+	type UploadHandler,
+	json,
+	unstable_composeUploadHandlers as composeUploadHandlers,
+	unstable_createMemoryUploadHandler as createMemoryUploadHandler,
+	unstable_parseMultipartFormData as parseMultipartFormData,
+} from '@remix-run/node'
+import { z } from 'zod'
+import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper'
+import { prisma } from '#app/utils/db.server'
+
 import {
 	getItemTableParams,
 	transactionsPaginationSchema,
 	type TransactionData,
 	type Transactions,
 } from '#app/utils/pagination/transactions'
+
+import { requireUserWithRole } from '#app/utils/permissions'
+import { generatePublicId } from '#app/utils/public-id'
+import { redirectWithToast } from '#app/utils/toast.server'
+import { DateSchema } from '#app/utils/user-validation'
+
+const TransactionsFormSchema = z.object({
+	id: z.string(),
+	intent: z.string(),
+	scheduleId: z.string().optional(),
+	ditch: z.preprocess(x => (x ? x : null), z.coerce.number()).optional(),
+	date: DateSchema.optional(),
+	debit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
+	credit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
+	note: z.string().optional(),
+})
+
+const TransactionsUploadSchema = z.array(
+	z.object({
+		id: z.string().optional(),
+		userId: z.string().optional(),
+		scheduleId: z.string().optional(),
+		ditch: z.preprocess(x => (x ? x : null), z.coerce.number()).optional(),
+		date: DateSchema,
+		debit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
+		credit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
+		note: z.string().optional(),
+	}),
+)
+export async function action({ request }: ActionFunctionArgs) {
+	const currentUser = await requireUserWithRole(request, 'admin')
+	const formData = await request.formData()
+	const intent = formData.get('intent')
+	try {
+		switch (intent) {
+			case 'upload-transactions': {
+				const uploadHandler: UploadHandler = composeUploadHandlers(csvUploadHandler, createMemoryUploadHandler())
+				const formData = await parseMultipartFormData(request, uploadHandler)
+
+				const csv = formData.get('selected_csv')
+				invariantResponse(typeof csv === 'string', 'selected_csv filename must be a string')
+
+				const transactions = csvFileToArray(csv)
+				const result = TransactionsUploadSchema.safeParse(transactions)
+				if (!result.success) return json({ status: 'error', error: result.error.message } as const, { status: 400 })
+
+				const missingUsers = []
+				for (let { id, ...transaction } of result.data) {
+					try {
+						if (!id) id = '__new_transaction__'
+						await prisma.transactions.upsert({
+							where: { id },
+							create: {
+								id: generatePublicId(),
+								...transaction,
+								updatedBy: currentUser,
+							},
+							update: {
+								...transaction,
+								updatedBy: currentUser,
+							},
+						})
+					} catch (error) {
+						console.error(JSON.stringify({ error, transaction }, null, 2))
+						missingUsers.push(transaction.userId)
+					}
+				}
+				return redirectWithToast('.', {
+					type: 'success',
+					title: 'Success',
+					description: JSON.stringify(missingUsers),
+				})
+			}
+			case 'delete-transaction':
+				const submission = parse(formData, { schema: z.object({ id: z.string() }) })
+				invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
+				const { id } = submission.value
+				await prisma.transactions.delete({ where: { id } })
+				return null
+			default: {
+				const submission = parse(formData, { schema: TransactionsFormSchema })
+				invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
+				const { id } = submission.value
+
+				console.log({ id, intent })
+
+				// @ts-ignore
+				if (submission.value[intent]) {
+					// @ts-ignore
+					await prisma.transactions.update({ data: { [intent]: submission.value[intent] }, where: { id } })
+					return null
+				}
+			}
+		}
+	} catch (error) {
+		return json({ status: 'error', error } as const, { status: 400 })
+	}
+	return json({ status: 'error' } as const, { status: 400 })
+}
 
 export const getPaginatedTransactions = async (request: Request) => {
 	return await getTransactions(request)

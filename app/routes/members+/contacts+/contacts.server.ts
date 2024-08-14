@@ -2,7 +2,7 @@ import { parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { type Prisma } from '@prisma/client'
 import { type ActionFunctionArgs, json } from '@remix-run/node'
-import { ThemeFormSchema } from '#app/routes/members+/contacts+'
+import { z } from 'zod'
 import { prisma } from '#app/utils/db.server.ts'
 import {
 	contactsPaginationSchema,
@@ -12,6 +12,7 @@ import {
 } from '#app/utils/pagination/contacts'
 import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server'
+import { EmailSchema, PhoneNumberSchema } from '#app/utils/user-validation'
 
 export const getPaginatedContacts = async (request: Request) => {
 	const tableParams = getItemTableParams(request, contactsPaginationSchema)
@@ -76,9 +77,21 @@ export const getPaginatedContacts = async (request: Request) => {
 	return result
 }
 
+const ContactsFormSchema = z.object({
+	intent: z.string(),
+	userId: z.string().optional(),
+	display: z.string().optional(),
+	quickbooks: z.string().optional(),
+	emailSubject: z.string().optional(),
+	primaryEmail: EmailSchema.optional(),
+	secondaryEmail: EmailSchema.optional(),
+	phoneId: z.string().optional(),
+	phoneType: z.string().optional(),
+	phoneNumber: PhoneNumberSchema.optional(),
+})
 export async function action({ request }: ActionFunctionArgs) {
 	const formData = await request.formData()
-	const submission = parse(formData, { schema: ThemeFormSchema })
+	const submission = parse(formData, { schema: ContactsFormSchema })
 	invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
 	const { userId: id, intent, phoneId } = submission.value
 	try {
@@ -86,21 +99,13 @@ export async function action({ request }: ActionFunctionArgs) {
 			case 'phone-type':
 				if (submission.value.phoneType) {
 					await prisma.userPhone.update({ data: { type: submission.value.phoneType }, where: { id: phoneId } })
-					return redirectWithToast('', {
-						type: 'success',
-						title: 'Success',
-						description: `Phone type updated.`,
-					})
 				}
+				return null
 			case 'phone-number':
 				if (submission.value.phoneNumber) {
 					await prisma.userPhone.update({ data: { number: submission.value.phoneNumber }, where: { id: phoneId } })
-					return redirectWithToast('', {
-						type: 'success',
-						title: 'Success',
-						description: `Phone number updated.`,
-					})
 				}
+				return null
 			case 'create-phone':
 				if (submission.value.phoneType && submission.value.phoneNumber) {
 					await prisma.userPhone.create({
@@ -111,27 +116,33 @@ export async function action({ request }: ActionFunctionArgs) {
 							number: submission.value.phoneNumber,
 						},
 					})
-					console.dir({ submission })
-					return redirectWithToast('', {
+					return redirectWithToast('.', {
 						type: 'success',
 						title: 'Success',
 						description: `New phone number added.`,
 					})
+				}
+				return null
+			case 'delete-phone':
+				try {
+					await prisma.userPhone.delete({ where: { id: phoneId } })
+					return redirectWithToast('.', {
+						type: 'success',
+						title: 'Success',
+						description: `Phone number deleted.`,
+					})
+				} catch (error) {
+					return null
 				}
 			default:
 				// @ts-ignore
 				if (submission.value[intent]) {
 					// @ts-ignore
 					await prisma.user.update({ data: { [intent]: submission.value[intent] }, where: { id } })
-					return redirectWithToast('', {
-						type: 'success',
-						title: 'Success',
-						description: `Contact ${intent} updated.`,
-					})
 				}
+				return null
 		}
 	} catch (error) {
 		return json({ status: 'error', error } as const, { status: 400 })
 	}
-	return null
 }

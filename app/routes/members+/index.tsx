@@ -139,13 +139,6 @@ export default function MembersRoute() {
 								</Icon>
 							</Link>
 						</Button>
-						<Button>
-							<Link reloadDocument to={`/resources/download-contacts`}>
-								<Icon name="download" size="md">
-									Contacts
-								</Icon>
-							</Link>
-						</Button>
 					</div>
 				</div>
 				<div className="m-auto block w-[90%] overflow-x-auto bg-background text-foreground" ref={nodeRefA}>
