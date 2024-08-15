@@ -26,7 +26,9 @@ export const getPaginatedContacts = async (request: Request) => {
 
 	const select: Prisma.UserSelect = {
 		id: true,
+		username: true,
 		display: true,
+		member: true,
 		quickbooks: true,
 		phones: { select: { id: true, type: true, number: true } },
 		emailSubject: true,

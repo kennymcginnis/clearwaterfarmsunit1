@@ -106,7 +106,9 @@ export default function ContactsRoute() {
 				{contacts.map(
 					({
 						id: userId,
+						username,
 						display,
+						member,
 						quickbooks,
 						emailSubject,
 						primaryEmail,
@@ -120,6 +122,12 @@ export default function ContactsRoute() {
 								<Input className="col-span-1" id="User Id" readOnly={true} defaultValue={userId} />
 							</div>
 							<div className="col-span-1 flex flex-col">
+								<Label className="col-span-1 m-1" htmlFor="username" children="Username" />
+								<Input
+									id="username"
+									defaultValue={username ?? ''}
+									onBlur={e => handleChange({ userId, intent: 'username', username: e.currentTarget.value })}
+								/>
 								<Label className="col-span-1 m-1" htmlFor="display" children="Display" />
 								<Input
 									id="display"
@@ -128,6 +136,12 @@ export default function ContactsRoute() {
 								/>
 							</div>
 							<div className="col-span-4 flex flex-col">
+								<Label className="col-span-4 m-1" htmlFor="member" children="Member Name" />
+								<Input
+									id="member"
+									defaultValue={member ?? ''}
+									onBlur={e => handleChange({ userId, intent: 'member', member: e.currentTarget.value })}
+								/>
 								<Label className="col-span-4 m-1" htmlFor="quickbooks" children="QuickBooks" />
 								<Input
 									id="quickbooks"
