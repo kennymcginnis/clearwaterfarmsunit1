@@ -3,7 +3,9 @@ import { z } from 'zod'
 export type Contacts = Contact[]
 export type Contact = {
 	id: string
+	username: string
 	display: string
+	member: string
 	quickbooks: string
 	emailSubject?: string
 	primaryEmail?: string

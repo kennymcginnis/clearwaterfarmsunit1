@@ -1,6 +1,6 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
-import { Form, Link, useFetcher, useLoaderData, useLocation } from '@remix-run/react'
+import { Link, useFetcher, useLoaderData, useLocation } from '@remix-run/react'
 import clsx from 'clsx'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
@@ -157,12 +157,12 @@ export default function ViewTransactions() {
 				</div>
 				{showUpload ? (
 					<div className="mt-2 flex w-full flex-row justify-end space-x-2">
-						<Form method="post" encType="multipart/form-data">
+						<fetcher.Form method="post" encType="multipart/form-data" action="/members/transactions/upload">
 							<input aria-label="File" type="file" accept=".csv" name="selected_csv" />
 							<Button type="submit" name="intent" value="upload-transactions" className="btn btn-sm">
 								Upload CSV
 							</Button>
-						</Form>
+						</fetcher.Form>
 					</div>
 				) : null}
 			</CardHeader>

@@ -31,9 +31,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 type ChangesType = {
-	userId: string
 	intent: string
+	userId: string
+	username?: string
 	display?: string
+	member?: string
 	quickbooks?: string
 	emailSubject?: string
 	primaryEmail?: string
@@ -84,7 +86,7 @@ export default function ContactsRoute() {
 
 	const baseUrl = '/members/contacts'
 	return (
-		<Card className="container mb-6 rounded-none bg-muted p-1 px-0 pb-12 xl:rounded-3xl">
+		<Card className="m-auto mt-2 flex w-[90%] flex-col items-center justify-center gap-1 rounded-none bg-accent px-0 pb-4 lg:rounded-3xl">
 			<CardHeader>
 				<CardTitle>Member Contact List</CardTitle>
 				<Button>
@@ -119,7 +121,7 @@ export default function ContactsRoute() {
 						<div key={userId} className="grid grid-cols-12 gap-1">
 							<div className="col-span-1 flex flex-col">
 								<Label className="col-span-1 m-1" htmlFor="User Id" children="User Id" />
-								<Input className="col-span-1" id="User Id" readOnly={true} defaultValue={userId} />
+								<Input className="col-span-1 bg-muted" id="User Id" readOnly={true} value={userId} />
 							</div>
 							<div className="col-span-1 flex flex-col">
 								<Label className="col-span-1 m-1" htmlFor="username" children="Username" />

@@ -82,7 +82,9 @@ export const getPaginatedContacts = async (request: Request) => {
 const ContactsFormSchema = z.object({
 	intent: z.string(),
 	userId: z.string().optional(),
+	username: z.string().optional(),
 	display: z.string().optional(),
+	member: z.string().optional(),
 	quickbooks: z.string().optional(),
 	emailSubject: z.string().optional(),
 	primaryEmail: EmailSchema.optional(),
