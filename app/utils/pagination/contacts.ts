@@ -16,6 +16,7 @@ export type Contact = {
 
 export interface ContactData {
 	contacts: Contact[]
+	displays: string[],
 	tableParams: ContactTableParams
 	filters: string[]
 	total: number
@@ -29,6 +30,7 @@ export const itemTableSchema = z.object({
 	items: z.number().min(1),
 	search: z.string().optional(),
 	age: z.number().min(0).optional(),
+	display: z.string().optional(),
 	ditch: z.number().min(1).max(9).optional(),
 	direction: z.enum(['asc', 'desc']).optional(),
 	//Override these two with an enum of possible keys
@@ -55,6 +57,7 @@ export const getItemTableParams = <ZodSchema>(request: Request, schema: z.Schema
 		Object.entries({
 			page: parseInt(query.get('page') || '1'),
 			items: parseInt(query.get('items') || '10'),
+			display: query.get('display'),
 			search: query.get('search'),
 			filter: query.get('filter'),
 			sort: query.get('sort'),
@@ -111,6 +114,7 @@ export const getNewTableUrl = (
 				params.set('page', '1')
 				break
 			case 'ditch':
+			case 'display':
 				params.set(newKey, newValue)
 				params.set('page', '1')
 				break

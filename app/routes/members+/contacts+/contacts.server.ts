@@ -19,6 +19,7 @@ export const getPaginatedContacts = async (request: Request) => {
 
 	let result: ContactData = {
 		contacts: [],
+		displays: [],
 		filters: [],
 		tableParams,
 		total: 0,
@@ -50,9 +51,20 @@ export const getPaginatedContacts = async (request: Request) => {
 		}
 	}
 
+	if (tableParams.display) {
+		filter.where = {
+			...filter.where,
+			display: tableParams.display,
+		}
+	}
+
 	if (tableParams.sort) {
 		filter.orderBy = {
 			[tableParams.sort]: tableParams.direction,
+		}
+	} else {
+		filter.orderBy = {
+			display: 'asc',
 		}
 	}
 
@@ -69,12 +81,21 @@ export const getPaginatedContacts = async (request: Request) => {
 		return res || []
 	}
 
-	const res = await Promise.all([getCount(), getContacts()])
+	const distinctDisplays = async () => {
+		// @ts-ignore
+		const res = await prisma.user.findMany({
+			distinct: ['display'],
+			select: { display: true },
+			orderBy: { display: 'asc' },
+		})
+		return res.map(r => r.display ?? '')
+	}
+
+	const res = await Promise.all([getCount(), distinctDisplays(), getContacts()])
 
 	result.total = res[0]
-	result.contacts = res[1]
-	// @ts-ignore
-	result.filters = res[2]
+	result.displays = res[1]
+	result.contacts = res[2]
 
 	return result
 }

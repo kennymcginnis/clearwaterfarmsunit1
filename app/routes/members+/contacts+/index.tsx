@@ -6,6 +6,7 @@ import { Link, useLoaderData, useFetcher } from '@remix-run/react'
 import clsx from 'clsx'
 import { type FormEvent } from 'react'
 import { z } from 'zod'
+import DisplayFilters from '#app/components/DisplayFilters'
 import Dropdown from '#app/components/Dropdown/Dropdown'
 import { PaginationComponent } from '#app/components/pagination'
 import { Button } from '#app/components/ui/button'
@@ -47,7 +48,7 @@ type ChangesType = {
 }
 
 export default function ContactsRoute() {
-	const { contacts, tableParams, total } = useLoaderData<typeof loader>()
+	const { contacts, tableParams, displays, total } = useLoaderData<typeof loader>()
 	const fetcher = useFetcher()
 
 	const handleChange = (changes: ChangesType) => fetcher.submit(changes, { method: 'POST' })
@@ -87,24 +88,49 @@ export default function ContactsRoute() {
 	const baseUrl = '/members/contacts'
 	return (
 		<Card className="m-auto mt-2 flex w-[90%] flex-col items-center justify-center gap-1 rounded-none bg-accent px-0 pb-4 lg:rounded-3xl">
-			<CardHeader>
-				<CardTitle>Member Contact List</CardTitle>
-				<Button>
-					<Link reloadDocument to={`/resources/download-contacts`}>
-						<Icon name="download" size="md">
-							Contacts
-						</Icon>
-					</Link>
-				</Button>
+			<CardHeader className="flex w-full flex-row flex-wrap gap-2 self-center p-4">
+				<div></div>
+				<div className="flex flex-col items-center">
+					<CardTitle>Member Contact List</CardTitle>
+				</div>
+				<div className="flex gap-2">
+					<Button>
+						<Link reloadDocument to={`/resources/download-contacts`}>
+							<Icon name="download" size="md">
+								Contacts
+							</Icon>
+						</Link>
+					</Button>
+				</div>
 			</CardHeader>
-			<div className="grid w-full grid-cols-12 gap-1 border-b-2 p-2 pb-0">
-				<Header header="id" className="col-span-1" />
-				<SortableHeader header="display" className="col-span-1" />
-				<SortableHeader header="quickbooks" className="col-span-4" />
-				<Header header="phones" className="col-span-3" />
-				<Header header="emails" className="col-span-3" />
-			</div>
 			<CardContent className="space-y-2 overflow-auto">
+				<div className="grid grid-cols-12 gap-1">
+					<div className="col-span-1">
+						<Button asChild variant="secondary" className="w-full">
+							<Link to={baseUrl}>
+								<Icon name="reset" className="scale-100 max-md:scale-125">
+									<span className="max-md:hidden">Reset Table</span>
+								</Icon>
+							</Link>
+						</Button>
+					</div>
+					<div className="col-span-2">
+						<DisplayFilters
+							baseUrl={baseUrl}
+							dropdownDefault="All Members"
+							displays={displays}
+							tableParams={tableParams}
+						/>
+					</div>
+				</div>
+
+				<div className="grid w-full grid-cols-12 gap-1 border-b-2 p-2 pb-0">
+					<Header header="id" className="col-span-1" />
+					<SortableHeader header="display" className="col-span-1" />
+					<SortableHeader header="quickbooks" className="col-span-4" />
+					<Header header="phones" className="col-span-3" />
+					<Header header="emails" className="col-span-3" />
+				</div>
 				{contacts.map(
 					({
 						id: userId,
@@ -282,7 +308,7 @@ function CreatePhone({ userId, index }: { userId: string; index: number }) {
 		if (fetcher.data?.submission.error) return
 		fetcher.submit(event.currentTarget)
 	}
-	
+
 	return (
 		<fetcher.Form method="POST" {...form.props} className="grid grid-cols-4" onBlur={handleSubmit}>
 			<input type="hidden" name="userId" value={userId} />
