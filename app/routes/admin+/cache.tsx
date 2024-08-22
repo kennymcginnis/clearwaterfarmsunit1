@@ -1,14 +1,36 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { type SEOHandle } from '@nasa-gcn/remix-seo'
-import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node'
-import { Form, Link, useFetcher, useLoaderData, useSearchParams, useSubmit } from '@remix-run/react'
+import {
+	json,
+	redirect,
+	type LoaderFunctionArgs,
+	type ActionFunctionArgs,
+} from '@remix-run/node'
+import {
+	Form,
+	Link,
+	useFetcher,
+	useLoaderData,
+	useSearchParams,
+	useSubmit,
+} from '@remix-run/react'
+import { GeneralErrorBoundary } from '#app/components/error-boundary'
 import { Field } from '#app/components/forms.tsx'
 import { Spacer } from '#app/components/spacer.tsx'
 import { Button } from '#app/components/ui/button.tsx'
-import { cache, getAllCacheKeys, lruCache, searchCacheKeys } from '#app/utils/cache.server.ts'
-import { ensureInstance, getAllInstances, getInstanceInfo } from '#app/utils/litefs.server.ts'
+import {
+	cache,
+	getAllCacheKeys,
+	lruCache,
+	searchCacheKeys,
+} from '#app/utils/cache.server.ts'
+import {
+	ensureInstance,
+	getAllInstances,
+	getInstanceInfo,
+} from '#app/utils/litefs.server.ts'
 import { useDebounce, useDoubleCheck } from '#app/utils/misc.tsx'
-import { requireUserWithRole } from '#app/utils/permissions.ts'
+import { requireUserWithRole } from '#app/utils/permissions.server.ts'
 
 export const handle: SEOHandle = {
 	getSitemapEntries: () => null,
@@ -25,7 +47,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const limit = Number(searchParams.get('limit') ?? 100)
 
 	const currentInstanceInfo = await getInstanceInfo()
-	const instance = searchParams.get('instance') ?? currentInstanceInfo.currentInstance
+	const instance =
+		searchParams.get('instance') ?? currentInstanceInfo.currentInstance
 	const instances = await getAllInstances()
 	await ensureInstance(instance)
 
@@ -83,10 +106,17 @@ export default function CacheAdminRoute() {
 		<div className="container">
 			<h1 className="text-h1">Cache Admin</h1>
 			<Spacer size="2xs" />
-			<Form method="get" className="flex flex-col gap-4" onChange={e => handleFormChange(e.currentTarget)}>
+			<Form
+				method="get"
+				className="flex flex-col gap-4"
+				onChange={(e) => handleFormChange(e.currentTarget)}
+			>
 				<div className="flex-1">
 					<div className="flex flex-1 gap-4">
-						<button type="submit" className="flex h-16 items-center justify-center">
+						<button
+							type="submit"
+							className="flex h-16 items-center justify-center"
+						>
 							🔎
 						</button>
 						<Field
@@ -99,7 +129,9 @@ export default function CacheAdminRoute() {
 							}}
 						/>
 						<div className="flex h-16 w-14 items-center text-lg font-medium text-muted-foreground">
-							<span title="Total results shown">{data.cacheKeys.sqlite.length + data.cacheKeys.lru.length}</span>
+							<span title="Total results shown">
+								{data.cacheKeys.sqlite.length + data.cacheKeys.lru.length}
+							</span>
 						</div>
 					</div>
 				</div>
@@ -124,8 +156,12 @@ export default function CacheAdminRoute() {
 								{[
 									inst,
 									`(${region})`,
-									inst === data.currentInstanceInfo.currentInstance ? '(current)' : '',
-									inst === data.currentInstanceInfo.primaryInstance ? ' (primary)' : '',
+									inst === data.currentInstanceInfo.currentInstance
+										? '(current)'
+										: '',
+									inst === data.currentInstanceInfo.primaryInstance
+										? ' (primary)'
+										: '',
 								]
 									.filter(Boolean)
 									.join(' ')}
@@ -137,23 +173,41 @@ export default function CacheAdminRoute() {
 			<Spacer size="2xs" />
 			<div className="flex flex-col gap-4">
 				<h2 className="text-h2">LRU Cache:</h2>
-				{data.cacheKeys.lru.map(key => (
-					<CacheKeyRow key={key} cacheKey={key} instance={instance} type="lru" />
+				{data.cacheKeys.lru.map((key) => (
+					<CacheKeyRow
+						key={key}
+						cacheKey={key}
+						instance={instance}
+						type="lru"
+					/>
 				))}
 			</div>
 			<Spacer size="3xs" />
 			<div className="flex flex-col gap-4">
 				<h2 className="text-h2">SQLite Cache:</h2>
-				{data.cacheKeys.sqlite.map(key => (
-					<CacheKeyRow key={key} cacheKey={key} instance={instance} type="sqlite" />
+				{data.cacheKeys.sqlite.map((key) => (
+					<CacheKeyRow
+						key={key}
+						cacheKey={key}
+						instance={instance}
+						type="sqlite"
+					/>
 				))}
 			</div>
 		</div>
 	)
 }
 
-function CacheKeyRow({ cacheKey, instance, type }: { cacheKey: string; instance?: string; type: 'sqlite' | 'lru' }) {
-	const fetcher = useFetcher<typeof action>()
+function CacheKeyRow({
+	cacheKey,
+	instance,
+	type,
+}: {
+	cacheKey: string
+	instance?: string
+	type: 'sqlite' | 'lru'
+}) {
+	const actionData = useActionData<typeofaction>()
 	const dc = useDoubleCheck()
 	const encodedKey = encodeURIComponent(cacheKey)
 	const valuePage = `/admin/cache/${type}/${encodedKey}?instance=${instance}`
@@ -163,8 +217,16 @@ function CacheKeyRow({ cacheKey, instance, type }: { cacheKey: string; instance?
 				<input type="hidden" name="cacheKey" value={cacheKey} />
 				<input type="hidden" name="instance" value={instance} />
 				<input type="hidden" name="type" value={type} />
-				<Button size="sm" variant="secondary" {...dc.getButtonProps({ type: 'submit' })}>
-					{fetcher.state === 'idle' ? (dc.doubleCheck ? 'You sure?' : 'Delete') : 'Deleting...'}
+				<Button
+					size="sm"
+					variant="secondary"
+					{...dc.getButtonProps({ type: 'submit' })}
+				>
+					{fetcher.state === 'idle'
+						? dc.doubleCheck
+							? 'You sure?'
+							: 'Delete'
+						: 'Deleting...'}
 				</Button>
 			</fetcher.Form>
 			<Link reloadDocument to={valuePage}>
@@ -174,8 +236,14 @@ function CacheKeyRow({ cacheKey, instance, type }: { cacheKey: string; instance?
 	)
 }
 
-export function ErrorBoundary({ error }: { error: Error }) {
-	console.error(error)
-
-	return <div>An unexpected error occurred: {error.message}</div>
+export function ErrorBoundary() {
+	return (
+		<GeneralErrorBoundary
+			statusHandlers={{
+				403: ({ error }) => (
+					<p>You are not allowed to do that: {error?.data.message}</p>
+				),
+			}}
+		/>
+	)
 }

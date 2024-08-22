@@ -6,19 +6,32 @@ import { useCallback, useState, useEffect } from 'react'
  * ScrollSync provider component
  *
  */
-const useScrollSync = ({ enabled = true, onSync, proportional = true, vertical = true, horizontal = true }) => {
+const useScrollSync = ({
+	enabled = true,
+	onSync,
+	proportional = true,
+	vertical = true,
+	horizontal = true,
+}) => {
 	const [panes, setPanes] = useState([])
 
 	const findPane = useCallback(
-		node => {
-			return panes.find(pane => pane === node)
+		(node) => {
+			return panes.find((pane) => pane === node)
 		},
 		[panes],
 	)
 
 	const syncScrollPosition = useCallback(
 		(scrolledPane, pane) => {
-			const { scrollTop, scrollHeight, clientHeight, scrollLeft, scrollWidth, clientWidth } = scrolledPane
+			const {
+				scrollTop,
+				scrollHeight,
+				clientHeight,
+				scrollLeft,
+				scrollWidth,
+				clientWidth,
+			} = scrolledPane
 
 			const scrollTopOffset = scrollHeight - clientHeight
 			const scrollLeftOffset = scrollWidth - clientWidth
@@ -28,23 +41,27 @@ const useScrollSync = ({ enabled = true, onSync, proportional = true, vertical =
 			const paneWidth = pane.scrollWidth - clientWidth
 			/* Adjust the scrollTop position of it accordingly */
 			if (vertical && scrollTopOffset > 0) {
-				pane.scrollTop = proportional ? (paneHeight * scrollTop) / scrollTopOffset : scrollTop // eslint-disable-line
+				pane.scrollTop = proportional
+					? (paneHeight * scrollTop) / scrollTopOffset
+					: scrollTop
 			}
 			if (horizontal && scrollLeftOffset > 0) {
-				pane.scrollLeft = proportional ? (paneWidth * scrollLeft) / scrollLeftOffset : scrollLeft // eslint-disable-line
+				pane.scrollLeft = proportional
+					? (paneWidth * scrollLeft) / scrollLeftOffset
+					: scrollLeft
 			}
 		},
 		[vertical, horizontal],
 	)
 
-	const removeEvents = useCallback(node => {
+	const removeEvents = useCallback((node) => {
 		/* For some reason element.removeEventListener doesnt work with document.body */
-		node.onscroll = null // eslint-disable-line
+		node.onscroll = null
 	}, [])
 
 	const syncScrollPositions = useCallback(
 		(scrolledPane, _panes) => {
-			_panes.forEach(paneNodeRef => {
+			_panes.forEach((paneNodeRef) => {
 				/* For all panes beside the currently scrolling one */
 				if (scrolledPane !== paneNodeRef) {
 					/* Remove event listeners from the node that we'll manipulate */
@@ -76,28 +93,28 @@ const useScrollSync = ({ enabled = true, onSync, proportional = true, vertical =
 	const addEvents = useCallback(
 		(node, _panes) => {
 			/* For some reason element.addEventListener doesnt work with document.body */
-			node.onscroll = handlePaneScroll.bind(this, node, _panes) // eslint-disable-line
+			node.onscroll = handlePaneScroll.bind(this, node, _panes)
 		},
 		[handlePaneScroll],
 	)
 
 	const registerPane = useCallback(
-		node => {
+		(node) => {
 			if (!findPane(node)) {
 				if (panes.length > 0) {
 					syncScrollPosition(panes[0], node)
 				}
-				setPanes(prev => [...prev, node])
+				setPanes((prev) => [...prev, node])
 			}
 		},
 		[panes, findPane, addEvents],
 	)
 
 	const unregisterPane = useCallback(
-		node => {
+		(node) => {
 			if (findPane(node)) {
 				removeEvents(node)
-				setPanes(prev => prev.splice(prev.indexOf(node), 1))
+				setPanes((prev) => prev.splice(prev.indexOf(node), 1))
 			}
 		},
 		[findPane, removeEvents],
@@ -105,7 +122,7 @@ const useScrollSync = ({ enabled = true, onSync, proportional = true, vertical =
 
 	useEffect(() => {
 		// Update events when registering more panes
-		panes.forEach(pane => {
+		panes.forEach((pane) => {
 			addEvents(pane, panes)
 		})
 	}, [panes])
@@ -148,13 +165,13 @@ export const useScrollSyncWrap = ({ nodeRefs, options = {} }) => {
 	const { registerPane, unregisterPane } = useScrollSync(options)
 
 	useEffect(() => {
-		nodeRefs.forEach(nodeRef => {
+		nodeRefs.forEach((nodeRef) => {
 			if (nodeRef && nodeRef.current) {
 				registerPane(nodeRef.current)
 			}
 		})
 		return () =>
-			nodeRefs.forEach(nodeRef => {
+			nodeRefs.forEach((nodeRef) => {
 				if (nodeRef && nodeRef.current) {
 					unregisterPane(nodeRef.current)
 				}

@@ -1,5 +1,9 @@
 import { invariantResponse } from '@epic-web/invariant'
-import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
+import {
+	json,
+	type LoaderFunctionArgs,
+	type MetaFunction,
+} from '@remix-run/node'
 import { Link, useLoaderData } from '@remix-run/react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
@@ -36,9 +40,18 @@ const SearchResultsSchema = z.array(
 	z.object({
 		id: z.string(),
 		display: z.string(),
-		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
-		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
+		ditch: z.preprocess(
+			(x) => (x ? x : undefined),
+			z.coerce.number().int().min(1).max(9),
+		),
+		position: z.preprocess(
+			(x) => (x ? x : undefined),
+			z.coerce.number().int().min(1).max(99),
+		),
+		hours: z.preprocess(
+			(x) => (x ? x : 0),
+			z.coerce.number().multipleOf(0.5).min(0).max(36),
+		),
 		start: z.date().nullable(),
 		stop: z.date().nullable(),
 	}),
@@ -95,8 +108,10 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		const pageNumber = page(ditch)
 		const leftOrRight = ditch % 2 ? 'left' : 'right'
 		const userType = { ...user, schedule: formatDates({ start, stop }) }
-		if (!users[pageNumber]) users[pageNumber] = { [position]: { [leftOrRight]: userType } }
-		if (!users[pageNumber][position]) users[pageNumber][position] = { [leftOrRight]: userType }
+		if (!users[pageNumber])
+			users[pageNumber] = { [position]: { [leftOrRight]: userType } }
+		if (!users[pageNumber][position])
+			users[pageNumber][position] = { [leftOrRight]: userType }
 		else users[pageNumber][position][leftOrRight] = userType
 
 		// ditch totals
@@ -120,14 +135,18 @@ export default function PrintableTimelineRoute() {
 	const { status, schedule, users } = data
 	const { id: scheduleId, date: scheduleDate } = schedule
 
-	if (status !== 'idle' || !scheduleId || !users || !Object.keys(users).length) return null
+	if (status !== 'idle' || !scheduleId || !users || !Object.keys(users).length)
+		return null
 
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
 			<div className="flex w-[90%] flex-row-reverse flex-wrap gap-2 p-0.5">
 				{userIsAdmin ? (
 					<Button>
-						<Link reloadDocument to={`/resources/download-print/${scheduleDate}`}>
+						<Link
+							reloadDocument
+							to={`/resources/download-print/${scheduleDate}`}
+						>
 							<Icon name="download">Download</Icon>
 						</Link>
 					</Button>
@@ -135,30 +154,46 @@ export default function PrintableTimelineRoute() {
 			</div>
 			<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
 				<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
-					{Object.keys(users).map(page => (
-						<div key={`${page}`} className="m-auto block overflow-x-auto overflow-y-auto">
+					{Object.keys(users).map((page) => (
+						<div
+							key={`${page}`}
+							className="m-auto block overflow-x-auto overflow-y-auto"
+						>
 							<table className="w-[80%]">
 								<thead>
 									<tr>
-										<td className="text-center text-body-lg">Ditch {Number(page) * 2 - 1}</td>
+										<td className="text-center text-body-lg">
+											Ditch {Number(page) * 2 - 1}
+										</td>
 										<td className="text-center text-body-lg">
 											{Number(page) < 5 ? `Ditch ${Number(page) * 2}` : null}
 										</td>
 									</tr>
 								</thead>
-								{Object.keys(users[page]).map(position => {
-									const { left, right } = users[page][position]
-									return (
-										<tr className="w-[100%]" key={`${position}`}>
-											<td className="w-[50%] p-0.5">
-												{left ? <UserCard scheduleDate={scheduleDate} user={left} /> : null}
-											</td>
-											<td className="w-[50%] p-0.5">
-												{right ? <UserCard scheduleDate={scheduleDate} user={right} /> : null}
-											</td>
-										</tr>
-									)
-								})}
+								{
+									// @ts-ignore
+									Object.keys(users[page]).map((position) => {
+										// @ts-ignore
+										const { left, right } = users[page][position]
+										return (
+											<tr className="w-[100%]" key={`${position}`}>
+												<td className="w-[50%] p-0.5">
+													{left ? (
+														<UserCard scheduleDate={scheduleDate} user={left} />
+													) : null}
+												</td>
+												<td className="w-[50%] p-0.5">
+													{right ? (
+														<UserCard
+															scheduleDate={scheduleDate}
+															user={right}
+														/>
+													) : null}
+												</td>
+											</tr>
+										)
+									})
+								}
 							</table>
 							<Separator className="mb-8 mt-4" />
 						</div>
@@ -169,7 +204,13 @@ export default function PrintableTimelineRoute() {
 	)
 }
 
-function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType }) {
+function UserCard({
+	scheduleDate,
+	user,
+}: {
+	scheduleDate: string
+	user: UserType
+}) {
 	return (
 		<Link
 			to={`/timeline/${scheduleDate}/${user.display}`}
@@ -195,7 +236,10 @@ function UserCard({ scheduleDate, user }: { scheduleDate: string; user: UserType
 	)
 }
 
-export const meta: MetaFunction<null, { 'routes/schedule+/$date/timeline': typeof loader }> = ({ params }) => {
+export const meta: MetaFunction<
+	null,
+	{ 'routes/schedule+/$date/timeline': typeof loader }
+> = ({ params }) => {
 	return [
 		{ title: `Irrigation Timeline | ${params.date}` },
 		{

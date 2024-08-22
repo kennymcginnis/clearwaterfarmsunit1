@@ -1,6 +1,11 @@
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
-import { Link, useFetcher, useLoaderData, useLocation } from '@remix-run/react'
+import {
+	Form,
+	Link,
+	useFetcher,
+	useLoaderData,
+	useLocation,
+} from '@remix-run/react'
 import clsx from 'clsx'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
@@ -11,11 +16,18 @@ import DitchFilters from '#app/components/DitchFilters'
 import Dropdown from '#app/components/Dropdown'
 import { PaginationComponent } from '#app/components/pagination'
 import { Button } from '#app/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '#app/components/ui/card'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon'
 import { Input } from '#app/components/ui/input'
 import { StatusButton } from '#app/components/ui/status-button'
-import { cn, useDoubleCheck } from '#app/utils/misc.tsx'
+import { cn, useDoubleCheck, useIsPending } from '#app/utils/misc.tsx'
 import {
 	getNewTableUrl,
 	TransactionAges,
@@ -23,7 +35,7 @@ import {
 	type Transaction,
 	DitchesArray,
 } from '#app/utils/pagination/transactions'
-import { requireUserWithRole } from '#app/utils/permissions'
+import { requireUserWithRole } from '#app/utils/permissions.server.ts'
 import { action, getPaginatedTransactions } from './transactions.server'
 export { action }
 
@@ -47,7 +59,8 @@ type ChangesType = {
 }
 
 export default function ViewTransactions() {
-	const { transactions, tableParams, filters, total, displays } = useLoaderData<TransactionData>()
+	const { transactions, tableParams, filters, total, displays } =
+		useLoaderData<TransactionData>()
 	const [showUpload, setShowUpload] = useState(false)
 	const toggleShowUpload = () => setShowUpload(!showUpload)
 
@@ -55,11 +68,20 @@ export default function ViewTransactions() {
 	const baseUrl = '/members/transactions'
 
 	const fetcher = useFetcher()
-	const handleChange = (changes: ChangesType) => fetcher.submit(changes, { method: 'POST' })
+	const handleChange = (changes: ChangesType) =>
+		fetcher.submit(changes, { method: 'POST' })
 
-	const Header = ({ header, className }: { header: string; className: string }) => {
-		const isSortingUp = tableParams.sort === header && tableParams.direction === 'asc'
-		const isSortingDown = tableParams.sort === header && tableParams.direction === 'desc'
+	const Header = ({
+		header,
+		className,
+	}: {
+		header: string
+		className: string
+	}) => {
+		const isSortingUp =
+			tableParams.sort === header && tableParams.direction === 'asc'
+		const isSortingDown =
+			tableParams.sort === header && tableParams.direction === 'desc'
 		return (
 			<Link
 				key={`header-${header}`}
@@ -67,58 +89,118 @@ export default function ViewTransactions() {
 					'flex h-8 px-4 py-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
 					className,
 				)}
-				to={getNewTableUrl(baseUrl, tableParams, 'sort', header !== 'intent' ? header : undefined)}
+				to={getNewTableUrl(
+					baseUrl,
+					tableParams,
+					'sort',
+					header !== 'intent' ? header : undefined,
+				)}
 			>
 				{header.toUpperCase()}
-				{header !== 'intent' && isSortingUp && <ChevronUpIcon className="ml-auto w-4" />}
-				{header !== 'intent' && isSortingDown && <ChevronDownIcon className="ml-auto w-4" />}
+				{header !== 'intent' && isSortingUp && (
+					<Icon name="chevron-up" className="ml-auto w-4" />
+				)}
+				{header !== 'intent' && isSortingDown && (
+					<Icon name="chevron-down" className="ml-auto w-4" />
+				)}
 			</Link>
 		)
 	}
 
-	const ItemRow = ({ id, scheduleId, ditch, user, date, debit, credit, note }: Transaction) => {
+	const ItemRow = ({
+		id,
+		scheduleId,
+		ditch,
+		user,
+		date,
+		debit,
+		credit,
+		note,
+	}: Transaction) => {
 		return (
-			<div key={`row-${id}`} className="grid grid-cols-12 gap-1 disabled:cursor-default">
+			<div
+				key={`row-${id}`}
+				className="grid grid-cols-12 gap-1 disabled:cursor-default"
+			>
 				<button type="submit" className="hidden" />
-				<Input id="id" disabled={true} className="col-span-1 disabled:cursor-default" value={id} />
+				<Input
+					id="id"
+					disabled={true}
+					className="col-span-1 disabled:cursor-default"
+					value={id}
+				/>
 				<Input
 					id="scheduleId"
 					className="col-span-1 disabled:cursor-default"
 					defaultValue={scheduleId}
-					onBlur={e => handleChange({ id, intent: 'scheduleId', scheduleId: e.currentTarget.value })}
+					onBlur={(e) =>
+						handleChange({
+							id,
+							intent: 'scheduleId',
+							scheduleId: e.currentTarget.value,
+						})
+					}
 				/>
 				<Input
 					id="ditch"
 					className="col-span-1 disabled:cursor-default"
 					defaultValue={ditch}
-					onBlur={e => handleChange({ id, intent: 'ditch', ditch: e.currentTarget.value ?? '' })}
+					onBlur={(e) =>
+						handleChange({
+							id,
+							intent: 'ditch',
+							ditch: e.currentTarget.value ?? '',
+						})
+					}
 				/>
-				<Input id="userId" disabled={true} className="col-span-1 disabled:cursor-default" value={user.id} />
-				<Input id="username" disabled={true} className="col-span-2 disabled:cursor-default" value={user.display} />
+				<Input
+					id="userId"
+					disabled={true}
+					className="col-span-1 disabled:cursor-default"
+					value={user.id}
+				/>
+				<Input
+					id="username"
+					disabled={true}
+					className="col-span-2 disabled:cursor-default"
+					value={user.display}
+				/>
 				<Input
 					id="date"
 					className="col-span-1 text-right disabled:cursor-default"
 					defaultValue={date}
-					onBlur={e => handleChange({ id, intent: 'date', date: e.currentTarget.value })}
+					onBlur={(e) =>
+						handleChange({ id, intent: 'date', date: e.currentTarget.value })
+					}
 				/>
 				<Input
 					id="debit"
 					className="col-span-1 text-right disabled:cursor-default"
 					defaultValue={debit.toString() ?? ''}
-					onBlur={e => handleChange({ id, intent: 'debit', debit: e.currentTarget.value })}
+					onBlur={(e) =>
+						handleChange({ id, intent: 'debit', debit: e.currentTarget.value })
+					}
 				/>
 				<Input
 					id="credit"
 					className="col-span-1 text-right disabled:cursor-default"
 					defaultValue={credit.toString() ?? ''}
-					onBlur={e => handleChange({ id, intent: 'credit', credit: e.currentTarget.value })}
+					onBlur={(e) =>
+						handleChange({
+							id,
+							intent: 'credit',
+							credit: e.currentTarget.value,
+						})
+					}
 				/>
 				<div className="rlex-row col-span-3 flex">
 					<Input
 						id="note"
 						className="mr-1"
 						defaultValue={note ?? ''}
-						onBlur={e => handleChange({ id, intent: 'note', note: e.currentTarget.value })}
+						onBlur={(e) =>
+							handleChange({ id, intent: 'note', note: e.currentTarget.value })
+						}
 					/>
 					<DeleteButton id={id} />
 				</div>
@@ -136,7 +218,10 @@ export default function ViewTransactions() {
 				</div>
 				<div className="flex gap-2">
 					<Button>
-						<Link reloadDocument to={`/resources/download-transactions${location.search}`}>
+						<Link
+							reloadDocument
+							to={`/resources/download-transactions${location.search}`}
+						>
 							<Icon name="download">Download</Icon>
 						</Link>
 					</Button>
@@ -157,9 +242,23 @@ export default function ViewTransactions() {
 				</div>
 				{showUpload ? (
 					<div className="mt-2 flex w-full flex-row justify-end space-x-2">
-						<fetcher.Form method="post" encType="multipart/form-data" action="/members/transactions/upload">
-							<input aria-label="File" type="file" accept=".csv" name="selected_csv" />
-							<Button type="submit" name="intent" value="upload-transactions" className="btn btn-sm">
+						<fetcher.Form
+							method="post"
+							encType="multipart/form-data"
+							action="/members/transactions/upload"
+						>
+							<input
+								aria-label="File"
+								type="file"
+								accept=".csv"
+								name="selected_csv"
+							/>
+							<Button
+								type="submit"
+								name="intent"
+								value="upload-transactions"
+								className="btn btn-sm"
+							>
 								Upload CSV
 							</Button>
 						</fetcher.Form>
@@ -205,7 +304,11 @@ export default function ViewTransactions() {
 						/>
 					</div>
 					<div className="col-span-2">
-						<DebitCreditFilters baseUrl={baseUrl} filters={filters} tableParams={tableParams} />
+						<DebitCreditFilters
+							baseUrl={baseUrl}
+							filters={filters}
+							tableParams={tableParams}
+						/>
 					</div>
 					<div className="col-span-3"></div>
 				</div>
@@ -224,7 +327,9 @@ export default function ViewTransactions() {
 					transactions.map(ItemRow)
 				) : (
 					<div className="flex w-full justify-center py-4">
-						<h4 className="font-medium tracking-wider text-gray-600">No results found</h4>
+						<h4 className="font-medium tracking-wider text-gray-600">
+							No results found
+						</h4>
 					</div>
 				)}
 			</CardContent>
@@ -233,7 +338,8 @@ export default function ViewTransactions() {
 					{total > tableParams.items ? (
 						<p className="text-sm tracking-wider">
 							Showing <b>{tableParams.items * (tableParams.page - 1) + 1}</b> to{' '}
-							<b>{tableParams.items * tableParams.page}</b> of <b>{total}</b> results
+							<b>{tableParams.items * tableParams.page}</b> of <b>{total}</b>{' '}
+							results
 						</p>
 					) : (
 						<p className="text-sm tracking-wider">
@@ -241,7 +347,11 @@ export default function ViewTransactions() {
 						</p>
 					)}
 				</div>
-				<PaginationComponent totalPages={Math.ceil(total / tableParams.items)} pageParam="page" className="mt-8" />
+				<PaginationComponent
+					totalPages={Math.ceil(total / tableParams.items)}
+					pageParam="page"
+					className="mt-8"
+				/>
 				<div className="mr-2">
 					<Dropdown
 						itemKey="items"
@@ -253,7 +363,9 @@ export default function ViewTransactions() {
 							<Link
 								to={getNewTableUrl(baseUrl, tableParams, 'items', item)}
 								className={clsx(
-									active || item === tableParams.items.toString() ? 'bg-secondary/80' : 'bg-secondary',
+									active || item === tableParams.items.toString()
+										? 'bg-secondary/80'
+										: 'bg-secondary',
 									'block px-4 py-2 text-sm text-secondary-foreground',
 								)}
 							>
@@ -268,10 +380,10 @@ export default function ViewTransactions() {
 }
 
 function DeleteButton({ id }: { id: string }) {
-	const fetcher = useFetcher<typeof action>()
 	const dc = useDoubleCheck()
+	const isPending = useIsPending()
 	return (
-		<fetcher.Form method="POST" key={`delete-${id}`}>
+		<Form method="POST" key={`delete-${id}`}>
 			<input type="hidden" name="id" value={id} />
 			<StatusButton
 				{...dc.getButtonProps({
@@ -281,7 +393,7 @@ function DeleteButton({ id }: { id: string }) {
 				})}
 				className={`w-[120px] ${dc.doubleCheck ? 'text-primary' : 'text-destructive'}`}
 				variant={dc.doubleCheck ? 'destructive' : 'default'}
-				status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
+				status={isPending ? 'pending' : 'idle'}
 			>
 				{dc.doubleCheck ? (
 					`Are you sure?`
@@ -291,6 +403,6 @@ function DeleteButton({ id }: { id: string }) {
 					</Icon>
 				)}
 			</StatusButton>
-		</fetcher.Form>
+		</Form>
 	)
 }

@@ -1,7 +1,7 @@
 import { Menu, Transition } from '@headlessui/react'
-import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 import { Fragment } from 'react'
+import { Icon } from '../ui/icon'
 
 interface DropdownProps<T> {
 	items: T[]
@@ -22,7 +22,6 @@ const Dropdown = <T,>({
 	defaultItem,
 	defaultBottom,
 	generateItem,
-	buttonClass,
 	buttonChild,
 	isRight,
 	isTop,
@@ -31,7 +30,11 @@ const Dropdown = <T,>({
 	<Menu as="div" className="relative inline-block text-left">
 		<Menu.Button className="m-4 inline-flex h-10 items-center justify-center text-nowrap rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground outline-none ring-ring ring-offset-2 ring-offset-background transition-colors focus-within:ring-2 hover:bg-secondary/80 focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50">
 			{buttonChild}
-			<ChevronDownIcon className="-mr-1 ml-2 h-5 w-5" aria-hidden="true" />
+			<Icon
+				name="chevron-down"
+				className="-mr-1 ml-2 h-5 w-5"
+				aria-hidden="true"
+			/>
 		</Menu.Button>
 
 		<Transition
@@ -52,11 +55,17 @@ const Dropdown = <T,>({
 				)}
 			>
 				<div className="py-1">
-					{defaultItem && !defaultBottom && <Menu.Item>{({ active }) => defaultItem(active)}</Menu.Item>}
+					{defaultItem && !defaultBottom && (
+						<Menu.Item>{({ active }: any) => defaultItem(active)}</Menu.Item>
+					)}
 					{items.map((item, index) => (
-						<Menu.Item key={`${itemKey}-${index}`}>{({ active }) => generateItem(active, item)}</Menu.Item>
+						<Menu.Item key={`${itemKey}-${index}`}>
+							{({ active }: any) => generateItem(active, item)}
+						</Menu.Item>
 					))}
-					{defaultItem && !!defaultBottom && <Menu.Item>{({ active }) => defaultItem(active)}</Menu.Item>}
+					{defaultItem && !!defaultBottom && (
+						<Menu.Item>{({ active }: any) => defaultItem(active)}</Menu.Item>
+					)}
 				</div>
 			</Menu.Items>
 		</Transition>

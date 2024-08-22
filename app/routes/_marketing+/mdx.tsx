@@ -1,5 +1,9 @@
 import { invariantResponse } from '@epic-web/invariant'
-import { json, type MetaFunction, type LoaderFunctionArgs } from '@remix-run/node'
+import {
+	json,
+	type MetaFunction,
+	type LoaderFunctionArgs,
+} from '@remix-run/node'
 import { Link, useLoaderData, useLocation } from '@remix-run/react'
 import { formatDistanceToNow } from 'date-fns'
 import { getMDXComponent } from 'mdx-bundler/client/index.js'
@@ -76,7 +80,7 @@ export default function DocumentComponent() {
 				) : null}
 			</CardHeader>
 			<CardContent className="p-10 pt-6">
-				<div className="prose prose-zinc max-w-none dark:prose-invert lg:prose-lg">
+				<div className="prose prose-zinc dark:prose-invert lg:prose-lg max-w-none">
 					<Component />
 				</div>
 			</CardContent>

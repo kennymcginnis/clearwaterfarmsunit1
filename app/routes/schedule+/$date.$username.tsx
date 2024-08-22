@@ -6,10 +6,11 @@ import { Icon } from '#app/components/ui/icon'
 import { requireSelfOrAdmin } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatDates } from '#app/utils/misc'
-import { UserScheduleEditor, action } from './__schedule-editor'
+import { UserScheduleEditor } from './__schedule-editor'
 import { UserScheduleTimeline } from './__schedule-timeline'
-
+import { action } from './schedule.server'
 export { action }
+
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const { date, username } = params
 	if (!date || !username) return redirect('/schedules')

@@ -21,7 +21,7 @@ import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon'
 import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper.ts'
 import { prisma } from '#app/utils/db.server.ts'
-import { requireUserWithRole } from '#app/utils/permissions.ts'
+import { requireUserWithRole } from '#app/utils/permissions.server'
 import useScrollSync from '#app/utils/scroll-sync'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
@@ -49,9 +49,18 @@ export const SearchResultsSchema = z.array(
 		id: z.string(),
 		username: z.string(),
 		display: z.string(),
-		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
-		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
+		ditch: z.preprocess(
+			(x) => (x ? x : undefined),
+			z.coerce.number().int().min(1).max(9),
+		),
+		position: z.preprocess(
+			(x) => (x ? x : undefined),
+			z.coerce.number().int().min(1).max(99),
+		),
+		hours: z.preprocess(
+			(x) => (x ? x : 0),
+			z.coerce.number().multipleOf(0.5).min(0).max(36),
+		),
 		updatedBy: z.string().nullable(),
 	}),
 )
@@ -104,7 +113,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const totals: TotalType = {}
 	const userSchedules: PositionDitchType = {}
 	for (let user of result.data) {
-		if (userSchedules[user.position]) userSchedules[user.position][user.ditch] = user
+		if (userSchedules[user.position])
+			userSchedules[user.position][user.ditch] = user
 		else userSchedules[user.position] = { [user.ditch]: user }
 
 		if (totals[user.ditch]) totals[user.ditch] += user.hours
@@ -134,15 +144,24 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	})
 	invariantResponse(schedule, 'Not found', { status: 404 })
 
-	const uploadHandler: UploadHandler = composeUploadHandlers(csvUploadHandler, createMemoryUploadHandler())
+	const uploadHandler: UploadHandler = composeUploadHandlers(
+		csvUploadHandler,
+		createMemoryUploadHandler(),
+	)
 	const formData = await parseMultipartFormData(request, uploadHandler)
 
 	const csv = formData.get('selected_csv')
-	invariantResponse(typeof csv === 'string', 'selected_csv filename must be a string')
+	invariantResponse(
+		typeof csv === 'string',
+		'selected_csv filename must be a string',
+	)
 
 	const userSchedules = csvFileToArray(csv)
 	const result = UploadSignupSchema.safeParse(userSchedules)
-	if (!result.success) return json({ status: 'error', error: result.error.message } as const, { status: 400 })
+	if (!result.success)
+		return json({ status: 'error', error: result.error.message } as const, {
+			status: 400,
+		})
 
 	const existing = await prisma.userSchedule.findMany({
 		select: { userId: true, ditch: true, scheduleId: true, hours: true },
@@ -155,7 +174,16 @@ export async function action({ request, params }: ActionFunctionArgs) {
 			else agg[cur.userId] = { [cur.ditch]: cur }
 			return agg
 		},
-		{} as { [key: string]: { [key: string]: { userId: string; scheduleId: string; ditch: number; hours: number } } },
+		{} as {
+			[key: string]: {
+				[key: string]: {
+					userId: string
+					scheduleId: string
+					ditch: number
+					hours: number
+				}
+			}
+		},
 	)
 
 	for (let { id, ditch, hours } of result.data) {
@@ -185,7 +213,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
 export default function ScheduleSignupRoute() {
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
-	const { status, schedule, userSchedules, totals, error } = useLoaderData<typeof loader>()
+	const { status, schedule, userSchedules, totals, error } =
+		useLoaderData<typeof loader>()
 	const { id: scheduleId, date: scheduleDate } = schedule
 
 	const nodeRefA = useRef(null)
@@ -202,11 +231,11 @@ export default function ScheduleSignupRoute() {
 	})
 
 	useEffect(() => {
-		nodeRefs.forEach(nodeRef => {
+		nodeRefs.forEach((nodeRef) => {
 			if (nodeRef?.current) registerPane(nodeRef.current)
 		})
 		return () =>
-			nodeRefs.forEach(nodeRef => {
+			nodeRefs.forEach((nodeRef) => {
 				if (nodeRef?.current) unregisterPane(nodeRef.current)
 			})
 	}, [nodeRefs, registerPane, unregisterPane])
@@ -218,7 +247,8 @@ export default function ScheduleSignupRoute() {
 	const [showUpload, setShowUpload] = useState(false)
 	const toggleShowUpload = () => setShowUpload(!showUpload)
 
-	if (!scheduleId || !userSchedules || !Object.keys(userSchedules).length) return null
+	if (!scheduleId || !userSchedules || !Object.keys(userSchedules).length)
+		return null
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
 			<div className="flex w-[63.5%] flex-row flex-wrap gap-2 p-0.5">
@@ -228,25 +258,38 @@ export default function ScheduleSignupRoute() {
 					</Button>
 					{currentUser && scheduleDate ? (
 						<Button asChild variant="secondary" className="ml-2 pb-2">
-							<Link to={`/schedule/${scheduleDate}/${currentUser.username}`}>Jump to Self</Link>
+							<Link to={`/schedule/${scheduleDate}/${currentUser.username}`}>
+								Jump to Self
+							</Link>
 						</Button>
 					) : null}
 				</div>
 				<div className="my-1 flex-grow">
-					<SearchBar action={`/schedule/${scheduleDate}/signup`} status={status} autoFocus autoSubmit />
+					<SearchBar
+						action={`/schedule/${scheduleDate}/signup`}
+						status={status}
+						autoFocus
+						autoSubmit
+					/>
 				</div>
 				<div className="my-1 flex flex-row space-x-2">
 					{userIsAdmin ? (
 						<>
 							<Button asChild variant="default">
 								<NavLink to={`/schedules/${schedule.date}`}>
-									<Icon name="activity-log" className="scale-100 max-md:scale-125">
+									<Icon
+										name="activity-log"
+										className="scale-100 max-md:scale-125"
+									>
 										<span className="max-md:hidden">Schedules</span>
 									</Icon>
 								</NavLink>
 							</Button>
 							<Button>
-								<Link reloadDocument to={`/resources/download-signup/${scheduleDate}`}>
+								<Link
+									reloadDocument
+									to={`/resources/download-signup/${scheduleDate}`}
+								>
 									<Icon name="download">Download</Icon>
 								</Link>
 							</Button>
@@ -271,15 +314,28 @@ export default function ScheduleSignupRoute() {
 			{showUpload ? (
 				<div className="mb-2 flex w-[63.5%] flex-row justify-end space-x-2">
 					<Form method="post" encType="multipart/form-data">
-						<input aria-label="File" type="file" accept=".csv" name="selected_csv" />
-						<Button type="submit" name="intent" value="upload-signup" className="btn btn-sm">
+						<input
+							aria-label="File"
+							type="file"
+							accept=".csv"
+							name="selected_csv"
+						/>
+						<Button
+							type="submit"
+							name="intent"
+							value="upload-signup"
+							className="btn btn-sm"
+						>
 							Upload CSV
 						</Button>
 					</Form>
 				</div>
 			) : null}
 			<header className="sticky top-0 m-auto flex w-full flex-col items-center gap-6 bg-background text-foreground">
-				<div className="m-auto block w-full overflow-x-auto bg-background text-foreground" ref={nodeRefA}>
+				<div
+					className="m-auto block w-full overflow-x-auto bg-background text-foreground"
+					ref={nodeRefA}
+				>
 					<table>
 						<thead>
 							<tr>
@@ -288,7 +344,9 @@ export default function ScheduleSignupRoute() {
 										{hours > 0 || showAll ? (
 											<p className="mb-1 flex w-44 flex-col rounded-lg bg-primary-foreground px-5 py-3 text-center text-body-lg">
 												Ditch {ditch}
-												<p className="mb-2 w-full text-center text-body-md">{hours} hours</p>
+												<p className="mb-2 w-full text-center text-body-md">
+													{hours} hours
+												</p>
 											</p>
 										) : null}
 									</th>
@@ -302,13 +360,17 @@ export default function ScheduleSignupRoute() {
 			<main className="m-auto w-full" style={{ height: 'fill-available' }}>
 				{status === 'idle' ? (
 					userSchedules ? (
-						<div className="m-auto block w-full overflow-x-auto overflow-y-auto" ref={nodeRefB}>
+						<div
+							className="m-auto block w-full overflow-x-auto overflow-y-auto"
+							ref={nodeRefB}
+						>
 							<table>
 								<tbody>
-									{Object.keys(userSchedules).map(position => (
+									{Object.keys(userSchedules).map((position) => (
 										<tr key={`${position}`}>
-											{Object.keys(totals).map(ditch => {
-												const userSchedule = userSchedules[Number(position)][Number(ditch)]
+											{Object.keys(totals).map((ditch) => {
+												const userSchedule =
+													userSchedules[Number(position)][Number(ditch)]
 												return (
 													<td className="p-0.5" key={`${ditch}${position}`}>
 														{userSchedule && (userSchedule.hours || showAll) ? (
@@ -337,9 +399,7 @@ function UserCard({ userSchedule }: { userSchedule: UserScheduleType }) {
 	return (
 		<div
 			// to={`/schedule/${scheduleDate}/${userSchedule.username}`}
-			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg px-5 py-3 
-				${userSchedule.hours ? 'bg-muted' : 'bg-muted-40'}
-				${userSchedule.id === userSchedule.updatedBy && 'border-1 border-primary bg-secondary'}`}
+			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg px-5 py-3 ${userSchedule.hours ? 'bg-muted' : 'bg-muted-40'} ${userSchedule.id === userSchedule.updatedBy && 'border-1 border-primary bg-secondary'}`}
 		>
 			<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-body-sm text-muted-foreground">
 				{userSchedule.position}: {userSchedule.display}
@@ -351,7 +411,10 @@ function UserCard({ userSchedule }: { userSchedule: UserScheduleType }) {
 	)
 }
 
-export const meta: MetaFunction<null, { 'routes/schedule+/$date/signup': typeof loader }> = ({ params }) => {
+export const meta: MetaFunction<
+	null,
+	{ 'routes/schedule+/$date/signup': typeof loader }
+> = ({ params }) => {
 	return [
 		{ title: `Irrigation Sign-Up | ${params.date}` },
 		{

@@ -31,7 +31,7 @@ export function GeneralErrorBoundary({
 				? (statusHandlers?.[error.status] ?? defaultStatusHandler)({
 						error,
 						params,
-				  })
+					})
 				: unexpectedErrorHandler(error)}
 		</div>
 	)

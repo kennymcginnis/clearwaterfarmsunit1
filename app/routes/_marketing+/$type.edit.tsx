@@ -1,7 +1,11 @@
 import { conform, useForm } from '@conform-to/react'
-import { getFieldsetConstraint, parse } from '@conform-to/zod'
+import { getZodConstraint, parseWithZod } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node'
+import {
+	json,
+	type LoaderFunctionArgs,
+	type ActionFunctionArgs,
+} from '@remix-run/node'
 import { useLoaderData, Form, useActionData } from '@remix-run/react'
 import { formatDistanceToNow } from 'date-fns'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
@@ -56,13 +60,16 @@ export async function action({ request }: ActionFunctionArgs) {
 	const formData = await request.formData()
 	await validateCSRF(formData, request.headers)
 
-	const submission = await parse(formData, {
+	const submission = await parseWithZod(formData, {
 		schema: () => DocumentEditorSchema.transform(async (data, ctx) => data),
 		async: true,
 	})
 
-	if (submission.intent !== 'submit') {
-		return json({ status: 'idle', submission } as const)
+	if (submission.status !== 'success') {
+		return json(
+			{ result: submission.reply() },
+			{ status: submission.status === 'error' ? 400 : 200 },
+		)
 	}
 
 	if (submission.value) {
@@ -96,10 +103,10 @@ export default function DocumentComponent() {
 
 	const [form, fields] = useForm({
 		id: 'note-editor',
-		constraint: getFieldsetConstraint(DocumentEditorSchema),
-		lastSubmission: actionData?.submission,
+		constraint: getZodConstraint(DocumentEditorSchema),
+		lastResult: actionData?.result,
 		onValidate({ formData }) {
-			return parse(formData, { schema: DocumentEditorSchema })
+			return parseWithZod(formData, { schema: DocumentEditorSchema })
 		},
 		defaultValue: {
 			content: data.content ?? '',
@@ -121,7 +128,12 @@ export default function DocumentComponent() {
 							<Button form={form.id} variant="destructive" type="reset">
 								Reset
 							</Button>
-							<StatusButton form={form.id} type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
+							<StatusButton
+								form={form.id}
+								type="submit"
+								disabled={isPending}
+								status={isPending ? 'pending' : 'idle'}
+							>
 								Submit
 							</StatusButton>
 						</div>
@@ -132,7 +144,7 @@ export default function DocumentComponent() {
 				<Form
 					method="POST"
 					className="overflow-y-auto overflow-x-hidden px-10 pb-28 pt-12"
-					{...form.props}
+					{...getFormProps(form)}
 					encType="multipart/form-data"
 				>
 					<AuthenticityTokenInput />

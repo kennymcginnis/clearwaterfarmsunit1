@@ -1,4 +1,4 @@
-import { parse } from '@conform-to/zod'
+import { parseWithZod } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { type Prisma } from '@prisma/client'
 import { type ActionFunctionArgs, json } from '@remix-run/node'

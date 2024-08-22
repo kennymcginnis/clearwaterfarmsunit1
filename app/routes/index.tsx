@@ -4,12 +4,18 @@ import { useLoaderData } from '@remix-run/react'
 import { formatDistanceToNow } from 'date-fns'
 import { z } from 'zod'
 import { DisplayField } from '#app/components/forms'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '#app/components/ui/card'
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { parseMdx } from '#app/utils/mdx-bundler.server'
 import { formatDay, formatDates, formatUserSchedule } from '#app/utils/misc'
-import AnnouncementsComponent from './_marketing+/announcements'
+// import AnnouncementsComponent from './_marketing+/announcements'
 import { UserScheduleEditor, action } from './schedule+/__schedule-editor'
 import { UserScheduleTimeline } from './schedule+/__schedule-timeline'
 
@@ -72,7 +78,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			WHERE userId = ${userId}
 		`
 		const result = UserSearchResultsSchema.safeParse(currentBalance)
-		const balance = result.success ? result.data[0].balance : 0
+		const balance = result?.data?.[0]?.balance ?? 0
 
 		const userSchedules = {
 			select: {
@@ -91,13 +97,18 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		})
 
 		// find the next future dated schedule for the user
-		let closed = allSchedules.find(s => s.userSchedules.some(us => us?.start && us.start > new Date()))
+		let closed = allSchedules.find((s) =>
+			s.userSchedules.some((us) => us?.start && us.start > new Date()),
+		)
 		// if none, then use the most recently closed schedule
 		if (!closed) closed = allSchedules.pop()
 		invariantResponse(closed, 'No Closed Schedules Found', { status: 404 })
 		const closedSchedules = {
 			...closed,
-			schedule: formatDates({ start: closed?.start ?? null, stop: closed?.stop ?? null }),
+			schedule: formatDates({
+				start: closed?.start ?? null,
+				stop: closed?.stop ?? null,
+			}),
 		}
 		const closedUserSchedules = formatUserSchedule(user, closed?.userSchedules)
 
@@ -107,7 +118,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			orderBy: { date: 'desc' },
 		})
 		const openSchedules = open ? { ...open, schedule: [] } : null
-		const openUserSchedules = formatUserSchedule(user, open?.userSchedules, closed?.userSchedules)
+		const openUserSchedules = formatUserSchedule(
+			user,
+			open?.userSchedules,
+			closed?.userSchedules,
+		)
 		return json({
 			type,
 			document,
@@ -136,7 +151,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		})
 		const closedSchedules = {
 			...closed,
-			schedule: formatDates({ start: closed?.start ?? null, stop: closed?.stop ?? null }),
+			schedule: formatDates({
+				start: closed?.start ?? null,
+				stop: closed?.stop ?? null,
+			}),
 		}
 		return json({
 			type,
@@ -153,9 +171,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 }
 
 export default function HomeRoute() {
-	const USDollar = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+	const USDollar = new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency: 'USD',
+	})
 
-	const { user, balance, open, closed, userSchedules } = useLoaderData<typeof loader>()
+	const { user, balance, open, closed, userSchedules } =
+		useLoaderData<typeof loader>()
 	if (user) {
 		return (
 			<div className="flex w-full flex-col items-center">
@@ -184,7 +206,9 @@ export default function HomeRoute() {
 						<div className="text-center text-xl font-semibold uppercase text-foreground-destructive">
 							User Account Restricted
 						</div>
-						<div className="text-center text-lg text-foreground-destructive">{user.restriction}</div>
+						<div className="text-center text-lg text-foreground-destructive">
+							{user.restriction}
+						</div>
 					</div>
 				) : null}
 				{balance ? (
@@ -200,11 +224,20 @@ export default function HomeRoute() {
 					</div>
 				) : null}
 
-				<div id="columns" className="m-auto flex h-full flex-wrap justify-center gap-4 p-4">
+				<div
+					id="columns"
+					className="m-auto flex h-full flex-wrap justify-center gap-4 p-4"
+				>
 					<div id="closed" className="w-[352px] flex-col">
-						<CardDescription className="text-center">Most Recently Closed Schedule:</CardDescription>
+						<CardDescription className="text-center">
+							Most Recently Closed Schedule:
+						</CardDescription>
 						{closed ? (
-							<ClosedSchedule closed={closed} userSchedules={userSchedules} user={user} />
+							<ClosedSchedule
+								closed={closed}
+								userSchedules={userSchedules}
+								user={user}
+							/>
 						) : (
 							<Card className="bg-muted">
 								<CardHeader>
@@ -216,20 +249,28 @@ export default function HomeRoute() {
 					</div>
 
 					<div id="open" className="w-[352px] flex-col">
-						<CardDescription className="text-center">Currently Open for Sign-Up:</CardDescription>
+						<CardDescription className="text-center">
+							Currently Open for Sign-Up:
+						</CardDescription>
 						{open ? (
-							<OpenSchedule open={open} userSchedules={userSchedules} user={user} />
+							<OpenSchedule
+								open={open}
+								userSchedules={userSchedules}
+								user={user}
+							/>
 						) : (
 							<Card className="bg-muted">
 								<CardHeader>
-									<CardTitle>No schedules are currently open for Sign-Up!</CardTitle>
+									<CardTitle>
+										No schedules are currently open for Sign-Up!
+									</CardTitle>
 								</CardHeader>
 								<CardContent />
 							</Card>
 						)}
 					</div>
 				</div>
-				<AnnouncementsComponent />
+				{/* <AnnouncementsComponent /> */}
 			</div>
 		)
 	} else {
@@ -238,10 +279,12 @@ export default function HomeRoute() {
 				<Card className="m-6 flex flex-col items-center gap-5">
 					<CardHeader className="m-auto w-[50%] flex-col items-center border-none">
 						<CardTitle className="pt-3">Clearwater Farms Unit 1</CardTitle>
-						<CardDescription className="pb-3">Log in to sign up for the current schedule.</CardDescription>
+						<CardDescription className="pb-3">
+							Log in to sign up for the current schedule.
+						</CardDescription>
 					</CardHeader>
 				</Card>
-				<AnnouncementsComponent />
+				{/* <AnnouncementsComponent /> */}
 			</>
 		)
 	}
@@ -278,11 +321,13 @@ function OpenSchedule({
 		<Card className="bg-muted">
 			<CardHeader className="flex-col items-center">
 				<CardTitle>Open Until: {open.deadline}</CardTitle>
-				<CardDescription>Sign-Up Deadline {formatDay(open.deadline)} at 7pm</CardDescription>
+				<CardDescription>
+					Sign-Up Deadline {formatDay(open.deadline)} at 7pm
+				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-2">
 				{userSchedules.open ? (
-					userSchedules.open.map(userSchedule => (
+					userSchedules.open.map((userSchedule) => (
 						<UserScheduleEditor
 							key={`schedule-${userSchedule.ditch}`}
 							user={user}
@@ -326,12 +371,18 @@ function ClosedSchedule({
 		<Card className="bg-muted">
 			<CardHeader className="flex-col items-center">
 				<CardTitle>Schedule Dated: {closed.date}</CardTitle>
-				{closed.start && closed.stop ? <CardDescription>{closed.schedule.join(' ─ ')}</CardDescription> : null}
+				{closed.start && closed.stop ? (
+					<CardDescription>{closed.schedule.join(' ─ ')}</CardDescription>
+				) : null}
 			</CardHeader>
 			<CardContent className="flex-col">
 				{userSchedules.closed ? (
-					userSchedules.closed.map(userSchedule => (
-						<UserScheduleTimeline key={`timeline-${userSchedule.ditch}`} user={user} userSchedule={userSchedule} />
+					userSchedules.closed.map((userSchedule) => (
+						<UserScheduleTimeline
+							key={`timeline-${userSchedule.ditch}`}
+							user={user}
+							userSchedule={userSchedule}
+						/>
 					))
 				) : (
 					<MissingUserSchedule schedule={userSchedules.closed} />
@@ -353,10 +404,22 @@ function MissingUserSchedule({
 }) {
 	return (
 		<>
-			<DisplayField labelProps={{ children: 'Date' }} inputProps={{ defaultValue: schedule.date }} />
-			<DisplayField labelProps={{ children: 'Deadline' }} inputProps={{ defaultValue: schedule.deadline }} />
-			<DisplayField labelProps={{ children: 'Source' }} inputProps={{ defaultValue: schedule.source }} />
-			<DisplayField labelProps={{ children: 'Cost Per Hour' }} inputProps={{ defaultValue: schedule.costPerHour }} />
+			<DisplayField
+				labelProps={{ children: 'Date' }}
+				inputProps={{ defaultValue: schedule.date }}
+			/>
+			<DisplayField
+				labelProps={{ children: 'Deadline' }}
+				inputProps={{ defaultValue: schedule.deadline }}
+			/>
+			<DisplayField
+				labelProps={{ children: 'Source' }}
+				inputProps={{ defaultValue: schedule.source }}
+			/>
+			<DisplayField
+				labelProps={{ children: 'Cost Per Hour' }}
+				inputProps={{ defaultValue: schedule.costPerHour }}
+			/>
 		</>
 	)
 }

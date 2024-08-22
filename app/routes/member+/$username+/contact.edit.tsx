@@ -1,18 +1,27 @@
 import { conform, useForm } from '@conform-to/react'
-import { getFieldsetConstraint, parse } from '@conform-to/zod'
+import { getZodConstraint, parseWithZod } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
 import { useLoaderData, type MetaFunction, Form } from '@remix-run/react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { Field } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '#app/components/ui/card'
+import {
+	Card,
+	CardContent,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button'
-import { action, UserContactSchema, UpdatePhone, CreatePhone } from '#app/routes/member+/$username+/_edit'
+import {
+	action,
+	UserContactSchema,
+	UpdatePhone,
+	CreatePhone,
+} from '#app/routes/member+/$username+/_edit'
 import { prisma } from '#app/utils/db.server.ts'
 import { useIsPending } from '#app/utils/misc'
-
-export { action }
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	const user = await prisma.user.findFirst({
@@ -49,10 +58,10 @@ export default function ContactEditRoute() {
 
 	const [form, fields] = useForm({
 		id: `user-form-contact`,
-		constraint: getFieldsetConstraint(UserContactSchema),
-		// lastSubmission: actionData?.submission,
+		constraint: getZodConstraint(UserContactSchema),
+		// lastResult: actionData?.result,
 		onValidate({ formData }) {
-			return parse(formData, { schema: UserContactSchema })
+			return parseWithZod(formData, { schema: UserContactSchema })
 		},
 		defaultValue: {
 			username: user.username ?? '',
@@ -65,7 +74,7 @@ export default function ContactEditRoute() {
 
 	return (
 		<Card>
-			<Form method="POST" {...form.props}>
+			<Form method="POST" {...getFormProps(form)}>
 				<CardHeader>
 					<CardTitle>Contact Information</CardTitle>
 				</CardHeader>
@@ -76,7 +85,7 @@ export default function ContactEditRoute() {
 							className="max-w-[50%]"
 							labelProps={{ children: 'Username' }}
 							inputProps={{
-								...conform.input(fields.username),
+								...getInputProps(fields.username),
 								autoFocus: true,
 								className: 'lowercase',
 								autoComplete: 'username',
@@ -87,7 +96,7 @@ export default function ContactEditRoute() {
 							className="max-w-[75%]"
 							labelProps={{ children: 'Member Name' }}
 							inputProps={{
-								...conform.input(fields.member),
+								...getInputProps(fields.member),
 							}}
 							errors={fields.member.errors}
 						/>
@@ -95,7 +104,7 @@ export default function ContactEditRoute() {
 							className="max-w-[75%]"
 							labelProps={{ children: 'Primary Email' }}
 							inputProps={{
-								...conform.input(fields.primaryEmail),
+								...getInputProps(fields.primaryEmail),
 								autoComplete: 'primaryEmail',
 							}}
 							errors={fields.primaryEmail.errors}
@@ -104,7 +113,7 @@ export default function ContactEditRoute() {
 							className="max-w-[75%]"
 							labelProps={{ children: 'Secondary Email' }}
 							inputProps={{
-								...conform.input(fields.secondaryEmail),
+								...getInputProps(fields.secondaryEmail),
 								autoComplete: 'secondaryEmail',
 							}}
 							errors={fields.secondaryEmail.errors}
@@ -114,12 +123,17 @@ export default function ContactEditRoute() {
 								<Button form={form.id} variant="destructive" type="reset">
 									Reset
 								</Button>
-								<StatusButton form={form.id} type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
+								<StatusButton
+									form={form.id}
+									type="submit"
+									disabled={isPending}
+									status={isPending ? 'pending' : 'idle'}
+								>
 									Submit
 								</StatusButton>
 							</div>
 						</CardFooter>
-						{user.phones.map(phone => (
+						{user.phones.map((phone) => (
 							<UpdatePhone key={phone.id} userId={user.id} phone={phone} />
 						))}
 						<CreatePhone userId={user.id} />
@@ -143,17 +157,17 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 
 /*
 function PrimaryPhone({ phone, userId }: { phone: { id: string; primary: boolean }; userId: string }) {
-	const fetcher = useFetcher<typeof updatePhoneAction>()
+	const actionData = useActionData<typeofupdatePhoneAction>()
 	const [form, fields] = useForm({
 		id: `${updatePhonePrimaryActionIntent}-${phone.id}`,
-		constraint: getFieldsetConstraint(UpdatePhonePrimarySchema),
-		lastSubmission: fetcher.data?.submission,
+		constraint: getZodConstraint(UpdatePhonePrimarySchema),
+		lastResult: actionData?.result,
 		onValidate({ formData }) {
-			return parse(formData, { schema: UpdatePhonePrimarySchema })
+			return parseWithZod(formData, { schema: UpdatePhonePrimarySchema })
 		},
 	})
 	return (
-		<fetcher.Form method="POST" {...form.props}>
+		<fetcher.Form method="POST" {...getFormProps(form)}>
 			<AuthenticityTokenInput />
 			<input type="hidden" name="id" value={phone.id} />
 			<input type="hidden" name="userId" value={userId} />
@@ -165,7 +179,7 @@ function PrimaryPhone({ phone, userId }: { phone: { id: string; primary: boolean
 					value: updatePhonePrimaryActionIntent,
 				}}
 				inputProps={{
-					...conform.input(fields.primary),
+					...getInputProps(fields.primary),
 				}}
 			/>
 		</fetcher.Form>

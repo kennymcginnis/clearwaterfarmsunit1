@@ -1,65 +1,30 @@
-import { useForm } from '@conform-to/react'
-import { getFieldsetConstraint, parse } from '@conform-to/zod'
-import { json, type ActionFunctionArgs } from '@remix-run/node'
-import { useFetcher } from '@remix-run/react'
+import { getFormProps, useForm } from '@conform-to/react'
+import { getZodConstraint, parseWithZod } from '@conform-to/zod'
+import { Form, useActionData } from '@remix-run/react'
 import { type SetStateAction, useState } from 'react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
 import { ErrorList, Field } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button'
-import { Card, CardHeader, CardFooter, CardContent, CardTitle, CardDescription } from '#app/components/ui/card'
+import {
+	Card,
+	CardHeader,
+	CardFooter,
+	CardContent,
+	CardTitle,
+	CardDescription,
+} from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
-import { requireUserId } from '#app/utils/auth.server.ts'
-import { validateCSRF } from '#app/utils/csrf.server.ts'
-import { prisma } from '#app/utils/db.server.ts'
 import { formatHours, useIsPending } from '#app/utils/misc.tsx'
-import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
+import { type updateUserScheduleAction } from './schedule.server'
 
-const UserScheduleEditorSchema = z.object({
+export const UserScheduleEditorSchema = z.object({
 	userId: z.string(),
 	scheduleId: z.string(),
 	ditch: z.number(),
 	hours: z.number().min(0).max(12),
 })
-
-export async function action({ request }: ActionFunctionArgs) {
-	const currentUser = await requireUserId(request)
-	const formData = await request.formData()
-	await validateCSRF(formData, request.headers)
-
-	const submission = await parse(formData, { schema: UserScheduleEditorSchema, async: true })
-	if (submission.intent !== 'submit') return json({ status: 'idle', submission })
-
-	if (submission.value) {
-		const { userId, ditch, scheduleId, hours } = submission.value
-
-		await prisma.userSchedule.upsert({
-			select: { userId: true, ditch: true, scheduleId: true },
-			where: { userId_ditch_scheduleId: { userId, ditch, scheduleId } },
-			create: {
-				userId,
-				scheduleId,
-				ditch,
-				hours,
-				updatedBy: currentUser,
-			},
-			update: {
-				hours,
-				updatedBy: currentUser,
-			},
-		})
-
-		return redirectWithToast('', {
-			type: 'success',
-			title: 'Success',
-			description: `${hours} hours saved for ditch ${ditch}.`,
-		})
-	} else {
-		return json({ status: 'error', submission } as const, { status: 400 })
-	}
-}
-
 export function UserScheduleEditor({
 	user,
 	schedule,
@@ -83,11 +48,12 @@ export function UserScheduleEditor({
 	}
 	previous?: number | null
 }) {
-	const scheduleEditor = useFetcher<typeof action>()
+	const actionData = useActionData<typeof updateUserScheduleAction>()
 	const isPending = useIsPending()
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
-	const canEdit = (!user.restricted && user.id === currentUser?.id) || userIsAdmin
+	const canEdit =
+		(!user.restricted && user.id === currentUser?.id) || userIsAdmin
 
 	const handlePrevious = (): void => {
 		if (previous) setHoursValue(previous)
@@ -95,7 +61,9 @@ export function UserScheduleEditor({
 	const handleDefault = (): void => {
 		if (user.defaultHours) setHoursValue(user.defaultHours)
 	}
-	const handleHoursChanged = (e: { target: { value: SetStateAction<string> } }) => {
+	const handleHoursChanged = (e: {
+		target: { value: SetStateAction<string> }
+	}) => {
 		const { value } = e.target
 		if (Number(value) >= 0) setHoursValue(Number(value))
 	}
@@ -104,17 +72,17 @@ export function UserScheduleEditor({
 
 	const [form, fields] = useForm({
 		id: 'signup-form',
-		constraint: getFieldsetConstraint(UserScheduleEditorSchema),
-		lastSubmission: scheduleEditor.data?.submission,
+		constraint: getZodConstraint(UserScheduleEditorSchema),
+		lastResult: actionData?.result,
 		onValidate({ formData }) {
-			return parse(formData, { schema: UserScheduleEditorSchema })
+			return parseWithZod(formData, { schema: UserScheduleEditorSchema })
 		},
 		shouldRevalidate: 'onBlur',
 	})
 
 	return (
 		<Card key={userSchedule.ditch}>
-			<scheduleEditor.Form method="POST" {...form.props}>
+			<Form method="POST" {...getFormProps(form)}>
 				<AuthenticityTokenInput />
 				<input type="hidden" name="userId" value={user.id} />
 				<input type="hidden" name="scheduleId" value={schedule.id} />
@@ -151,22 +119,34 @@ export function UserScheduleEditor({
 					<CardFooter className="flex items-center justify-between gap-2 px-2 pb-2">
 						<div className="flex gap-1">
 							{user.defaultHours > 0 ? (
-								<Button variant="secondary" type="reset" onClick={handleDefault}>
+								<Button
+									variant="secondary"
+									type="reset"
+									onClick={handleDefault}
+								>
 									Default
 								</Button>
 							) : null}
 							{previous ? (
-								<Button variant="secondary" type="reset" onClick={handlePrevious}>
+								<Button
+									variant="secondary"
+									type="reset"
+									onClick={handlePrevious}
+								>
 									Previous
 								</Button>
 							) : null}
 						</div>
-						<StatusButton type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
+						<StatusButton
+							type="submit"
+							disabled={isPending}
+							status={isPending ? 'pending' : 'idle'}
+						>
 							Submit
 						</StatusButton>
 					</CardFooter>
 				) : null}
-			</scheduleEditor.Form>
+			</Form>
 		</Card>
 	)
 }

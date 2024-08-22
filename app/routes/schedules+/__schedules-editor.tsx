@@ -1,5 +1,5 @@
-import { conform, useForm } from '@conform-to/react'
-import { getFieldsetConstraint, parse } from '@conform-to/zod'
+import { useForm } from '@conform-to/react'
+import { getZodConstraint, parseWithZod } from '@conform-to/zod'
 import { type Schedule } from '@prisma/client'
 import {
 	unstable_createMemoryUploadHandler as createMemoryUploadHandler,
@@ -19,7 +19,6 @@ import { ErrorList, Field } from '#app/components/forms.tsx'
 import { SourceCombobox } from '#app/components/source-combobox'
 import { Button } from '#app/components/ui/button'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
-import { requireUserId } from '#app/utils/auth.server.ts'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { useIsPending } from '#app/utils/misc.tsx'
@@ -36,12 +35,13 @@ const ScheduleEditorSchema = z.object({
 })
 
 export async function action({ request }: ActionFunctionArgs) {
-	const userId = await requireUserId(request)
-
-	const formData = await parseMultipartFormData(request, createMemoryUploadHandler())
+	const formData = await parseMultipartFormData(
+		request,
+		createMemoryUploadHandler(),
+	)
 	await validateCSRF(formData, request.headers)
 
-	const submission = await parse(formData, {
+	const submission = await parseWithZod(formData, {
 		schema: ScheduleEditorSchema.superRefine(async (data, ctx) => {
 			const existingSchedule = await prisma.schedule.findFirst({
 				select: { id: true },
@@ -73,7 +73,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	console.dir({ submission })
 
-	if (submission.intent !== 'submit') {
+	if (submission.status !== 'success') {
 		return json({ submission } as const)
 	}
 
@@ -81,7 +81,13 @@ export async function action({ request }: ActionFunctionArgs) {
 		return json({ submission } as const, { status: 400 })
 	}
 
-	const { id: scheduleId, date, deadline, source, costPerHour } = submission.value
+	const {
+		id: scheduleId,
+		date,
+		deadline,
+		source,
+		costPerHour,
+	} = submission.value
 
 	const updatedSchedule = await prisma.schedule.upsert({
 		select: { id: true, date: true },
@@ -92,14 +98,14 @@ export async function action({ request }: ActionFunctionArgs) {
 			deadline,
 			source,
 			costPerHour,
-			updatedBy: userId,
+			updatedBy,
 		},
 		update: {
 			date,
 			deadline,
 			source,
 			costPerHour,
-			updatedBy: userId,
+			updatedBy,
 		},
 	})
 
@@ -109,19 +115,23 @@ export async function action({ request }: ActionFunctionArgs) {
 export function ScheduleEditor({
 	schedule,
 }: {
-	schedule?: SerializeFrom<Pick<Schedule, 'id' | 'date' | 'deadline' | 'source' | 'costPerHour'>>
+	schedule?: SerializeFrom<
+		Pick<Schedule, 'id' | 'date' | 'deadline' | 'source' | 'costPerHour'>
+	>
 }) {
 	const actionData = useActionData<typeof action>()
 	const isPending = useIsPending()
 
-	const [sourceValue, setSourceValue] = useState((schedule?.source ?? 'surface').toString())
+	const [sourceValue, setSourceValue] = useState(
+		(schedule?.source ?? 'surface').toString(),
+	)
 
 	const [form, fields] = useForm({
 		id: 'schedule-editor',
-		constraint: getFieldsetConstraint(ScheduleEditorSchema),
-		lastSubmission: actionData?.submission,
+		constraint: getZodConstraint(ScheduleEditorSchema),
+		lastResult: actionData?.result,
 		onValidate({ formData }) {
-			return parse(formData, { schema: ScheduleEditorSchema })
+			return parseWithZod(formData, { schema: ScheduleEditorSchema })
 		},
 		defaultValue: {
 			date: schedule?.date ?? '',
@@ -136,7 +146,7 @@ export function ScheduleEditor({
 			<Form
 				method="POST"
 				className="flex h-full flex-col gap-y-4 overflow-y-auto overflow-x-hidden px-10 pb-28 pt-12"
-				{...form.props}
+				{...getFormProps(form)}
 				encType="multipart/form-data"
 			>
 				<AuthenticityTokenInput />
@@ -152,7 +162,7 @@ export function ScheduleEditor({
 						className="w-[250px]"
 						labelProps={{ children: 'Date' }}
 						inputProps={{
-							...conform.input(fields.date, { ariaAttributes: true }),
+							...getInputProps(fields.date, { ariaAttributes: true }),
 							placeholder: 'yyyy-MM-dd',
 						}}
 						errors={fields.date.errors}
@@ -161,7 +171,7 @@ export function ScheduleEditor({
 						className="w-[250px]"
 						labelProps={{ children: 'Deadline' }}
 						inputProps={{
-							...conform.input(fields.deadline, { ariaAttributes: true }),
+							...getInputProps(fields.deadline, { ariaAttributes: true }),
 							placeholder: 'yyyy-MM-dd',
 						}}
 						errors={fields.deadline.errors}
@@ -173,7 +183,7 @@ export function ScheduleEditor({
 						labelProps={{ children: 'Cost Per Hour' }}
 						inputProps={{
 							type: 'number',
-							...conform.input(fields.costPerHour, { ariaAttributes: true }),
+							...getInputProps(fields.costPerHour, { ariaAttributes: true }),
 						}}
 						errors={fields.costPerHour.errors}
 					/>
@@ -184,7 +194,12 @@ export function ScheduleEditor({
 				<Button form={form.id} variant="destructive" type="reset">
 					Reset
 				</Button>
-				<StatusButton form={form.id} type="submit" disabled={isPending} status={isPending ? 'pending' : 'idle'}>
+				<StatusButton
+					form={form.id}
+					type="submit"
+					disabled={isPending}
+					status={isPending ? 'pending' : 'idle'}
+				>
 					Submit
 				</StatusButton>
 			</div>
@@ -196,7 +211,9 @@ export function ErrorBoundary() {
 	return (
 		<GeneralErrorBoundary
 			statusHandlers={{
-				404: ({ params }) => <p>No schedule with the id "{params.scheduleId}" exists</p>,
+				404: ({ params }) => (
+					<p>No schedule with the id "{params.scheduleId}" exists</p>
+				),
 			}}
 		/>
 	)

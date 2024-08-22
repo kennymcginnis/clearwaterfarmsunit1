@@ -1,26 +1,40 @@
-import { conform, useForm } from '@conform-to/react'
-import { getFieldsetConstraint, parse } from '@conform-to/zod'
+import { getFormProps, getInputProps, useForm } from '@conform-to/react'
+import { getZodConstraint, parseWithZod } from '@conform-to/zod'
 import { type SEOHandle } from '@nasa-gcn/remix-seo'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
-import { type MetaFunction, useFetcher, Link, useLoaderData } from '@remix-run/react'
+import {
+	type MetaFunction,
+	useFetcher,
+	Link,
+	useLoaderData,
+	useActionData,
+	Form,
+} from '@remix-run/react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
+import { z } from 'zod'
 import { Field, ErrorList } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon'
 import { StatusButton } from '#app/components/ui/status-button'
 import {
-	action,
+	type action,
+	type profileUpdateAction,
+	type signOutOfSessionsAction,
+} from '#app/routes/member+/$username+/_edit.server.tsx'
+import {
 	CreatePhone,
-	ProfileFormSchema,
 	profileUpdateActionIntent,
 	signOutOfSessionsActionIntent,
 	UpdatePhone,
-	type profileUpdateAction,
-	type signOutOfSessionsAction,
-} from '#app/routes/member+/$username+/_edit'
+} from '#app/routes/member+/$username+/_edit.tsx'
 import { requireUserId } from '#app/utils/auth.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
-import { useDoubleCheck, getUserImgSrc } from '#app/utils/misc'
+import { useDoubleCheck, getUserImgSrc, useIsPending } from '#app/utils/misc'
+import {
+	EmailSchema,
+	NameSchema,
+	UsernameSchema,
+} from '#app/utils/user-validation'
 
 export { action }
 
@@ -82,7 +96,12 @@ export default function EditUserProfile() {
 						variant="outline"
 						className="absolute -right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full p-0"
 					>
-						<Link preventScrollReset to="photo" title="Change profile photo" aria-label="Change profile photo">
+						<Link
+							preventScrollReset
+							to="photo"
+							title="Change profile photo"
+							aria-label="Change profile photo"
+						>
 							<Icon name="camera" className="h-4 w-4" />
 						</Link>
 					</Button>
@@ -92,7 +111,11 @@ export default function EditUserProfile() {
 
 			<div className="col-span-6 my-4 h-1 border-b-[1.5px] border-foreground" />
 			<div className="col-span-full flex flex-col gap-6">
-				<Link reloadDocument download="my-epic-notes-data.json" to="/resources/download-user-data">
+				<Link
+					reloadDocument
+					download="my-epic-notes-data.json"
+					to="/resources/download-user-data"
+				>
 					<Icon name="download">Download your data</Icon>
 				</Link>
 				<SignOutOfSessions />
@@ -102,37 +125,42 @@ export default function EditUserProfile() {
 	)
 }
 
+export const ProfileFormSchema = z.object({
+	member: NameSchema.optional(),
+	username: UsernameSchema,
+	secondaryEmail: EmailSchema.optional(),
+})
 function UpdateProfile() {
 	const data = useLoaderData<typeof loader>()
-	const fetcher = useFetcher<typeof profileUpdateAction>()
+	const actionData = useActionData<typeof profileUpdateAction>()
 
 	const [form, fields] = useForm({
 		id: 'edit-profile',
-		constraint: getFieldsetConstraint(ProfileFormSchema),
-		lastSubmission: fetcher.data?.submission,
+		constraint: getZodConstraint(ProfileFormSchema),
+		lastResult: actionData?.result,
 		onValidate({ formData }) {
-			return parse(formData, { schema: ProfileFormSchema })
+			return parseWithZod(formData, { schema: ProfileFormSchema })
 		},
 		defaultValue: {
 			username: data.user.username,
 			member: data.user.member ?? '',
-			primaryEmail: data.user.primaryEmail,
 			secondaryEmail: data.user.secondaryEmail,
 		},
 	})
 
+	const isPending = useIsPending()
 	return (
-		<fetcher.Form method="POST" {...form.props}>
+		<Form method="POST" {...getFormProps(form)}>
 			<AuthenticityTokenInput />
 			<div className="grid grid-cols-6 gap-2">
 				<Field
 					className="col-span-2"
 					labelProps={{ htmlFor: fields.username.id, children: 'Username' }}
-					inputProps={conform.input(fields.username)}
+					inputProps={{ ...getInputProps(fields.username, { type: 'text' }) }}
 					errors={fields.username.errors}
 				/>
 				<div className="col-span-4 content-end">
-					<Button variant="outline" className="pb-2 bg-muted border-secondary">
+					<Button variant="outline" className="border-secondary bg-muted pb-2">
 						<Link to={'password'}>
 							<Icon name="dots-horizontal">Change Password</Icon>
 						</Link>
@@ -141,7 +169,7 @@ function UpdateProfile() {
 				<Field
 					className="col-span-6"
 					labelProps={{ htmlFor: fields.member.id, children: 'Member Name' }}
-					inputProps={conform.input(fields.member)}
+					inputProps={{ ...getInputProps(fields.member, { type: 'text' }) }}
 					errors={fields.member.errors}
 				/>
 				<div className="col-span-3 pb-4">
@@ -154,15 +182,22 @@ function UpdateProfile() {
 						aria-label="Change email"
 					>
 						<Icon name="envelope-closed">
-							{data.user.primaryEmail ? `Change email from ${data.user.primaryEmail}` : 'Add primary email'}
+							{data.user.primaryEmail
+								? `Change email from ${data.user.primaryEmail}`
+								: 'Add primary email'}
 						</Icon>
 					</Link>
 				</div>
 
 				<Field
 					className="col-span-3"
-					labelProps={{ htmlFor: fields.secondaryEmail.id, children: 'Secondary Email' }}
-					inputProps={conform.input(fields.secondaryEmail)}
+					labelProps={{
+						htmlFor: fields.secondaryEmail.id,
+						children: 'Secondary Email',
+					}}
+					inputProps={{
+						...getInputProps(fields.secondaryEmail, { type: 'email' }),
+					}}
 					errors={fields.secondaryEmail.errors}
 				/>
 			</div>
@@ -174,18 +209,18 @@ function UpdateProfile() {
 					size="wide"
 					name="intent"
 					value={profileUpdateActionIntent}
-					status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
+					status={isPending ? 'pending' : (form.status ?? 'idle')}
 				>
 					Save Changes
 				</StatusButton>
 			</div>
 			<div className="col-span-6 my-4 h-1 border-b-[1.5px] border-foreground" />
 
-			{data.user.phones.map(phone => (
+			{data.user.phones.map((phone) => (
 				<UpdatePhone key={phone.id} userId={data.user.id} phone={phone} />
 			))}
 			<CreatePhone userId={data.user.id} />
-		</fetcher.Form>
+		</Form>
 	)
 }
 
@@ -205,10 +240,16 @@ function SignOutOfSessions() {
 					value: signOutOfSessionsActionIntent,
 				})}
 				variant={dc.doubleCheck ? 'destructive' : 'default'}
-				status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
+				status={
+					fetcher.state !== 'idle'
+						? 'pending'
+						: (fetcher.data?.status ?? 'idle')
+				}
 			>
 				<Icon name="avatar">
-					{dc.doubleCheck ? `Are you sure?` : `Sign out of ${otherSessionsCount} other sessions`}
+					{dc.doubleCheck
+						? `Are you sure?`
+						: `Sign out of ${otherSessionsCount} other sessions`}
 				</Icon>
 			</StatusButton>
 		</fetcher.Form>

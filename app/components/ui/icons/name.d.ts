@@ -9,6 +9,8 @@ export type IconName =
 	| 'camera'
 	| 'caret-sort'
 	| 'check'
+	| 'chevron-down'
+	| 'chevron-up'
 	| 'clock'
 	| 'cross-1'
 	| 'dots-horizontal'

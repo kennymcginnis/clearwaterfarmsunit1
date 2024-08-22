@@ -1,5 +1,4 @@
-import { parse } from '@conform-to/zod'
-import { invariantResponse } from '@epic-web/invariant'
+import { parseWithZod } from '@conform-to/zod'
 import { type Prisma } from '@prisma/client'
 import { type ActionFunctionArgs, json } from '@remix-run/node'
 import { z } from 'zod'
@@ -47,7 +46,10 @@ export const getPaginatedContacts = async (request: Request) => {
 	if (tableParams.search) {
 		filter.where = {
 			...filter.where,
-			OR: [{ display: { contains: tableParams.search } }, { quickbooks: { contains: tableParams.search } }],
+			OR: [
+				{ display: { contains: tableParams.search } },
+				{ quickbooks: { contains: tableParams.search } },
+			],
 		}
 	}
 
@@ -88,7 +90,7 @@ export const getPaginatedContacts = async (request: Request) => {
 			select: { display: true },
 			orderBy: { display: 'asc' },
 		})
-		return res.map(r => r.display ?? '')
+		return res.map((r) => r.display ?? '')
 	}
 
 	const res = await Promise.all([getCount(), distinctDisplays(), getContacts()])
@@ -116,21 +118,32 @@ const ContactsFormSchema = z.object({
 })
 export async function action({ request }: ActionFunctionArgs) {
 	const formData = await request.formData()
-	const submission = parse(formData, { schema: ContactsFormSchema })
-	invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
+	const submission = parseWithZod(formData, { schema: ContactsFormSchema })
+
+	if (submission.status !== 'success') {
+		return json(
+			{ result: submission.reply() },
+			{ status: submission.status === 'error' ? 400 : 200 },
+		)
+	}
+
 	const { userId: id, intent, phoneId } = submission.value
 	try {
 		switch (intent) {
 			case 'phone-type':
 				if (submission.value.phoneType) {
-					await prisma.userPhone.update({ data: { type: submission.value.phoneType }, where: { id: phoneId } })
+					await prisma.userPhone.update({
+						data: { type: submission.value.phoneType },
+						where: { id: phoneId },
+					})
 				}
-				return null
 			case 'phone-number':
 				if (submission.value.phoneNumber) {
-					await prisma.userPhone.update({ data: { number: submission.value.phoneNumber }, where: { id: phoneId } })
+					await prisma.userPhone.update({
+						data: { number: submission.value.phoneNumber },
+						where: { id: phoneId },
+					})
 				}
-				return null
 			case 'create-phone':
 				if (submission.value.phoneType && submission.value.phoneNumber) {
 					await prisma.userPhone.create({
@@ -146,28 +159,35 @@ export async function action({ request }: ActionFunctionArgs) {
 						title: 'Success',
 						description: `New phone number added.`,
 					})
+				} else {
+					return json(
+						{
+							result: submission.reply({
+								formErrors: ['You must submit both phone type and number.'],
+							}),
+						},
+						{ status: 400 },
+					)
 				}
-				return null
 			case 'delete-phone':
-				try {
-					await prisma.userPhone.delete({ where: { id: phoneId } })
-					return redirectWithToast('.', {
-						type: 'success',
-						title: 'Success',
-						description: `Phone number deleted.`,
-					})
-				} catch (error) {
-					return null
-				}
+				await prisma.userPhone.delete({ where: { id: phoneId } })
+				return redirectWithToast('.', {
+					type: 'success',
+					title: 'Success',
+					description: `Phone number deleted.`,
+				})
 			default:
-				// @ts-ignore
+				// @ts-ignore:next-line
 				if (submission.value[intent]) {
-					// @ts-ignore
-					await prisma.user.update({ data: { [intent]: submission.value[intent] }, where: { id } })
+					await prisma.user.update({
+						// @ts-ignore:next-line
+						data: { [intent]: submission.value[intent] },
+						where: { id },
+					})
 				}
-				return null
 		}
 	} catch (error) {
-		return json({ status: 'error', error } as const, { status: 400 })
+		return json({ status: 'error', error } as const, { status: 500 })
 	}
+	return json({ result: submission.reply() }, { status: 200 })
 }

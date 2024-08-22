@@ -1,11 +1,20 @@
 import { conform, useForm } from '@conform-to/react'
-import { getFieldsetConstraint, parse } from '@conform-to/zod'
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node'
+import { getZodConstraint, parseWithZod } from '@conform-to/zod'
+import {
+	json,
+	type LoaderFunctionArgs,
+	type ActionFunctionArgs,
+} from '@remix-run/node'
 import { useLoaderData, useFetcher } from '@remix-run/react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary'
 import { Field } from '#app/components/forms.tsx'
-import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card'
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button'
 import { requireSelfOrAdmin, requireUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
@@ -46,10 +55,16 @@ const updateDefaultsActionIntent = 'update-defaults'
 export async function action({ request }: ActionFunctionArgs) {
 	const currentUser = await requireUserId(request)
 	const formData = await request.formData()
-	const submission = await parse(formData, { schema: IrrigationDefaultsSchema, async: true })
+	const submission = await parseWithZod(formData, {
+		schema: IrrigationDefaultsSchema,
+		async: true,
+	})
 
-	if (submission.intent !== 'submit') {
-		return json({ status: 'idle', submission } as const)
+	if (submission.status !== 'success') {
+		return json(
+			{ result: submission.reply() },
+			{ status: submission.status === 'error' ? 400 : 200 },
+		)
 	}
 
 	if (submission.value) {
@@ -73,13 +88,13 @@ export default function NotesRoute() {
 	const { user, userSchedules } = useLoaderData<typeof loader>()
 	const isPending = useIsPending()
 
-	const fetcher = useFetcher<typeof action>()
+	const actionData = useActionData<typeofaction>()
 	const [form, fields] = useForm({
 		id: `irrigation-defaults`,
-		constraint: getFieldsetConstraint(IrrigationDefaultsSchema),
-		lastSubmission: fetcher.data?.submission,
+		constraint: getZodConstraint(IrrigationDefaultsSchema),
+		lastResult: actionData?.result,
 		onValidate({ formData }) {
-			return parse(formData, { schema: IrrigationDefaultsSchema })
+			return parseWithZod(formData, { schema: IrrigationDefaultsSchema })
 		},
 		defaultValue: {
 			defaultHours: user?.defaultHours ?? 0,
@@ -93,12 +108,16 @@ export default function NotesRoute() {
 				<CardTitle>Irrigation Defaults</CardTitle>{' '}
 				{user?.restricted ? (
 					<div className="m-auto mt-2 flex w-[50%] flex-col rounded-md border border-destructive px-3 py-2">
-						<div className="text-md text-center uppercase text-foreground-destructive">User Account Restricted</div>
-						<div className="text-center text-sm text-foreground-destructive">{user.restriction}</div>
+						<div className="text-md text-center uppercase text-foreground-destructive">
+							User Account Restricted
+						</div>
+						<div className="text-center text-sm text-foreground-destructive">
+							{user.restriction}
+						</div>
 					</div>
 				) : null}
 			</CardHeader>
-			<fetcher.Form method="POST" {...form.props}>
+			<fetcher.Form method="POST" {...getFormProps(form)}>
 				<CardContent className="flex w-full flex-row justify-stretch gap-2 space-y-2">
 					<input type="hidden" name="id" value={user?.id} />
 					<Field
@@ -109,7 +128,7 @@ export default function NotesRoute() {
 							step: 0.5,
 							min: 0,
 							max: 12,
-							...conform.input(fields.defaultHours),
+							...getInputProps(fields.defaultHours),
 							autoFocus: true,
 						}}
 					/>
@@ -120,7 +139,9 @@ export default function NotesRoute() {
 							value={updateDefaultsActionIntent}
 							form={form.id}
 							disabled={isPending}
-							status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
+							status={
+								fetcher.state !== 'idle' ? 'pending' : (form.status ?? 'idle')
+							}
 						>
 							Submit
 						</StatusButton>
@@ -138,7 +159,7 @@ export default function NotesRoute() {
 							return (
 								<tr
 									key={`userSchedules-${index}`}
-									className="flex w-full flex-row justify-between gap-1 rounded-lg bg-muted p-2 mb-1"
+									className="mb-1 flex w-full flex-row justify-between gap-1 rounded-lg bg-muted p-2"
 								>
 									<td className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
 										Ditch: {ditch}

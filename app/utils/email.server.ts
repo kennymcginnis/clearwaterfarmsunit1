@@ -27,7 +27,10 @@ export async function sendEmail({
 }: {
 	to: string
 	subject: string
-} & ({ html: string; text: string; react?: never } | { react: ReactElement; html?: never; text?: never })) {
+} & (
+	| { html: string; text: string; react?: never }
+	| { react: ReactElement; html?: never; text?: never }
+)) {
 	const from = 'clearwat@clearwaterfarmsunit1.com'
 
 	const email = {
@@ -35,6 +38,7 @@ export async function sendEmail({
 		...options,
 		...(react ? await renderReactEmail(react) : null),
 	}
+
 	const response = await fetch('https://api.resend.com/emails', {
 		method: 'POST',
 		body: JSON.stringify(email),
@@ -73,6 +77,9 @@ export async function sendEmail({
 }
 
 async function renderReactEmail(react: ReactElement) {
-	const [html, text] = await Promise.all([renderAsync(react), renderAsync(react, { plainText: true })])
+	const [html, text] = await Promise.all([
+		renderAsync(react),
+		renderAsync(react, { plainText: true }),
+	])
 	return { html, text }
 }

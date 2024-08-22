@@ -1,4 +1,3 @@
-import tailwindPlugin from '@tailwindcss/typography'
 import { type Config } from 'tailwindcss'
 import animatePlugin from 'tailwindcss-animate'
 import radixPlugin from 'tailwindcss-radix'
@@ -19,5 +18,5 @@ export default {
 		extend: extendedTheme,
 	},
 	presets: [marketingPreset],
-	plugins: [animatePlugin, radixPlugin, tailwindPlugin],
+	plugins: [animatePlugin, radixPlugin],
 } satisfies Config

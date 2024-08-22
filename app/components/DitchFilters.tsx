@@ -1,4 +1,3 @@
-import { CalendarIcon } from '@heroicons/react/24/outline'
 import { Link } from '@remix-run/react'
 import {
 	DropdownMenu,
@@ -6,8 +5,12 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '#app/components/ui/dropdown-menu'
-import { getNewTableUrl, type ItemTableParams } from '#app/utils/pagination/transactions'
+import {
+	getNewTableUrl,
+	type ItemTableParams,
+} from '#app/utils/pagination/transactions'
 import { Button } from './ui/button'
+import { Icon } from './ui/icon'
 
 interface DitchProps {
 	baseUrl: string
@@ -16,23 +19,40 @@ interface DitchProps {
 	tableParams: ItemTableParams
 }
 
-const DitchDitchs: React.FC<DitchProps> = ({ baseUrl, tableParams, ditches, dropdownDefault }) => {
-	const currentDitch = tableParams.ditch ? `Ditch ${tableParams.ditch}` : 'All Ditches'
+const DitchDitchs: React.FC<DitchProps> = ({
+	baseUrl,
+	tableParams,
+	ditches,
+	dropdownDefault,
+}) => {
+	const currentDitch = tableParams.ditch
+		? `Ditch ${tableParams.ditch}`
+		: 'All Ditches'
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger className="w-full">
 				<Button variant="secondary" className="w-full">
-					<CalendarIcon className="mr-2 w-4" />
+					<Icon name="calendar" className="mr-2 w-4" />
 					{currentDitch}
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent className="w-full" style={{ width: 'var(--radix-popper-anchor-width)'}}>
+			<DropdownMenuContent
+				className="w-full"
+				style={{ width: 'var(--radix-popper-anchor-width)' }}
+			>
 				<Link to={getNewTableUrl(baseUrl, tableParams, 'ditch')}>
-					<DropdownMenuItem className="capitalize">{dropdownDefault}</DropdownMenuItem>
+					<DropdownMenuItem className="capitalize">
+						{dropdownDefault}
+					</DropdownMenuItem>
 				</Link>
-				{ditches.map(ditch => (
-					<Link key={`ditch-${ditch}`} to={getNewTableUrl(baseUrl, tableParams, 'ditch', ditch)}>
-						<DropdownMenuItem className="capitalize">Ditch {ditch}</DropdownMenuItem>
+				{ditches.map((ditch) => (
+					<Link
+						key={`ditch-${ditch}`}
+						to={getNewTableUrl(baseUrl, tableParams, 'ditch', ditch)}
+					>
+						<DropdownMenuItem className="capitalize">
+							Ditch {ditch}
+						</DropdownMenuItem>
 					</Link>
 				))}
 			</DropdownMenuContent>

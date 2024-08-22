@@ -24,7 +24,7 @@ export function ScheduleActionButton({
 	const isPending = useIsPending()
 	const [form] = useForm({ id: value })
 	return (
-		<Form method="POST" {...form.props}>
+		<Form method="POST" {...getFormProps(form)}>
 			<AuthenticityTokenInput />
 			<input type="hidden" name="scheduleId" value={id} />
 			<StatusButton
@@ -32,12 +32,14 @@ export function ScheduleActionButton({
 				name="intent"
 				value={value}
 				variant={variant}
-				status={isPending ? 'pending' : actionData?.status ?? 'idle'}
+				status={isPending ? 'pending' : (form.status ?? 'idle')}
 				disabled={isPending}
 				className="w-full max-md:aspect-square max-md:px-0"
 			>
 				<Icon name={icon} className="scale-125 max-md:scale-150">
-					<span className="overflow-ellipsis text-nowrap max-md:hidden">{text}</span>
+					<span className="overflow-ellipsis text-nowrap max-md:hidden">
+						{text}
+					</span>
 				</Icon>
 			</StatusButton>
 			<ErrorList errors={form.errors} id={form.errorId} />

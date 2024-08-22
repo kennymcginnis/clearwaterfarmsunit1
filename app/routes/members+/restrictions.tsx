@@ -1,4 +1,4 @@
-import { parse } from '@conform-to/zod'
+import { parseWithZod } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { type ActionFunctionArgs, json, type LoaderFunctionArgs, redirect } from '@remix-run/node'
 import { useLoaderData, useSubmit } from '@remix-run/react'

@@ -11,7 +11,8 @@ const schema = z.object({
 	// If you plan on using Sentry, uncomment this line
 	// SENTRY_DSN: z.string(),
 	// If you plan to use Resend, uncomment this line
-	RESEND_API_KEY: z.string(),
+	// RESEND_API_KEY: z.string(),
+	ALLOW_INDEXING: z.enum(['true', 'false']).optional(),
 })
 
 declare global {
@@ -24,7 +25,10 @@ export function init() {
 	const parsed = schema.safeParse(process.env)
 
 	if (parsed.success === false) {
-		console.error('❌ Invalid environment variables:', parsed.error.flatten().fieldErrors)
+		console.error(
+			'❌ Invalid environment variables:',
+			parsed.error.flatten().fieldErrors,
+		)
 
 		throw new Error('Invalid environment variables')
 	}
@@ -43,6 +47,7 @@ export function getEnv() {
 	return {
 		MODE: process.env.NODE_ENV,
 		SENTRY_DSN: process.env.SENTRY_DSN,
+		ALLOW_INDEXING: process.env.ALLOW_INDEXING,
 	}
 }
 
