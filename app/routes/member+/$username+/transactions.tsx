@@ -1,8 +1,7 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
-import { useLoaderData, type MetaFunction } from '@remix-run/react'
+import { Link, useLoaderData, type MetaFunction } from '@remix-run/react'
 import { formatInTimeZone } from 'date-fns-tz'
-import { useState } from 'react'
 import { Button } from '#app/components/ui/button.tsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon.tsx'
@@ -63,20 +62,15 @@ export default function TransactionsRoute() {
 			note: '2024 Starting Balance',
 		})
 	}
-	const [editProfile, setEditProfile] = useState('')
-	const toggleEditProfile = (profile: string) => {
-		if (editProfile === profile) setEditProfile('')
-		else setEditProfile(profile)
-	}
 
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>Transactions</CardTitle>
-				<Button variant="outline" onClick={() => toggleEditProfile('transactions')} className="pb-2">
-					<Icon name="pencil-1" className="scale-125 max-md:scale-150">
-						Edit Transactions
-					</Icon>
+				<Button>
+					<Link reloadDocument to={`/resources/download-user-transactions/${user.username}`}>
+						<Icon name="download">Download</Icon>
+					</Link>
 				</Button>
 			</CardHeader>
 			<CardContent className="max-h-[600px] space-y-2 overflow-auto">
@@ -118,7 +112,9 @@ export default function TransactionsRoute() {
 								readOnly={true}
 								className="col-span-1 text-right"
 								defaultValue={
-									lineItem.waterStart ? formatInTimeZone(lineItem.waterStart, 'Etc/UTC', 'MMM dd, h:mmaaa', { timeZone: 'Etc/UTC' }) : ''
+									lineItem.waterStart
+										? formatInTimeZone(lineItem.waterStart, 'Etc/UTC', 'MMM dd, h:mmaaa', { timeZone: 'Etc/UTC' })
+										: ''
 								}
 							/>
 							<Input
