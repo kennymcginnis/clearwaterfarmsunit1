@@ -1,11 +1,11 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
-import * as E from '@react-email/components'
 import { json, redirect, type ActionFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { Link, useFetcher } from '@remix-run/react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { HoneypotInputs } from 'remix-utils/honeypot/react'
 import { z } from 'zod'
+import { ForgotPasswordEmail } from '#app/components/email/ForgotPasswordEmail'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { ErrorList, Field } from '#app/components/forms.tsx'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
@@ -93,27 +93,6 @@ export async function action({ request }: ActionFunctionArgs) {
 	} else {
 		return json({ status: 'error', submission } as const, { status: 500 })
 	}
-}
-
-function ForgotPasswordEmail({ onboardingUrl, otp }: { onboardingUrl: string; otp: string }) {
-	return (
-		<E.Html lang="en" dir="ltr">
-			<E.Container>
-				<h1>
-					<E.Text>Clearwater Farms 1 Password Reset</E.Text>
-				</h1>
-				<p>
-					<E.Text>
-						Here's your verification code: <strong>{otp}</strong>
-					</E.Text>
-				</p>
-				<p>
-					<E.Text>Or click the link:</E.Text>
-				</p>
-				<E.Link href={onboardingUrl}>{onboardingUrl}</E.Link>
-			</E.Container>
-		</E.Html>
-	)
 }
 
 export const meta: MetaFunction = () => {

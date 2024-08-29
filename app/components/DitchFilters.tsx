@@ -1,4 +1,3 @@
-import { CalendarIcon } from '@heroicons/react/24/outline'
 import { Link } from '@remix-run/react'
 import {
 	DropdownMenu,
@@ -17,12 +16,12 @@ interface DitchProps {
 }
 
 const DitchDitchs: React.FC<DitchProps> = ({ baseUrl, tableParams, ditches, dropdownDefault }) => {
-	const currentDitch = tableParams.ditch ? `Ditch ${tableParams.ditch}` : 'All Ditches'
+	const currentDitch = tableParams.ditch ? `Ditch ${tableParams.ditch}` : 'All'
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger className="w-full">
 				<Button variant="secondary" className="w-full">
-					<CalendarIcon className="mr-2 w-4" />
+					{/* <CalendarIcon className="mr-2 w-4" /> */}
 					{currentDitch}
 				</Button>
 			</DropdownMenuTrigger>

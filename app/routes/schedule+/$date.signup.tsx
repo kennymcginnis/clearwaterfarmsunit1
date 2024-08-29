@@ -38,6 +38,7 @@ type UserScheduleType = {
 	id: string
 	username: string
 	display: string | null
+	restricted: boolean
 	ditch: number
 	position: number
 	hours: number | bigint | null
@@ -49,6 +50,7 @@ export const SearchResultsSchema = z.array(
 		id: z.string(),
 		username: z.string(),
 		display: z.string(),
+		restricted: z.boolean(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
@@ -68,7 +70,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUserSchedules = await prisma.$queryRaw`
-		SELECT User.id, User.username, User.display, Port.ditch, Port.position, mid.hours, mid.updatedBy
+		SELECT User.id, User.username, User.display, User.restricted, 
+					 Port.ditch, Port.position, 
+					 mid.hours, mid.updatedBy
 			FROM User
 			INNER JOIN Port ON User.id = Port.userId
 			LEFT JOIN (
@@ -159,7 +163,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	)
 
 	for (let { id, ditch, hours } of result.data) {
-		if (!hours || hours === existingMap?.[id]?.[ditch]?.hours) continue
+		if (hours == null || hours === existingMap?.[id]?.[ditch]?.hours) continue
 		await prisma.userSchedule.upsert({
 			select: { scheduleId: true, ditch: true, userId: true },
 			where: {
@@ -246,7 +250,7 @@ export default function ScheduleSignupRoute() {
 								</NavLink>
 							</Button>
 							<Button>
-								<Link reloadDocument to={`/resources/download-signup/${scheduleDate}`}>
+								<Link reloadDocument to={`/resources/download/signup/${scheduleDate}`}>
 									<Icon name="download">Download</Icon>
 								</Link>
 							</Button>
@@ -337,9 +341,9 @@ function UserCard({ userSchedule }: { userSchedule: UserScheduleType }) {
 	return (
 		<div
 			// to={`/schedule/${scheduleDate}/${userSchedule.username}`}
-			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg px-5 py-3 
-				${userSchedule.hours ? 'bg-muted' : 'bg-muted-40'}
-				${userSchedule.id === userSchedule.updatedBy && 'border-1 border-primary bg-secondary'}`}
+			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg px-5 py-3 border-1  
+				${formatColors(userSchedule)}
+			`}
 		>
 			<span className="col-span-3 overflow-hidden text-ellipsis text-nowrap text-body-sm text-muted-foreground">
 				{userSchedule.position}: {userSchedule.display}
@@ -359,6 +363,11 @@ export const meta: MetaFunction<null, { 'routes/schedule+/$date/signup': typeof 
 			content: `Clearwater Farms 1 Irrigation Sign-Up`,
 		},
 	]
+}
+
+function formatColors(userSchedule: UserScheduleType) {
+	if (userSchedule.restricted) return 'border-destructive bg-destructive/30'
+	if (userSchedule.id === userSchedule.updatedBy) return 'border-primary bg-secondary'
 }
 
 export function ErrorBoundary() {

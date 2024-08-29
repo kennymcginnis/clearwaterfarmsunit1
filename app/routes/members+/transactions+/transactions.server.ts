@@ -70,9 +70,11 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 	let result: TransactionData = {
 		transactions: [],
 		displays: [],
+		quickbooks: [],
 		filters: [],
 		tableParams,
 		total: 0,
+		balance: 0,
 	}
 
 	const select: Prisma.TransactionsSelect = {
@@ -84,7 +86,7 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		debit: true,
 		credit: true,
 		note: true,
-		user: { select: { id: true, display: true } },
+		user: { select: { id: true, display: true, quickbooks: true } },
 	}
 	const filter: Prisma.TransactionsFindManyArgs = returnAll
 		? { select, where: {} }
@@ -113,6 +115,13 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		filter.where = {
 			...filter.where,
 			user: { display: tableParams.display },
+		}
+	}
+
+	if (tableParams.quickbooks) {
+		filter.where = {
+			...filter.where,
+			user: { quickbooks: tableParams.quickbooks },
 		}
 	}
 
@@ -150,16 +159,33 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 					user: { display: tableParams.direction },
 				}
 				break
+			case 'quickbooks':
+				filter.orderBy = {
+					user: { quickbooks: tableParams.direction },
+				}
+				break
 			default:
 				filter.orderBy = {
 					[tableParams.sort]: tableParams.direction,
 				}
 				break
 		}
+	} else {
+		filter.orderBy = {
+			date: 'desc',
+		}
 	}
 
 	const getCount = async () => {
 		const res = await prisma.transactions.count({
+			where: filter.where,
+		})
+		return res || 0
+	}
+
+	const getBalance = async () => {
+		const res = await prisma.transactions.aggregate({
+			_sum: { debit: true, credit: true },
 			where: filter.where,
 		})
 		return res || 0
@@ -181,6 +207,16 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		return res.map(r => r.display)
 	}
 
+	const distinctQuickbooks = async () => {
+		// @ts-ignore
+		const res = await prisma.user.findMany({
+			distinct: ['quickbooks'],
+			select: { quickbooks: true },
+			orderBy: { quickbooks: 'asc' },
+		})
+		return res.map(r => r.quickbooks)
+	}
+
 	const distinctNoteDates = async () => {
 		const res = await prisma.transactions.findMany({
 			distinct: ['date'],
@@ -190,14 +226,26 @@ const getTransactions = async (request: Request, returnAll?: boolean) => {
 		return res.map(r => r.date)
 	}
 
-	const res = await Promise.all([getCount(), getTransactions(), distinctDisplays(), distinctNoteDates()])
+	const res = await Promise.all([
+		getCount(),
+		getBalance(),
+		getTransactions(),
+		distinctDisplays(),
+		distinctQuickbooks(),
+		distinctNoteDates(),
+	])
 
 	result.total = res[0]
-	result.transactions = res[1]
+	result.transactions = res[2]
 	// @ts-ignore
-	result.displays = res[2]
+	result.displays = res[3]
 	// @ts-ignore
-	result.filters = res[3]
+	result.quickbooks = res[4]
+	// @ts-ignore
+	result.filters = res[5]
+
+
+	result.balance = (res[1]._sum.debit ?? 0) - (res[1]._sum.credit ?? 0)
 
 	return result
 }

@@ -24,7 +24,7 @@ const DebitCreditFilters: React.FC<FilterProps> = ({ baseUrl, tableParams }) => 
 			>
 				<ToggleGroupItem value="debit" aria-label="Toggle Debits" className="w-full">
 					<Icon className="m-2 text-body-md" name="plus" />
-					Debit
+					{/* Debit */}
 				</ToggleGroupItem>
 			</Link>
 			<Link
@@ -32,7 +32,7 @@ const DebitCreditFilters: React.FC<FilterProps> = ({ baseUrl, tableParams }) => 
 				className="w-full"
 			>
 				<ToggleGroupItem value="credit" aria-label="Toggle Credits" className="w-full">
-					Credit
+					{/* Credit */}
 					<Icon className="m-2 text-body-md" name="minus" />
 				</ToggleGroupItem>
 			</Link>

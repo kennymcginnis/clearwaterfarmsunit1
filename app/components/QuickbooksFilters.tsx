@@ -12,12 +12,13 @@ import { Icon } from './ui/icon'
 interface FilterProps {
 	baseUrl: string
 	dropdownDefault: string
-	displays: string[]
+	quickbooks: string[]
 	tableParams: ItemTableParams
 }
 
-const DisplayFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, displays, dropdownDefault }) => {
-	const currentFilter = tableParams.display ?? displays.find(d => d === tableParams.display) ?? 'Display Name'
+const QuickbooksFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, quickbooks, dropdownDefault }) => {
+	const currentFilter =
+		tableParams.quickbooks ?? quickbooks.find(d => d === tableParams.quickbooks) ?? 'Quickbooks Name'
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger className="w-full">
@@ -27,13 +28,13 @@ const DisplayFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, displays,
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent className="w-full" style={{ width: 'var(--radix-popper-anchor-width)' }}>
-				<Link to={getNewTableUrl(baseUrl, tableParams, 'display')}>
+				<Link to={getNewTableUrl(baseUrl, tableParams, 'quickbooks')}>
 					<DropdownMenuItem className="capitalize">{dropdownDefault}</DropdownMenuItem>
 				</Link>
 				<div className="max-h-[420px] overflow-auto">
-					{displays.map((display, i) => (
-						<Link key={`display-${i}`} to={getNewTableUrl(baseUrl, tableParams, 'display', display)}>
-							<DropdownMenuItem>{display}</DropdownMenuItem>
+					{quickbooks.map((quickbooks, i) => (
+						<Link key={`quickbooks-${i}`} to={getNewTableUrl(baseUrl, tableParams, 'quickbooks', quickbooks)}>
+							<DropdownMenuItem>{quickbooks}</DropdownMenuItem>
 						</Link>
 					))}
 				</div>
@@ -42,4 +43,4 @@ const DisplayFilters: React.FC<FilterProps> = ({ baseUrl, tableParams, displays,
 	)
 }
 
-export default DisplayFilters
+export default QuickbooksFilters

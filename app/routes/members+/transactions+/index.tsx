@@ -10,6 +10,7 @@ import DisplayFilters from '#app/components/DisplayFilters'
 import DitchFilters from '#app/components/DitchFilters'
 import Dropdown from '#app/components/Dropdown'
 import { PaginationComponent } from '#app/components/pagination'
+import QuickbooksFilters from '#app/components/QuickbooksFilters'
 import { Button } from '#app/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon'
@@ -47,7 +48,7 @@ type ChangesType = {
 }
 
 export default function ViewTransactions() {
-	const { transactions, tableParams, filters, total, displays } = useLoaderData<TransactionData>()
+	const { transactions, tableParams, filters, total, balance, displays, quickbooks } = useLoaderData<TransactionData>()
 	const [showUpload, setShowUpload] = useState(false)
 	const toggleShowUpload = () => setShowUpload(!showUpload)
 
@@ -56,6 +57,8 @@ export default function ViewTransactions() {
 
 	const fetcher = useFetcher()
 	const handleChange = (changes: ChangesType) => fetcher.submit(changes, { method: 'POST' })
+
+	const USDollar = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
 	const Header = ({ header, className }: { header: string; className: string }) => {
 		const isSortingUp = tableParams.sort === header && tableParams.direction === 'asc'
@@ -78,12 +81,12 @@ export default function ViewTransactions() {
 
 	const ItemRow = ({ id, scheduleId, ditch, user, date, debit, credit, note }: Transaction) => {
 		return (
-			<div key={`row-${id}`} className="grid grid-cols-12 gap-1 disabled:cursor-default">
+			<div key={`row-${id}`} className="grid-cols-20 grid gap-1 disabled:cursor-default">
 				<button type="submit" className="hidden" />
-				<Input id="id" disabled={true} className="col-span-1 disabled:cursor-default" value={id} />
+				<Input id="id" className="col-span-2 disabled:cursor-default" disabled={true} value={id} />
 				<Input
 					id="scheduleId"
-					className="col-span-1 disabled:cursor-default"
+					className="col-span-2 disabled:cursor-default"
 					defaultValue={scheduleId}
 					onBlur={e => handleChange({ id, intent: 'scheduleId', scheduleId: e.currentTarget.value })}
 				/>
@@ -93,11 +96,12 @@ export default function ViewTransactions() {
 					defaultValue={ditch}
 					onBlur={e => handleChange({ id, intent: 'ditch', ditch: e.currentTarget.value ?? '' })}
 				/>
-				<Input id="userId" disabled={true} className="col-span-1 disabled:cursor-default" value={user.id} />
-				<Input id="username" disabled={true} className="col-span-2 disabled:cursor-default" value={user.display} />
+				<Input id="userId" className="col-span-2 disabled:cursor-default" disabled={true} value={user.id} />
+				<Input id="display" className="col-span-2 disabled:cursor-default" disabled={true} value={user.display} />
+				<Input id="quickbooks" className="col-span-3 disabled:cursor-default" disabled={true} value={user.quickbooks} />
 				<Input
 					id="date"
-					className="col-span-1 text-right disabled:cursor-default"
+					className="col-span-2 text-right disabled:cursor-default"
 					defaultValue={date}
 					onBlur={e => handleChange({ id, intent: 'date', date: e.currentTarget.value })}
 				/>
@@ -113,7 +117,7 @@ export default function ViewTransactions() {
 					defaultValue={credit.toString() ?? ''}
 					onBlur={e => handleChange({ id, intent: 'credit', credit: e.currentTarget.value })}
 				/>
-				<div className="rlex-row col-span-3 flex">
+				<div className="rlex-row col-span-4 flex">
 					<Input
 						id="note"
 						className="mr-1"
@@ -127,7 +131,7 @@ export default function ViewTransactions() {
 	}
 
 	return (
-		<Card className="m-auto mt-2 flex w-[90%] flex-col items-center justify-center gap-1 rounded-none bg-accent px-0 pb-4 lg:rounded-3xl">
+		<Card className="m-auto mt-2 flex w-full flex-col items-center justify-center gap-1 rounded-none bg-accent px-0 pb-4">
 			<CardHeader className="flex w-full flex-row flex-wrap gap-2 self-center p-4">
 				<div></div>
 				<div className="flex flex-col items-center">
@@ -136,7 +140,7 @@ export default function ViewTransactions() {
 				</div>
 				<div className="flex gap-2">
 					<Button>
-						<Link reloadDocument to={`/resources/download-transactions${location.search}`}>
+						<Link reloadDocument to={`/resources/download/transactions${location.search}`}>
 							<Icon name="download">Download</Icon>
 						</Link>
 					</Button>
@@ -167,8 +171,8 @@ export default function ViewTransactions() {
 				) : null}
 			</CardHeader>
 			<CardContent className="w-full space-y-2">
-				<div className="grid grid-cols-12 gap-1">
-					<div className="col-span-1">
+				<div className="grid-cols-20 grid gap-1">
+					<div className="col-span-2">
 						<Button asChild variant="secondary" className="w-full">
 							<Link to={baseUrl}>
 								<Icon name="reset" className="scale-100 max-md:scale-125">
@@ -177,16 +181,11 @@ export default function ViewTransactions() {
 							</Link>
 						</Button>
 					</div>
-					<div className="col-span-1"></div>
+					<div className="col-span-2"></div>
 					<div className="col-span-1">
-						<DitchFilters
-							baseUrl={baseUrl}
-							dropdownDefault="All Ditches"
-							ditches={DitchesArray}
-							tableParams={tableParams}
-						/>
+						<DitchFilters baseUrl={baseUrl} dropdownDefault="All" ditches={DitchesArray} tableParams={tableParams} />
 					</div>
-					<div className="col-span-1"></div>
+					<div className="col-span-2"></div>
 					<div className="col-span-2">
 						<DisplayFilters
 							baseUrl={baseUrl}
@@ -195,7 +194,15 @@ export default function ViewTransactions() {
 							tableParams={tableParams}
 						/>
 					</div>
-					<div className="col-span-1">
+					<div className="col-span-3">
+						<QuickbooksFilters
+							baseUrl={baseUrl}
+							dropdownDefault="All Members"
+							quickbooks={quickbooks}
+							tableParams={tableParams}
+						/>
+					</div>
+					<div className="col-span-2">
 						<DateFilters
 							ages={TransactionAges}
 							baseUrl={baseUrl}
@@ -207,18 +214,27 @@ export default function ViewTransactions() {
 					<div className="col-span-2">
 						<DebitCreditFilters baseUrl={baseUrl} filters={filters} tableParams={tableParams} />
 					</div>
-					<div className="col-span-3"></div>
+					<div
+						className={`col-span-4 rounded-md border-2 ${balance < 0 ? 'border-destructive' : 'border-green-900'} px-2`}
+					>
+						<CardTitle
+							className={`text-right text-2xl ${balance < 0 ? 'text-foreground-destructive' : 'text-green-900'}`}
+						>
+							Balance: {USDollar.format(balance)}
+						</CardTitle>
+					</div>
 				</div>
-				<div className="grid grid-cols-12 gap-1">
-					<Header header="id" className="col-span-1 pr-3" />
-					<Header header="scheduleId" className="col-span-1 pr-3" />
+				<div className="grid-cols-20 grid gap-1">
+					<Header header="id" className="col-span-2 pr-3" />
+					<Header header="scheduleId" className="col-span-2 pr-3" />
 					<Header header="ditch" className="col-span-1 pr-3" />
-					<Header header="userId" className="col-span-1 pr-3" />
+					<Header header="userId" className="col-span-2 pr-3" />
 					<Header header="display" className="col-span-2 pr-3" />
-					<Header header="date" className="col-span-1 pr-2 text-right" />
+					<Header header="quickbooks" className="col-span-3 pr-3" />
+					<Header header="date" className="col-span-2 pr-2 text-right" />
 					<Header header="debit" className="col-span-1 pr-3 text-right" />
 					<Header header="credit" className="col-span-1 pr-3 text-right" />
-					<Header header="note" className="col-span-3 pl-3" />
+					<Header header="note" className="col-span-4 pl-3" />
 				</div>
 				{transactions && transactions.length ? (
 					transactions.map(ItemRow)

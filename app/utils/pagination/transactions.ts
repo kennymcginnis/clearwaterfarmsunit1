@@ -9,15 +9,17 @@ export type Transaction = {
 	debit: number
 	credit: number
 	note: string | null
-	user: { id: string; display: string }
+	user: { id: string; display: string; quickbooks: string }
 }
 
 export interface TransactionData {
 	transactions: Transaction[]
 	displays: string[]
+	quickbooks: string[]
 	tableParams: TransactionTableParams
 	filters: string[]
 	total: number
+	balance: number
 }
 
 export type TransactionHeader =
@@ -26,6 +28,7 @@ export type TransactionHeader =
 	| 'ditch'
 	| 'userId'
 	| 'display'
+	| 'quickbooks'
 	| 'date'
 	| 'debit'
 	| 'credit'
@@ -36,6 +39,7 @@ export const TransactionHeaders: TransactionHeader[] = [
 	'ditch',
 	'userId',
 	'display',
+	'quickbooks',
 	'date',
 	'debit',
 	'credit',
@@ -72,6 +76,7 @@ export const itemTableSchema = z.object({
 	age: z.number().min(0).optional(),
 	ditch: z.number().min(1).max(9).optional(),
 	display: z.string().optional(),
+	quickbooks: z.string().optional(),
 	direction: z.enum(['asc', 'desc']).optional(),
 	//Override these two with an enum of possible keys
 	filter: z.string().optional(),
@@ -82,7 +87,9 @@ export const itemTableSchema = z.object({
 export const transactionsPaginationSchema = itemTableSchema.merge(
 	z.object({
 		search: z.string().optional(),
-		sort: z.enum(['id', 'scheduleId', 'ditch', 'userId', 'display', 'date', 'debit', 'credit', 'note']).optional(),
+		sort: z
+			.enum(['id', 'scheduleId', 'ditch', 'userId', 'display', 'quickbooks', 'date', 'debit', 'credit', 'note'])
+			.optional(),
 	}),
 )
 
@@ -103,6 +110,7 @@ export const getItemTableParams = <ZodSchema>(request: Request, schema: z.Schema
 			age: age ? parseInt(age) : null,
 			ditch: ditch ? parseInt(ditch) : null,
 			display: query.get('display'),
+			quickbooks: query.get('quickbooks'),
 			filter: query.get('filter'),
 			hide: query.get('hide'),
 			sort: query.get('sort'),
@@ -160,6 +168,7 @@ export const getNewTableUrl = (
 				break
 			case 'ditch':
 			case 'display':
+			case 'quickbooks':
 				params.set(newKey, newValue)
 				params.set('page', '1')
 				break

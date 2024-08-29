@@ -68,7 +68,7 @@ export default function TransactionsRoute() {
 			<CardHeader>
 				<CardTitle>Transactions</CardTitle>
 				<Button>
-					<Link reloadDocument to={`/resources/download-user-transactions/${user.username}`}>
+					<Link reloadDocument to={`/resources/download/user-transactions/${user.username}`}>
 						<Icon name="download">Download</Icon>
 					</Link>
 				</Button>

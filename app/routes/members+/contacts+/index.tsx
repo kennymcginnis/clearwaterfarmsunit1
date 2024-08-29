@@ -87,7 +87,7 @@ export default function ContactsRoute() {
 
 	const baseUrl = '/members/contacts'
 	return (
-		<Card className="m-auto mt-2 flex w-[90%] flex-col items-center justify-center gap-1 rounded-none bg-accent px-0 pb-4 lg:rounded-3xl">
+		<Card className="m-auto mt-2 flex w-full flex-col items-center justify-center gap-1 rounded-none bg-accent px-0 pb-4">
 			<CardHeader className="flex w-full flex-row flex-wrap gap-2 self-center p-4">
 				<div></div>
 				<div className="flex flex-col items-center">
@@ -95,7 +95,7 @@ export default function ContactsRoute() {
 				</div>
 				<div className="flex gap-2">
 					<Button>
-						<Link reloadDocument to={`/resources/download-contacts`}>
+						<Link reloadDocument to={`/resources/download/contacts`}>
 							<Icon name="download" size="md">
 								Contacts
 							</Icon>

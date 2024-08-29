@@ -127,7 +127,7 @@ export default function PrintableTimelineRoute() {
 			<div className="flex w-[90%] flex-row-reverse flex-wrap gap-2 p-0.5">
 				{userIsAdmin ? (
 					<Button>
-						<Link reloadDocument to={`/resources/download-print/${scheduleDate}`}>
+						<Link reloadDocument to={`/resources/download/print/${scheduleDate}`}>
 							<Icon name="download">Download</Icon>
 						</Link>
 					</Button>

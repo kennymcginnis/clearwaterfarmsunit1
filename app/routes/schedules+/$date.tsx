@@ -105,12 +105,12 @@ export default function ScheduleRoute() {
 						{isClosed ? (
 							<>
 								<Button>
-									<Link reloadDocument to={`/resources/download-crossovers/${schedule.date}`}>
+									<Link reloadDocument to={`/resources/download/crossovers/${schedule.date}`}>
 										<Icon name="download">Crossovers</Icon>
 									</Link>
 								</Button>
 								<Button>
-									<Link reloadDocument to={`/resources/download-quickbooks/${schedule.date}`}>
+									<Link reloadDocument to={`/resources/download/quickbooks/${schedule.date}`}>
 										<Icon name="download">Quickbooks</Icon>
 									</Link>
 								</Button>

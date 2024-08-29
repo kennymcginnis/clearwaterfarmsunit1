@@ -133,7 +133,7 @@ export default function MembersRoute() {
 							</Link>
 						</Button>
 						<Button>
-							<Link reloadDocument to={`/resources/download-balances`}>
+							<Link reloadDocument to={`/resources/download/balances`}>
 								<Icon name="download" size="md">
 									Balances
 								</Icon>

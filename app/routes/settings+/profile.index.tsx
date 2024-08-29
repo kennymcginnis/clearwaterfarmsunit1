@@ -92,7 +92,7 @@ export default function EditUserProfile() {
 
 			<div className="col-span-6 my-4 h-1 border-b-[1.5px] border-foreground" />
 			<div className="col-span-full flex flex-col gap-6">
-				<Link reloadDocument download="my-epic-notes-data.json" to="/resources/download-user-data">
+				<Link reloadDocument download="my-epic-notes-data.json" to="/resources/download/user-data">
 					<Icon name="download">Download your data</Icon>
 				</Link>
 				<SignOutOfSessions />
@@ -132,7 +132,7 @@ function UpdateProfile() {
 					errors={fields.username.errors}
 				/>
 				<div className="col-span-4 content-end">
-					<Button variant="outline" className="pb-2 bg-muted border-secondary">
+					<Button variant="outline" className="border-secondary bg-muted pb-2">
 						<Link to={'password'}>
 							<Icon name="dots-horizontal">Change Password</Icon>
 						</Link>

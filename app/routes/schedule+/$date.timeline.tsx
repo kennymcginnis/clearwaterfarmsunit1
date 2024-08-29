@@ -262,7 +262,7 @@ export default function ScheduleTimelineRoute() {
 								</NavLink>
 							</Button>
 							<Button>
-								<Link reloadDocument to={`/resources/download-timeline/${scheduleDate}`}>
+								<Link reloadDocument to={`/resources/download/timeline/${scheduleDate}`}>
 									<Icon name="download">Download</Icon>
 								</Link>
 							</Button>
