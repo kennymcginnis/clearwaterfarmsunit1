@@ -1,76 +1,45 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { type ActionFunctionArgs } from '@remix-run/node'
 import { prisma } from '#app/utils/db.server.ts'
-import { formatSubject } from '#app/utils/misc'
+import { stripe } from '#server/stripe.server'
 
 export async function loader() {
 	return await prisma.user.findMany()
 }
 
-export const action = async ({ request, params }: ActionFunctionArgs) => {
-	const body: any = await request.json()
+export const action = async ({ params }: ActionFunctionArgs) => {
 	switch (params.intent) {
-		case 'display-name':
-			if (Object.keys(body).length) {
-				Object.entries(body).forEach(async ([key, value]) => {
-					const user = await prisma.user.findFirst({ where: { username: key } })
-					if (user && value) {
-						await prisma.user.update({
-							data: { display: value },
-							where: { username: key },
-						})
-					}
+		case 'stripe': {
+			const users = await prisma.user.findMany({
+				select: { id: true, member: true, quickbooks: true, primaryEmail: true },
+				where: { stripeId: null },
+			})
+			const currentBalances = await prisma.transactions.groupBy({
+				by: ['userId'],
+				_sum: { debit: true },
+			})
+
+			let updated = 0
+			for (const { id, member, quickbooks, primaryEmail } of users) {
+				const name = member ? { name: member } : quickbooks ? { name: quickbooks } : {}
+				const email = primaryEmail ? { email: primaryEmail } : {}
+
+				const currentBalance = currentBalances.find(bal => bal.userId === id)
+				const stripeUser = await stripe.customers.create({
+					...name,
+					...email,
+					balance: (currentBalance?._sum?.debit ?? 0) * 100,
 				})
-				return `Complete. ${Object.keys(body).length} updated.`
+
+				await prisma.user.update({
+					select: { stripeId: true },
+					data: { stripeId: stripeUser.id },
+					where: { id },
+				})
+				updated += 1
 			}
-		case 'quickbooks':
-			if (Object.keys(body).length) {
-				Object.entries(body).forEach(async ([key, value]) => {
-					const user = await prisma.user.findFirst({ where: { username: key } })
-					if (user && value) {
-						await prisma.user.update({
-							data: { quickbooks: value },
-							where: { username: key },
-						})
-					}
-				})
-				return `Complete. ${Object.keys(body).length} updated.`
-			}
-		case 'username':
-			if (Object.keys(body).length) {
-				Object.entries(body).forEach(async ([key, value]) => {
-					const user = await prisma.user.findFirst({ where: { username: key } })
-					if (user && value) {
-						await prisma.user.update({
-							data: { username: value },
-							where: { username: key },
-						})
-					}
-				})
-				return `Complete. ${Object.keys(body).length} updated.`
-			}
-		case 'email-subject':
-			if (Object.keys(body).length) {
-				Object.entries(body).forEach(async ([key, value]) => {
-					const user = await prisma.user.findFirst({ where: { username: key } })
-					if (user && value) {
-						await prisma.user.update({
-							data: { emailSubject: value },
-							where: { username: key },
-						})
-					}
-				})
-				return `Complete. ${Object.keys(body).length} updated.`
-			} else {
-				const users = await prisma.user.findMany()
-				users.forEach(async ({ id, member }) => {
-					await prisma.user.update({
-						data: { emailSubject: formatSubject(member) },
-						where: { id },
-					})
-				})
-				return `Complete. ${users.length} updated.`
-			}
+			return `Complete. ${updated} updated.`
+		}
 		default:
 			invariantResponse(params.intent, `Intent not handled.`, { status: 404 })
 			break

@@ -454,11 +454,3 @@ export const formatHrs = (hours: number | null) => (!hours ? '' : hours === 1 ? 
 
 export const formatBalance = (balance: number): string =>
 	!balance ? '' : balance % 1 === 0 ? `$${balance}` : `$${balance}0`
-
-export const formatSubject = (member: string | null) => {
-	if (!member) return ''
-	const splitAtComma = member.split(', ')
-	const secondElement = splitAtComma[splitAtComma.length > 1 ? 1 : 0]
-	const beforeTheSpace = secondElement.split(' ')[0]
-	return beforeTheSpace.replaceAll('?', '')
-}

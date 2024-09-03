@@ -36,6 +36,8 @@ export type IconName =
 	| 'question-mark-circled'
 	| 'reader'
 	| 'reset'
+	| 'stripe-icon'
+	| 'stripe'
 	| 'sun'
 	| 'trash'
 	| 'update'

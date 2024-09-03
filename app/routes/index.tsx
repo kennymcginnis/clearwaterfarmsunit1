@@ -5,17 +5,21 @@ import { formatDistanceToNow } from 'date-fns'
 import { z } from 'zod'
 import { DisplayField } from '#app/components/forms'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
+import { Icon } from '#app/components/ui/icon'
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { parseMdx } from '#app/utils/mdx-bundler.server'
 import { formatDay, formatDates, formatUserSchedule } from '#app/utils/misc'
 import AnnouncementsComponent from './_marketing+/announcements'
+import { PaymentCancelled } from './payment+/__cancelled-dialog'
+import { PaymentsDialog } from './payment+/__continue-dialog'
+import { PaymentSuccess } from './payment+/__success-dialog'
 import { UserScheduleEditor, action } from './schedule+/__schedule-editor'
 import { UserScheduleTimeline } from './schedule+/__schedule-timeline'
 
 export { action }
 
-export async function loader({ request, params }: LoaderFunctionArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
 	const type = 'announcements'
 	const document = await prisma.document.findFirst({
 		select: {
@@ -29,10 +33,15 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		where: { type },
 		orderBy: { updatedAt: 'desc' },
 	})
+	invariantResponse(document, `No announcements found`, { status: 404 })
 
-	invariantResponse(document, `No ${params.type} document found`, {
-		status: 404,
-	})
+	const query = new URL(request.url).searchParams
+	const { enabled } = (await prisma.featureToggle.findUnique({
+		select: { enabled: true },
+		where: { name: 'stripe-payments' },
+	})) ?? { enabled: false }
+	const success = Boolean(query.get('payment') === 'success' ?? false)
+	const cancelled = Boolean(query.get('payment') === 'cancelled' ?? false)
 
 	const date = new Date(document.updatedAt)
 	const timeAgo = formatDistanceToNow(date)
@@ -57,6 +66,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 				id: true,
 				username: true,
 				display: true,
+				stripeId: true,
 				defaultHours: true,
 				restricted: true,
 				restriction: true,
@@ -117,10 +127,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			balance,
 			open: openSchedules,
 			closed: closedSchedules,
-			userSchedules: {
-				open: openUserSchedules,
-				closed: closedUserSchedules,
-			},
+			userSchedules: { open: openUserSchedules, closed: closedUserSchedules },
+			payment: { enabled, success, cancelled },
 		})
 	} else {
 		const open = await prisma.schedule.findFirst({
@@ -148,14 +156,21 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			open: openSchedules,
 			closed: closedSchedules,
 			userSchedules: { open: null, closed: null },
+			payment: { enabled, success, cancelled },
 		})
 	}
 }
 
 export default function HomeRoute() {
 	const USDollar = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
-
-	const { user, balance, open, closed, userSchedules } = useLoaderData<typeof loader>()
+	const {
+		user,
+		balance,
+		open,
+		closed,
+		userSchedules,
+		payment: { enabled, success, cancelled },
+	} = useLoaderData<typeof loader>()
 	if (user) {
 		return (
 			<div className="flex w-full flex-col items-center">
@@ -164,17 +179,16 @@ export default function HomeRoute() {
 				</h2>
 				<div className="mb-0 text-xl">Irrigation Schedules</div>
 
-				{/* 				
 				<div
 					style={{ width: 'clamp(352px, 75%, 720px)' }}
 					className="m-auto mt-2 rounded-md border-2 border-secondary px-3 py-1 text-center align-bottom"
 				>
-					<Icon className="mr-1 h-6 w-6 text-yellow-600" name="exclamation-triangle" />
-					<strong>Zach Walter</strong>: (623) 256-7077
+					For website access, questions or comments, please send an email to:
 					<br />
-					Please call at the time of the problem!
-				</div> 
-				*/}
+					<strong>Ken McGinnis&nbsp;</strong>
+					<Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="id-card" />
+					kenneth.j.mcginnis@gmail.com
+				</div>
 
 				{user.restricted ? (
 					<div
@@ -187,15 +201,22 @@ export default function HomeRoute() {
 						<div className="text-center text-lg text-foreground-destructive">{user.restriction}</div>
 					</div>
 				) : null}
-				{balance ? (
+				{balance !== null ? (
 					<div
 						style={{ width: 'clamp(352px, 75%, 720px)' }}
 						className={`m-auto mt-2 flex flex-col rounded-md border-2 ${balance < 0 ? 'border-destructive' : 'border-green-900'} px-3 py-2`}
 					>
 						<div
-							className={`text-center text-xl font-semibold ${balance < 0 ? 'text-foreground-destructive' : 'text-green-900'}`}
+							className={`flex items-center text-xl font-semibold ${balance < 0 ? 'text-foreground-destructive' : 'text-green-900'}`}
 						>
-							Irrigation Balance: {USDollar.format(balance)}
+							<div className="w-full text-center">Irrigation Balance: {USDollar.format(balance)}</div>
+							{enabled ? (
+								<>
+									<PaymentsDialog userId={user.id} stripeId={user.stripeId} balance={balance} />
+									<PaymentSuccess open={success} username={user.username} />
+									<PaymentCancelled open={cancelled} username={user.username} />
+								</>
+							) : null}
 						</div>
 					</div>
 				) : null}

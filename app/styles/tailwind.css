@@ -123,4 +123,11 @@
 	.grid-cols-20 {
 		grid-template-columns: repeat(20, minmax(0, 1fr));
 	}
+	.table-fixed thead th {
+    position: sticky;
+    position: -webkit-sticky;
+    top: 0;
+		border-spacing: 10px 0px;
+	}
+
 }
