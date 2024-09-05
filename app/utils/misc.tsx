@@ -86,8 +86,16 @@ export function cn(...inputs: ClassValue[]) {
 	return customTwMerge(clsx(inputs))
 }
 
+export function getHost(request: Request) {
+	return request.headers.get('X-Forwarded-Host') ?? request.headers.get('host') ?? new URL(request.url).host
+}
+
+export function isLocalHost(request: Request) {
+	return getHost(request).includes('localhost')
+}
+
 export function getDomainUrl(request: Request) {
-	const host = request.headers.get('X-Forwarded-Host') ?? request.headers.get('host') ?? new URL(request.url).host
+	const host = getHost(request)
 	const protocol = host.includes('localhost') ? 'http' : 'https'
 	return `${protocol}://${host}`
 }

@@ -3,7 +3,8 @@ import { invariantResponse } from '@epic-web/invariant'
 import { type ActionFunctionArgs, json, redirect } from '@remix-run/node'
 import { z } from 'zod'
 import { prisma } from '#app/utils/db.server'
-import { getDomainUrl, stripe } from '#server/stripe.server'
+import { getDomainUrl, isLocalHost } from '#app/utils/misc'
+import { stripe } from '#server/stripe.server'
 
 const adjustable_quantity = {
 	enabled: true,
@@ -27,22 +28,25 @@ const PaymentFormSchema = z.object({
 	customer: z.string(),
 })
 
-const SURFACE_WATER = 'price_1PuU3ZRwh7qPyZNKz8QG1JQk'
-const WELL_WATER = 'price_1PuU2PRwh7qPyZNKm191NdT5'
-const defaultLineItems = [
-	{
-		price: SURFACE_WATER,
-		quantity: 1,
-		adjustable_quantity,
-	},
-	{
-		price: WELL_WATER,
-		quantity: 1,
-		adjustable_quantity,
-	},
-]
-
 export async function action({ request }: ActionFunctionArgs) {
+	const local = isLocalHost(request)
+	const SURFACE_WATER = local ? 'price_1PuU3ZRwh7qPyZNKz8QG1JQk' : 'price_1Pv6SkRwh7qPyZNKvaN0nHfs'
+	const WELL_WATER = local ? 'price_1PuU2PRwh7qPyZNKm191NdT5' : 'price_1Pv6SqRwh7qPyZNKtpDrKtI9'
+	const TRANSACTION_FEE = local ? 'price_1PuTxFRwh7qPyZNKLSivIlgQ' : 'price_1Pv77lRwh7qPyZNKcCPzbUNS'
+
+	const defaultLineItems = [
+		{
+			price: SURFACE_WATER,
+			quantity: 1,
+			adjustable_quantity,
+		},
+		{
+			price: WELL_WATER,
+			quantity: 1,
+			adjustable_quantity,
+		},
+	]
+
 	if (request.method !== 'POST') return json({ message: 'Method now allowed' }, 405)
 	const formData = await request.formData()
 	const submission = parse(formData, { schema: PaymentFormSchema })
@@ -85,11 +89,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	// filter line items with zero quantity
 	let line_items = Object.values(lineItems).filter(({ quantity }) => Boolean(quantity))
 	if (!line_items.length) line_items = [...defaultLineItems]
-	line_items.push({
-		price: 'price_1PuTxFRwh7qPyZNKLSivIlgQ',
-		quantity: 1,
-	})
-
+	line_items.push({ price: TRANSACTION_FEE, quantity: 1 })
 	const domainUrl = getDomainUrl(request)
 	const session = await stripe.checkout.sessions.create({
 		mode: 'payment',
