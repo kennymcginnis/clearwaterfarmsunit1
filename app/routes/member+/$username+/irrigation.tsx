@@ -90,7 +90,7 @@ export default function NotesRoute() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Irrigation Defaults</CardTitle>{' '}
+				<CardTitle>Irrigation Defaults</CardTitle>
 				{user?.restricted ? (
 					<div className="m-auto mt-2 flex w-[50%] flex-col rounded-md border border-destructive px-3 py-2">
 						<div className="text-md text-center uppercase text-foreground-destructive">User Account Restricted</div>

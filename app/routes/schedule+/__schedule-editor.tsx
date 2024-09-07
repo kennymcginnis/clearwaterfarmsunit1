@@ -70,7 +70,7 @@ export function UserScheduleEditor({
 		id: string
 		display: string | null
 		defaultHours: number
-		restricted: boolean
+		restricted: boolean | null
 		restriction: string | null
 	}
 	schedule: {
@@ -87,7 +87,7 @@ export function UserScheduleEditor({
 	const isPending = useIsPending()
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
-	const canEdit = (!user.restricted && user.id === currentUser?.id) || userIsAdmin
+	const canEdit = (user.restricted !== true && user.id === currentUser?.id) || userIsAdmin
 
 	const handlePrevious = (): void => {
 		if (previous) setHoursValue(previous)

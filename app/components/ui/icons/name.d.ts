@@ -11,6 +11,7 @@ export type IconName =
 	| 'check'
 	| 'clock'
 	| 'cross-1'
+	| 'cross-2'
 	| 'dots-horizontal'
 	| 'download'
 	| 'droplet'

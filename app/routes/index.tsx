@@ -84,6 +84,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		const result = UserSearchResultsSchema.safeParse(currentBalance)
 		const balance = result.success ? result.data[0].balance : 0
 
+		// a null user restriction means "auto-restrict" when they owe more than $50
+		if (user.restricted === null && balance <= -50) {
+			user.restriction = 'Restricted for Irrigation Balance'
+			user.restricted = true
+		}
+
 		const userSchedules = {
 			select: {
 				ditch: true,
@@ -291,7 +297,7 @@ function OpenSchedule({
 		id: string
 		display: string | null
 		defaultHours: number
-		restricted: boolean
+		restricted: boolean | null
 		restriction: string | null
 	}
 }) {

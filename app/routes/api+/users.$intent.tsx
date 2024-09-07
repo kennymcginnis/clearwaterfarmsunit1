@@ -40,6 +40,12 @@ export const action = async ({ params }: ActionFunctionArgs) => {
 			}
 			return `Complete. ${updated} updated.`
 		}
+		case 'restricted': {
+			await prisma.user.updateMany({
+				data: { restricted: null, restriction: null },
+				where: { OR: [{ restricted: false }, { restriction: 'Restricted for Irrigation Balance' }] },
+			})
+		}
 		default:
 			invariantResponse(params.intent, `Intent not handled.`, { status: 404 })
 			break

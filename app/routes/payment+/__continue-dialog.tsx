@@ -64,20 +64,20 @@ export function PaymentsDialog({
 						</p>
 					</DialogDescription>
 				</DialogHeader>
-				<DialogFooter className="sm:justify-start">
-					<Form method="POST" action="/payment">
-						<input type="hidden" name="userId" value={userId} />
-						<input type="hidden" name="customer" value={stripeId ?? undefined} />
-						<input type="hidden" name="balance" value={balance} />
-						<Button variant="secondary">
-							<Icon name="stripe" className="m-2 w-20 text-body-xl"></Icon>
-						</Button>
-					</Form>
+				<DialogFooter className="flex flex-row content-between justify-between sm:justify-between">
 					<DialogClose asChild>
 						<Button type="button" variant="secondary">
 							Cancel
 						</Button>
 					</DialogClose>
+					<Form method="POST" action="/payment">
+						<input type="hidden" name="userId" value={userId} />
+						<input type="hidden" name="customer" value={stripeId ?? undefined} />
+						<input type="hidden" name="balance" value={balance} />
+						<Button variant="secondary">
+							<Icon name="stripe" className="w-20 pr-1 text-body-xl"></Icon>
+						</Button>
+					</Form>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

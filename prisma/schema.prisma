@@ -35,7 +35,7 @@ model User {
 
   defaultHours Float @default(0)
 
-  restricted  Boolean @default(false)
+  restricted  Boolean?
   restriction String?
 
   image    UserImage?

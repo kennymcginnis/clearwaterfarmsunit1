@@ -211,7 +211,7 @@ export default function MemberRoute() {
 }
 
 function ViewIrrigation(user: {
-	restricted: boolean
+	restricted: boolean | null
 	defaultHours: number
 	ports: {
 		ditch: number

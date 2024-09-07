@@ -1,5 +1,6 @@
 import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
+import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Card, CardContent } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon'
@@ -33,6 +34,21 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		},
 		where: { username },
 	})
+
+	const UserSearchResultsSchema = z.array(z.object({ balance: z.number() }))
+	const currentBalance = await prisma.$queryRaw`
+		SELECT sum(debit - credit) as balance
+			FROM Transactions
+		WHERE userId = ${user.id}
+	`
+	const result = UserSearchResultsSchema.safeParse(currentBalance)
+	const balance = result.success ? result.data[0].balance : 0
+
+	// a null user restriction means "auto-restrict" when they owe more than $50
+	if (user.restricted === null && balance <= -50) {
+		user.restriction = 'Restricted for Irrigation Balance'
+		user.restricted = true
+	}
 
 	const schedule = await prisma.schedule.findFirstOrThrow({
 		select: {
