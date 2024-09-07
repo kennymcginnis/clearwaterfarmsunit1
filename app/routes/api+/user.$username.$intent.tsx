@@ -62,7 +62,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 					return json({ status: 'updated', ...updated } as const, { status: 200 })
 				}
 				case 'restricted': {
-					const PutUserRestrictedSchema = z.object({ restricted: z.boolean(), restriction: z.string().optional() })
+					const PutUserRestrictedSchema = z.object({ restricted: z.boolean().nullable(), restriction: z.string().optional() })
 					const result = PutUserRestrictedSchema.safeParse(await request.json())
 					if (!result.success) {
 						return json({ status: 'error', error: result.error.message } as const, {

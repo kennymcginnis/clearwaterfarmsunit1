@@ -38,7 +38,7 @@ type UserScheduleType = {
 	id: string
 	username: string
 	display: string | null
-	restricted: boolean
+	restricted: boolean | null
 	ditch: number
 	position: number
 	hours: number | bigint | null
@@ -50,7 +50,7 @@ export const SearchResultsSchema = z.array(
 		id: z.string(),
 		username: z.string(),
 		display: z.string(),
-		restricted: z.boolean(),
+		restricted: z.boolean().nullable(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
