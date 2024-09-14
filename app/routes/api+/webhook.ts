@@ -30,14 +30,18 @@ export async function action({ request }: ActionFunctionArgs) {
 						where: { id: userId },
 					})
 				}
-				await prisma.transactions.create({
-					data: {
-						id: payment_intent as string,
-						userId,
-						debit,
-						date: format(new Date(created * 1000), 'yyyy-MM-dd'),
-						note: `Received Online PaymentId: ${payment_intent}`,
-					},
+				const id = payment_intent as string
+				const data = {
+					id,
+					userId,
+					debit,
+					date: format(new Date(created * 1000), 'yyyy-MM-dd'),
+					note: `Received Online PaymentId: ${payment_intent}`,
+				}
+				await prisma.transactions.upsert({
+					where: { id },
+					create: data,
+					update: data,
 				})
 			}
 			console.dir({ session }, { depth: null, colors: true })
