@@ -20,7 +20,7 @@ const UserScheduleEditorSchema = z.object({
 	userId: z.string(),
 	scheduleId: z.string(),
 	ditch: z.number(),
-	hours: z.number().min(0).max(12),
+	hours: z.number().min(0).max(12).optional().default(0),
 })
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -53,7 +53,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		return redirectWithToast('', {
 			type: 'success',
 			title: 'Success',
-			description: `${hours} hours saved for ditch ${ditch}.`,
+			description: hours ? `${hours} hours saved for ditch ${ditch}.` : `Hours removed from ditch ${ditch}.`,
 		})
 	} else {
 		return json({ status: 'error', submission } as const, { status: 400 })
@@ -123,11 +123,11 @@ export function UserScheduleEditor({
 					<CardTitle>Ditch {userSchedule.ditch}</CardTitle>
 					<CardDescription>{user.display}</CardDescription>
 				</CardHeader>
-				{userSchedule.hours ? (
-					<CardDescription className="mx-3 mb-0 mt-1.5 rounded-sm border-2 border-blue-900 p-2 text-center text-blue-700">
-						You are signed up for {formatHours(userSchedule.hours)}.
-					</CardDescription>
-				) : null}
+				<CardDescription className="mx-3 mb-0 mt-1.5 rounded-sm border-2 border-blue-900 p-2 text-center text-blue-700">
+					{userSchedule.hours
+						? `You are signed up for ${formatHours(userSchedule.hours)}.`
+						: 'You have not signed up for hours.'}
+				</CardDescription>
 				<CardContent>
 					<div className="flex flex-col gap-2">
 						<Field
