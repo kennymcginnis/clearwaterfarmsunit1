@@ -1,7 +1,7 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { type LoaderFunctionArgs, json } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow , subDays } from 'date-fns'
 import { z } from 'zod'
 import { DisplayField } from '#app/components/forms'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
@@ -106,8 +106,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 			orderBy: { date: 'asc' },
 		})
 
-		// find the next future dated schedule for the user
-		let closed = allSchedules.find(s => s.userSchedules.some(us => us?.start && us.start > new Date()))
+		// find the next future dated schedule for the user - offset 1day because of -7hrs PHX timezone
+		const yesterday = subDays(new Date(), 1)
+		let closed = allSchedules.find(s => s.userSchedules.some(us => us?.start && us.start > yesterday))
 		// if none, then use the most recently closed schedule
 		if (!closed) closed = allSchedules.pop()
 		invariantResponse(closed, 'No Closed Schedules Found', { status: 404 })

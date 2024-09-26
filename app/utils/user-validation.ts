@@ -66,6 +66,7 @@ export const PortsSchema = z.object({
 	ditch: z.number(),
 	position: z.number(),
 	entry: z.string().optional(),
+  section: z.string()
 })
 export const DepositsSchema = z.object({
 	amount: z.number(),
