@@ -14,7 +14,7 @@ export { action }
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const { date, username } = params
 	if (!date || !username) return redirect('/schedules')
-		await requireSelfOrAdmin({ request, params }, { redirectTo: `/schedule/${date}` })
+	await requireSelfOrAdmin({ request, params }, { redirectTo: `/schedule/${date}` })
 
 	const user = await prisma.user.findFirstOrThrow({
 		select: {
@@ -27,8 +27,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			ports: {
 				select: {
 					ditch: true,
-					position: true,
-					entry: true,
 				},
 			},
 		},
@@ -39,7 +37,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const currentBalance = await prisma.$queryRaw`
 		SELECT sum(debit - credit) as balance
 			FROM Transactions
-		WHERE userId = ${user.id}
+		 WHERE userId = ${user.id}
 	`
 	const result = UserSearchResultsSchema.safeParse(currentBalance)
 	const balance = result.success ? result.data[0].balance : 0

@@ -28,6 +28,8 @@ type UserType = {
 	member: string | null
 	ditch: number
 	position: number
+	entry: string | null
+	section: string | null
 	currentBalance: number | null
 }
 
@@ -39,6 +41,8 @@ const UserSearchResultSchema = z.object({
 	imageId: z.string().nullable(),
 	ditch: z.number(),
 	position: z.number(),
+	entry: z.string().nullable(),
+	section: z.string().nullable(),
 	currentBalance: z.number().nullable(),
 })
 
@@ -53,16 +57,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
 		SELECT User.id, User.username, User.display, User.member, UserImage.id AS imageId, 
-			Port.ditch, Port.position,
-			SUM(debit - credit) AS currentBalance
-		FROM User
-		LEFT JOIN UserImage ON User.id = UserImage.userId
-		INNER JOIN Port ON User.id = Port.userId
-		LEFT JOIN Transactions ON User.id = Transactions.userId
-		WHERE User.active 
-		AND (User.username LIKE ${like} OR User.member LIKE ${like})
-		GROUP BY User.id, Port.ditch, Port.position
-		ORDER BY Port.ditch, Port.position
+			     Port.ditch, Port.position, Port.entry, Port.section,
+			     SUM(debit - credit) AS currentBalance
+		  FROM User
+		  LEFT JOIN UserImage ON User.id = UserImage.userId
+		 INNER JOIN Port ON User.id = Port.userId
+		  LEFT JOIN Transactions ON User.id = Transactions.userId
+		 WHERE User.active 
+		   AND (User.username LIKE ${like} OR User.member LIKE ${like})
+		 GROUP BY User.id, Port.ditch, Port.position
+		 ORDER BY Port.ditch, Port.position
 	`
 
 	const result = UserSearchResultsSchema.safeParse(rawUsers)
@@ -172,7 +176,7 @@ export default function MembersRoute() {
 														{user ? (
 															<Link
 																to={`/member/${user.username}/contact`}
-																className="flex h-36 w-44 flex-col items-center justify-center rounded-lg bg-muted px-3"
+																className="flex h-48 w-44 flex-col items-center justify-center rounded-lg bg-muted px-3"
 															>
 																<UserCard user={user} />
 															</Link>
@@ -197,7 +201,7 @@ export default function MembersRoute() {
 }
 
 function UserCard({
-	user: { id, display, ditch, imageId, member, position, username, currentBalance },
+	user: { id, display, ditch, imageId, member, position, entry, section, username, currentBalance },
 }: {
 	user: UserType
 }) {
@@ -211,6 +215,10 @@ function UserCard({
 			) : null}
 			<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">
 				Ditch: {ditch} Pos: {position}
+				<br />
+				Entry: {entry}
+				<br />
+				Section: {section}
 			</span>
 			<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">
 				Balance: ${formatCurrency(currentBalance)}

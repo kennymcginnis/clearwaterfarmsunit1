@@ -8,6 +8,7 @@ const CrossoversSchema = z
 	.object({
 		ditch: z.number(),
 		position: z.number(),
+		entry: z.string(),
 		section: z.string(),
 		start: z.date().nullable(),
 	})
@@ -17,20 +18,20 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	if (!params?.date) return redirect('/schedules')
 
 	const rawUsers = await prisma.$queryRaw`
-		SELECT Port.ditch, Port.position, Port.section, mid.start
-		FROM User
-		INNER JOIN Port ON User.id = Port.userId
-    INNER JOIN (
+		SELECT Port.ditch, Port.position, Port.entry, Port.section, mid.start
+		  FROM User
+		 INNER JOIN Port ON User.id = Port.userId
+     INNER JOIN (
       SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.start
-      FROM Schedule 
-      INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
-      WHERE Schedule.date = ${params.date}
-			AND UserSchedule.hours > 0
-    ) mid
-		ON User.id = mid.userId
-		AND Port.ditch = mid.ditch
-		WHERE User.active
-		ORDER BY Port.ditch, Port.position
+        FROM Schedule 
+       INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
+       WHERE Schedule.date = ${params.date}
+			   AND UserSchedule.hours > 0
+         ) mid
+		    ON User.id = mid.userId
+		   AND Port.ditch = mid.ditch
+		 WHERE User.active
+		 ORDER BY Port.ditch, Port.position
 	`
 
 	const result = CrossoversSchema.safeParse(rawUsers)

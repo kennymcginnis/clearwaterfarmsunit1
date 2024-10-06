@@ -22,6 +22,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 					ditch: true,
 					position: true,
 					entry: true,
+					section: true,
 				},
 			},
 			userAddress: {
@@ -77,22 +78,22 @@ export default function PropertyRoute() {
 			</CardHeader>
 			<CardContent className="space-y-2">
 				{user.userAddress.map((userAddress, i) => (
-					<div key={userAddress.id} className="grid grid-cols-6 gap-x-10 gap-y-3">
-						{i > 0 ? <Separator className="col-span-6 mb-1 mt-3 border-b-2 border-t-2" /> : null}
+					<div key={userAddress.id} className="grid grid-cols-8 gap-x-4 gap-y-2">
+						{i > 0 ? <Separator className="col-span-8 mb-1 mt-3 border-b-2 border-t-2" /> : null}
 						<DisplayField
-							className="col-span-6"
+							className="col-span-8"
 							labelProps={{ htmlFor: userAddress.address.address ?? '', children: 'Address' }}
 							inputProps={{ defaultValue: userAddress.address.address }}
 						/>
 						{userAddress.address.parcelAndLot.map(parcelAndLot => (
 							<>
 								<DisplayField
-									className="col-span-3"
+									className="col-span-4"
 									labelProps={{ htmlFor: parcelAndLot.parcel, children: 'Parcel' }}
 									inputProps={{ defaultValue: parcelAndLot.parcel }}
 								/>
 								<DisplayField
-									className="col-span-3"
+									className="col-span-4"
 									labelProps={{ htmlFor: parcelAndLot.lot, children: 'Lot' }}
 									inputProps={{ defaultValue: parcelAndLot.lot }}
 								/>
@@ -110,13 +111,16 @@ export default function PropertyRoute() {
 									labelProps={{ htmlFor: port.position.toString(), children: 'Position' }}
 									inputProps={{ defaultValue: port.position }}
 								/>
-								{port.entry ? (
-									<DisplayField
-										className="col-span-2"
-										labelProps={{ htmlFor: port.entry, children: 'Entry' }}
-										inputProps={{ defaultValue: port.entry }}
-									/>
-								) : null}
+								<DisplayField
+									className="col-span-2"
+									labelProps={{ htmlFor: port.entry ?? '', children: 'Entry' }}
+									inputProps={{ defaultValue: port.entry ?? '' }}
+								/>
+								<DisplayField
+									className="col-span-2"
+									labelProps={{ htmlFor: port.section ?? '', children: 'Section' }}
+									inputProps={{ defaultValue: port.section ?? '' }}
+								/>
 							</>
 						))}
 					</div>

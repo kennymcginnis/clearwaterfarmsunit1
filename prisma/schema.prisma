@@ -155,7 +155,6 @@ model Timeline {
   id String @id
 
   scheduleId String
-  side       String?
   order      Int?
 
   date String
@@ -165,7 +164,8 @@ model Timeline {
 
   ditch    Int
   position Int
-  section  String?
+  entry    String
+  section  String
 
   hours Float
   start DateTime?
@@ -332,7 +332,7 @@ model Verification {
 }
 
 model FeatureToggle {
-  name    String  @id 
+  name    String  @id
   enabled Boolean
 
   updatedAt DateTime @updatedAt

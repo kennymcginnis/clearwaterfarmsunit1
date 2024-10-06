@@ -16,10 +16,13 @@ import { useOptionalAdminUser } from '#app/utils/user'
 type PositionDitchType = {
 	// page - for <table>
 	[key: string]: {
-		// position - for <tr>
+		// section - for <tr dotted>
 		[key: string]: {
-			// ditch - for <td>
-			[key: string]: UserType
+			// position - for <tr>
+			[key: string]: {
+				// entry - for <td>
+				[key: string]: UserType
+			}
 		}
 	}
 }
@@ -32,6 +35,53 @@ type UserType = {
 	start: Date | string | null
 	stop: Date | string | null
 	schedule: string[]
+	first?: boolean
+}
+type SidesType = { begins: Date; ends: Date; hours: number; irrigators: number; [key: string]: Date | number }
+type TimelinesType = { '10-01': SidesType; '10-03': SidesType; [key: string]: SidesType }
+const timelines: TimelinesType = {
+	'10-01': {
+		begins: new Date(100000000000000),
+		ends: new Date(0),
+		hours: 0,
+		irrigators: 0,
+	},
+	'10-03': {
+		begins: new Date(100000000000000),
+		ends: new Date(0),
+		hours: 0,
+		irrigators: 0,
+	},
+}
+// page0.West.5.['10-01'].hours
+// page1.North.7.['10-03'].hours
+const groupped: PositionDitchType = {
+	'0': { West: {}, East: {} },
+	'1': { North: {}, South: {} },
+	'2': { North: {}, South: {} },
+	'3': { North: {}, South: {} },
+	'4': { North: {}, South: {} },
+}
+type FirstDitchType = {
+	// ditch
+	[key: string]: {
+		// entry - for <td>
+		[key: string]: {
+			// section
+			[key: string]: boolean
+		}
+	}
+}
+const firsts: FirstDitchType = {
+	'1': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
+	'2': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
+	'3': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
+	'4': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
+	'5': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
+	'6': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
+	'7': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
+	'8': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
+	'9': { '10-01': { West: false, East: false }, '10-03': { West: false, East: false } },
 }
 const SearchResultsSchema = z.array(
 	z.object({
@@ -39,7 +89,8 @@ const SearchResultsSchema = z.array(
 		display: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
-		section: z.string().nullable(),
+		entry: z.string(),
+		section: z.string(),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
 		start: z.date().nullable(),
 		stop: z.date().nullable(),
@@ -59,15 +110,17 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		// await prisma.timeline.deleteMany()
 	} else {
 		const rawUsers = await prisma.$queryRaw`
-			SELECT User.id AS userId, User.display, Port.ditch, Port.position, Port.section, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
-			FROM User
-			INNER JOIN Port ON User.id = Port.userId
-			LEFT JOIN UserSchedule
-			ON User.id = UserSchedule.userId
-			AND Port.ditch = UserSchedule.ditch
-			AND UserSchedule.scheduleId = ${schedule.id}
-			WHERE User.active
-			ORDER BY Port.ditch, Port.position
+			SELECT User.id AS userId, User.display, 
+	  				 Port.ditch, Port.position, Port.entry, Port.section, 
+	  				 UserSchedule.hours, UserSchedule.start, UserSchedule.stop
+	  		FROM User
+	  	 INNER JOIN Port ON User.id = Port.userId
+	  	  LEFT JOIN UserSchedule
+	  	    ON User.id = UserSchedule.userId
+	  	   AND Port.ditch = UserSchedule.ditch
+	  	   AND UserSchedule.scheduleId = ${schedule.id}
+	  	 WHERE User.active
+	  	 ORDER BY Port.ditch, Port.position
 		`
 
 		const result = SearchResultsSchema.safeParse(rawUsers)
@@ -85,25 +138,19 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			)
 		}
 
-		const leftOrRight = (ditch: number, section: string | null) => {
-			if (ditch < 5) return 'left'
-			if (ditch < 9) return 'right'
-			return section === 'West' ? 'left' : 'right'
-		}
 		const sortOrder = (ditch: number, position: number) => {
 			if (ditch === 9) return position
 			return ditch * 100 + position
 		}
 
-		for (let { ditch, position, section, ...member } of result.data) {
-			const side = leftOrRight(ditch, section)
+		for (let { ditch, position, entry, section, ...member } of result.data) {
 			const order = sortOrder(ditch, position)
 
 			await prisma.timeline.create({
 				data: {
 					id: generatePublicId(),
 					scheduleId: schedule.id,
-					side,
+					entry,
 					order,
 					date,
 					ditch,
@@ -117,60 +164,42 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		timeline = await prisma.timeline.findMany({ where: { date: params.date }, orderBy: { order: 'asc' } })
 	}
 
-	type SideSortType = { [key: string]: UserType[][]; left: UserType[][]; right: UserType[][] }
-	const sorted: SideSortType = { left: new Array(9).fill([]), right: new Array(9).fill([]) }
-
-	const cell = (ditch: number, position: number, section: string | null) => {
-		if (ditch < 5) return { page: ditch, row: position, side: 'left' }
-		if (ditch < 9) return { page: ditch - 4, row: position, side: 'right' }
-		return { page: 0, row: position < 15 ? position : position - 14, side: section === 'West' ? 'left' : 'right' }
+	const cell = (ditch: number, position: number) => {
+		if (ditch < 5) return { page: ditch, row: position }
+		if (ditch < 9) return { page: ditch - 4, row: position }
+		return { page: 0, row: position < 15 ? position : position - 14 }
 	}
 
-	type SidesType = { begins: Date; ends: Date; hours: number; irrigators: number; [key: string]: Date | number }
-	type TimelinesType = { left: SidesType; right: SidesType; [key: string]: SidesType }
-	const timelines: TimelinesType = {
-		left: {
-			begins: new Date(100000000000000),
-			ends: new Date(0),
-			hours: 0,
-			irrigators: 0,
-		},
-		right: {
-			begins: new Date(100000000000000),
-			ends: new Date(0),
-			hours: 0,
-			irrigators: 0,
-		},
-	}
-	const groupped: PositionDitchType = { '0': {}, '1': {}, '2': {}, '3': {}, '4': {} }
 	for (let user of timeline) {
 		// user groupings
-		const { start, stop, ditch, position, section, hours } = user
-		const { page, row, side } = cell(ditch, position, section)
+		const { hours, start, stop, ditch, position, entry, section } = user
+		const { page, row } = cell(ditch, position)
 		const userType = { ...user, schedule: formatDates({ start, stop }) }
-		if (!groupped[page][row]) groupped[page][row] = { [side]: userType }
-		else groupped[page][row][side] = userType
-
-		// users sorted
-		sorted[side][page][row] = userType
+		if (!groupped[page][section][row]) groupped[page][section][row] = { [entry]: userType }
+		else groupped[page][section][row][entry] = userType
 
 		if (hours) {
-			timelines[side].hours += hours
-			timelines[side].irrigators += 1
+			timelines[entry].hours += hours
+			timelines[entry].irrigators += 1
+
+			if (!firsts[ditch][entry][section]) {
+				groupped[page][section][row][entry].first = true
+				firsts[ditch][entry][section] = true
+			}
 		}
-		if (start && start < timelines[side].begins) timelines[side].begins = start
-		if (stop && stop > timelines[side].ends) timelines[side].ends = stop
+		if (start && start < timelines[entry].begins) timelines[entry].begins = start
+		if (stop && stop > timelines[entry].ends) timelines[entry].ends = stop
 	}
 
 	// if not yet calculated, set default start to today
-	if (timelines.left.begins.getTime() === new Date(100000000000000).getTime())
-		timelines.left.begins = new Date(new Date().toISOString().slice(0, 10))
-	if (timelines.right.begins.getTime() === new Date(100000000000000).getTime())
-		timelines.right.begins = new Date(new Date().toISOString().slice(0, 10))
-	if (timelines.left.ends.getTime() === new Date(0).getTime())
-		timelines.left.ends = add(timelines.left.begins, { hours: timelines.left.hours })
-	if (timelines.right.ends.getTime() === new Date(0).getTime())
-		timelines.right.ends = add(timelines.right.begins, { hours: timelines.right.hours })
+	if (timelines['10-01'].begins.getTime() === new Date(100000000000000).getTime())
+		timelines['10-01'].begins = new Date(new Date().toISOString().slice(0, 10))
+	if (timelines['10-03'].begins.getTime() === new Date(100000000000000).getTime())
+		timelines['10-03'].begins = new Date(new Date().toISOString().slice(0, 10))
+	if (timelines['10-01'].ends.getTime() === new Date(0).getTime())
+		timelines['10-01'].ends = add(timelines['10-01'].begins, { hours: timelines['10-01'].hours })
+	if (timelines['10-03'].ends.getTime() === new Date(0).getTime())
+		timelines['10-03'].ends = add(timelines['10-03'].begins, { hours: timelines['10-03'].hours })
 
 	return json({
 		status: 'idle',
@@ -184,7 +213,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	await requireUserWithRole(request, 'admin')
 	const formData = await request.formData()
 	const intent = formData.get('intent')
-	const side = formData.get('side')?.toString()
+	const entry = formData.get('entry')?.toString()
 	const direction = formData.get('direction')?.toString()
 	const timestamp = formData.get('timestamp')?.toString()
 	const scheduleId = formData.get('scheduleId')?.toString()
@@ -201,18 +230,20 @@ export async function action({ request }: ActionFunctionArgs) {
 			invariantResponse(timestamp, 'Invalid Timestamp', { status: 400 })
 			const dated = parseISO(timestamp)
 			invariantResponse(direction, 'Invalid Direction', { status: 400 })
-			invariantResponse(side, 'Invalid Side', { status: 400 })
-			await updateSection({ [direction]: dated, side })
+			invariantResponse(entry, 'Invalid Entry', { status: 400 })
+			await updateSection({ [direction]: dated, entry })
 			return redirectWithToast('.', { type: 'success', title: 'Success', description: 'Timeline updated.' })
 		}
 		case 'submit': {
 			const timeline = await prisma.timeline.findMany({ where: { scheduleId, hours: { gt: 0 } } })
 			timeline.forEach(async ({ userId, scheduleId, ditch, start, stop }) => {
 				await prisma.userSchedule.update({
-					where: { userId_ditch_scheduleId: { userId, ditch, scheduleId } },
 					data: { start, stop },
+					where: { userId_ditch_scheduleId: { userId, ditch, scheduleId } },
 				})
 			})
+
+			await prisma.timeline.deleteMany()
 
 			return redirectWithToast(`/schedule/${schedule.date}/timeline`, {
 				type: 'success',
@@ -222,8 +253,8 @@ export async function action({ request }: ActionFunctionArgs) {
 		}
 	}
 
-	async function updateSection({ begins, ends, side }: { begins?: Date; ends?: Date; side: string }) {
-		const timeline = await prisma.timeline.findMany({ where: { scheduleId, side }, orderBy: { order: 'asc' } })
+	async function updateSection({ begins, ends, entry }: { begins?: Date; ends?: Date; entry: string }) {
+		const timeline = await prisma.timeline.findMany({ where: { scheduleId, entry }, orderBy: { order: 'asc' } })
 
 		if (begins) {
 			let start,
@@ -263,13 +294,13 @@ export default function PrintableTimelineRoute() {
 		if (!ev.target['validity'].valid) return ''
 		return ev.target['value'] + ':00Z'
 	}
-	const handleChangeTimestamp = (ev: any, side: string, direction: string) => {
+	const handleChangeTimestamp = (ev: any, entry: string, direction: string) => {
 		const timestamp = getTimestamp(ev)
 		const t = { ...timestamps }
-		t[side][direction] = timestamp
+		t[entry][direction] = timestamp
 		// @ts-ignore:next-line
 		setTimestamps(t)
-		submit({ intent: 'update', scheduleId, side, direction, timestamp }, { method: 'post' })
+		submit({ intent: 'update', scheduleId, entry, direction, timestamp }, { method: 'post' })
 	}
 
 	if (status !== 'idle' || !scheduleId || !users || !Object.keys(users).length) return null
@@ -307,10 +338,10 @@ export default function PrintableTimelineRoute() {
 										aria-label="Date and time"
 										type="datetime-local"
 										step="1800"
-										value={(timelines.left.begins || '').toString().substring(0, 16)}
-										onChange={ev => handleChangeTimestamp(ev, 'left', 'begins')}
+										value={(timelines['10-01'].begins || '').toString().substring(0, 16)}
+										onChange={ev => handleChangeTimestamp(ev, '10-01', 'begins')}
 									/>
-									<div className="float-left pl-2 text-body-md">Total Hours: {timelines.left.hours}</div>
+									<div className="float-left pl-2 text-body-md">Total Hours: {timelines['10-01'].hours}</div>
 								</div>
 								<div className="min-w-[300px] max-w-[50%] border-r p-2">
 									<div className="flex pl-2 text-body-lg font-semibold">Ends:</div>
@@ -319,10 +350,10 @@ export default function PrintableTimelineRoute() {
 										aria-label="Date and time"
 										type="datetime-local"
 										step="1800"
-										value={(timelines.left.ends || '').toString().substring(0, 16)}
-										onChange={ev => handleChangeTimestamp(ev, 'left', 'ends')}
+										value={(timelines['10-01'].ends || '').toString().substring(0, 16)}
+										onChange={ev => handleChangeTimestamp(ev, '10-01', 'ends')}
 									/>
-									<div className="float-left pl-2 text-body-md">Irrigators: {timelines.left.irrigators}</div>
+									<div className="float-left pl-2 text-body-md">Irrigators: {timelines['10-01'].irrigators}</div>
 								</div>
 							</div>
 							<div className="flex w-[50%] flex-row flex-wrap">
@@ -333,10 +364,10 @@ export default function PrintableTimelineRoute() {
 										aria-label="Date and time"
 										type="datetime-local"
 										step="1800"
-										value={(timelines.right.begins || '').toString().substring(0, 16)}
-										onChange={ev => handleChangeTimestamp(ev, 'right', 'begins')}
+										value={(timelines['10-03'].begins || '').toString().substring(0, 16)}
+										onChange={ev => handleChangeTimestamp(ev, '10-03', 'begins')}
 									/>
-									<div className="float-left pl-2 text-body-md">Total Hours: {timelines.right.hours}</div>
+									<div className="float-left pl-2 text-body-md">Total Hours: {timelines['10-03'].hours}</div>
 								</div>
 								<div className="min-w-[300px] max-w-[50%] p-2">
 									<div className="flex pl-2 text-body-lg font-semibold">Ends:</div>
@@ -345,10 +376,10 @@ export default function PrintableTimelineRoute() {
 										aria-label="Date and time"
 										type="datetime-local"
 										step="1800"
-										value={(timelines.right.ends || '').toString().substring(0, 16)}
-										onChange={ev => handleChangeTimestamp(ev, 'right', 'ends')}
+										value={(timelines['10-03'].ends || '').toString().substring(0, 16)}
+										onChange={ev => handleChangeTimestamp(ev, '10-03', 'ends')}
 									/>
-									<div className="float-left pl-2 text-body-md">Irrigators: {timelines.right.irrigators}</div>
+									<div className="float-left pl-2 text-body-md">Irrigators: {timelines['10-03'].irrigators}</div>
 								</div>
 							</div>
 						</div>
@@ -369,27 +400,38 @@ export default function PrintableTimelineRoute() {
 											</td>
 										</tr>
 									</thead>
-									{Object.keys(users[page]).map(position => {
-										const { left, right } = users[page][position]
-										return (
-											<tr className="w-[100%]" key={`${position}`}>
-												<td className="w-[50%] border-r px-1 py-0.5">
-													{left && (left.hours || showAll) ? (
-														<UserCard scheduleDate={scheduleDate} user={left} />
-													) : (
-														<div></div>
-													)}
-												</td>
-												<td className="w-[50%] border-l px-1 py-0.5">
-													{right && (right.hours || showAll) ? (
-														<UserCard scheduleDate={scheduleDate} user={right} />
-													) : (
-														<div></div>
-													)}
-												</td>
-											</tr>
-										)
-									})}
+									{Object.keys(users[page]).map((section, index) => (
+										<>
+											{Object.keys(users[page][section]).map(row => {
+												const left = users[page][section][row]['10-01']
+												const right = users[page][section][row]['10-03']
+												return (
+													<tr className="w-[100%]" key={`${row}`}>
+														<td className="w-[50%] border-r px-1 py-0.5">
+															{left && (left.hours || showAll) ? (
+																<UserCard scheduleDate={scheduleDate} user={left} />
+															) : (
+																<div></div>
+															)}
+														</td>
+														<td className="w-[50%] border-l px-1 py-0.5">
+															{right && (right.hours || showAll) ? (
+																<UserCard scheduleDate={scheduleDate} user={right} />
+															) : (
+																<div></div>
+															)}
+														</td>
+													</tr>
+												)
+											})}
+											{index === 0 ? (
+												<tr>
+													<td className="border-t-2 border-dashed" key={`${page}-${section}`}></td>
+													<td className="border-t-2 border-dashed" key={`${page}-${section}`}></td>
+												</tr>
+											) : null}
+										</>
+									))}
 								</table>
 							</div>
 						))}
@@ -402,7 +444,7 @@ export default function PrintableTimelineRoute() {
 
 function UserCard({
 	scheduleDate,
-	user: { display, hours, position, schedule },
+	user: { display, hours, position, schedule, first },
 }: {
 	scheduleDate: string
 	user: UserType
@@ -410,7 +452,7 @@ function UserCard({
 	return (
 		<Link
 			to={`/timeline/${scheduleDate}/${display}`}
-			className={`flex rounded-lg ${hours ? 'bg-muted' : 'bg-muted-40'} p-2`}
+			className={`flex rounded-lg ${hours ? 'bg-muted' : 'bg-muted-40'} ${first && 'border-1 border-secondary-foreground'} p-2`}
 		>
 			<div className="flex w-full flex-row justify-between gap-1">
 				<span className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">

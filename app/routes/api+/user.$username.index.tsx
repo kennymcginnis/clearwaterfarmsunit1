@@ -32,6 +32,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 					ditch: true,
 					position: true,
 					entry: true,
+					section: true,
 				},
 			},
 			transactions: {

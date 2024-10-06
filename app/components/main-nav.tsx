@@ -114,7 +114,7 @@ export function IrrigationNavigationMenu({
 					</NavigationMenuTrigger>
 					<NavigationMenuContent className="hover:z-10">
 						<ul className="grid w-[300px] grid-cols-1 gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-							<li className="row-span-3">
+							<li className="row-span-4">
 								<NavigationMenuLink asChild>
 									<Link to="/schedules">
 										<div className="z-1 flex h-full w-full select-none flex-col items-center justify-center rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md">
@@ -128,13 +128,11 @@ export function IrrigationNavigationMenu({
 									</Link>
 								</NavigationMenuLink>
 							</li>
-							{/* 
 							<Link to="/irrigation-information">
 								<NavigationSubMenuItem key="irrigation-information" title="Irrigation Info">
 									<div className="mb-2 mt-4 text-sm font-medium">Basic Irrigation Information</div>
 								</NavigationSubMenuItem>
-							</Link> 
-							*/}
+							</Link>
 							<Link to={`/schedule/${open?.date}/signup`} className={open ? '' : 'pointer-events-none'}>
 								<NavigationSubMenuItem key="signup" title="Sign Up">
 									<div className="mb-2 mt-4 text-sm font-medium">

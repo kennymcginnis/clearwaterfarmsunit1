@@ -10,7 +10,7 @@ export const UsernameSchema = z
 	// users can type the username in any case, but we store it in lowercase
 	.transform(value => value.toLowerCase())
 
-	export const PhoneNumberSchema = z
+export const PhoneNumberSchema = z
 	.string({ required_error: 'Phone number required' })
 	.regex(/^((\+1|1)?( |-)?)?(\([2-9][0-9]{2}\)|[2-9][0-9]{2})( |-)?([2-9][0-9]{2}( |-)?[0-9]{4})$/, {
 		message: 'Invalid phone number',
@@ -65,8 +65,8 @@ export const AddressSchema = z.object({
 export const PortsSchema = z.object({
 	ditch: z.number(),
 	position: z.number(),
-	entry: z.string().optional(),
-  section: z.string()
+	entry: z.enum(['10-01', '10-03']),
+	section: z.enum(['North', 'South', 'East', 'West']),
 })
 export const DepositsSchema = z.object({
 	amount: z.number(),
