@@ -105,8 +105,9 @@ model Port {
   section  String?
   entry    String?
 
-  user   User?   @relation(fields: [userId], references: [id])
-  userId String?
+  user         User?          @relation(fields: [userId], references: [id])
+  userId       String?
+  userSchedule UserSchedule[]
 
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
@@ -176,16 +177,15 @@ model Timeline {
 }
 
 model UserSchedule {
-  id         String?  @unique
   user       User     @relation(fields: [userId], references: [id])
   userId     String
   ditch      Int
   schedule   Schedule @relation(fields: [scheduleId], references: [id])
   scheduleId String
+  port       Port?    @relation(fields: [portId], references: [id])
+  portId     String?
 
   hours Float
-  head  Int   @default(70)
-
   start DateTime?
   stop  DateTime?
 

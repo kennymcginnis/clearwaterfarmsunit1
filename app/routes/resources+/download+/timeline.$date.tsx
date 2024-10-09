@@ -8,6 +8,8 @@ const UserSearchResultSchema = z.object({
 	display: z.string(),
 	ditch: z.number(),
 	position: z.number(),
+	entry: z.string(),
+	section: z.string(),
 	hours: z.bigint().or(z.number()).nullable(),
 	start: z.date().nullable(),
 	stop: z.date().nullable(),
@@ -19,19 +21,21 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	if (!params?.date) return redirect('/schedules')
 
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.display, Port.ditch, Port.position, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
-		FROM User
-		INNER JOIN Port ON User.id = Port.userId
-    LEFT JOIN (
-      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
-      FROM Schedule 
-      INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
-      WHERE Schedule.date = ${params.date}
-    ) UserSchedule
-		ON User.id = UserSchedule.userId
-		AND Port.ditch = UserSchedule.ditch
-		WHERE User.active
-		ORDER BY Port.ditch, Port.position
+		SELECT User.id, User.display, 
+					 Port.ditch, Port.position, Port.entry, Port.section, 
+					 UserSchedule.hours, UserSchedule.start, UserSchedule.stop
+		  FROM User
+		 INNER JOIN Port ON User.id = Port.userId
+      LEFT JOIN (
+				SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
+				  FROM Schedule 
+				 INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
+				 WHERE Schedule.date = ${params.date}
+			   ) UserSchedule
+		    ON User.id = UserSchedule.userId
+		   AND Port.ditch = UserSchedule.ditch
+		 WHERE User.active
+		 ORDER BY Port.ditch, Port.position
 	`
 
 	const result = UserSearchResultsSchema.safeParse(rawUsers)

@@ -73,14 +73,14 @@ type FirstDitchType = {
 	}
 }
 const firsts: FirstDitchType = {
-	'1': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
-	'2': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
-	'3': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
-	'4': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
-	'5': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
-	'6': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
-	'7': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
-	'8': { '10-01': { North: false, South: false }, '10-03': { North: false, South: false } },
+	'1': { '10-01': { North: false, South: false } },
+	'2': { '10-01': { North: false, South: false } },
+	'3': { '10-01': { North: false, South: false } },
+	'4': { '10-01': { North: false, South: false } },
+	'5': { '10-03': { North: false, South: false } },
+	'6': { '10-03': { North: false, South: false } },
+	'7': { '10-03': { North: false, South: false } },
+	'8': { '10-03': { North: false, South: false } },
 	'9': { '10-01': { West: false, East: false }, '10-03': { West: false, East: false } },
 }
 const SearchResultsSchema = z.array(
@@ -278,7 +278,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	}
 }
 
-export default function PrintableTimelineRoute() {
+export default function GenerateTimelineRoute() {
 	const submit = useSubmit()
 	const userIsAdmin = useOptionalAdminUser()
 	const data = useLoaderData<typeof loader>()

@@ -54,19 +54,21 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.display, Port.ditch, Port.position, mid.hours, mid.start, mid.stop
-		FROM User
-		INNER JOIN Port ON User.id = Port.userId
-    LEFT JOIN (
-      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
-      FROM Schedule 
-      INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
-      WHERE Schedule.id = ${schedule?.id}
-    ) mid
-		ON User.id = mid.userId
-		AND Port.ditch = mid.ditch
-		WHERE User.active
-		ORDER BY Port.ditch, Port.position
+		SELECT User.id, User.display, 
+					 Port.ditch, Port.position, Port.entry, Port.section, 
+					 mid.hours, mid.start, mid.stop
+		  FROM User
+		 INNER JOIN Port ON User.id = Port.userId
+      LEFT JOIN (
+				SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
+				  FROM Schedule 
+				 INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
+				 WHERE Schedule.id = ${schedule?.id}
+			) mid
+		    ON User.id = mid.userId
+		   AND Port.ditch = mid.ditch
+		 WHERE User.active
+		 ORDER BY Port.ditch, Port.position
 	`
 
 	const result = SearchResultsSchema.safeParse(rawUsers)
