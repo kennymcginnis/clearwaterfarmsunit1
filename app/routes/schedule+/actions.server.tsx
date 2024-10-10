@@ -124,10 +124,20 @@ async function closeScheduleAction({ userId, schedule, formData }: ScheduleActio
 
 	if (submission.value) {
 		const userSchedules = await prisma.userSchedule.findMany({
-			select: { userId: true, hours: true, ditch: true, start: true },
+			select: {
+				userId: true,
+				port: { select: { ditch: true } },
+				hours: true,
+				start: true,
+			},
 			where: { scheduleId },
 		})
-		for (const { userId, ditch, hours, start } of userSchedules) {
+		for (const {
+			userId,
+			port: { ditch },
+			hours,
+			start,
+		} of userSchedules) {
 			if (start && hours) {
 				await prisma.transactions.create({
 					data: {
@@ -186,8 +196,12 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 						emailSubject: true,
 					},
 				},
+				port: {
+					select: {
+						ditch: true,
+					},
+				},
 				hours: true,
-				ditch: true,
 				start: true,
 				stop: true,
 				updatedBy: true,
@@ -204,7 +218,7 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 		const emails: EmailType = {}
 		userSchedules
 			.filter(us => us.updatedBy === us.user.id)
-			.forEach(({ ditch, hours, start, stop, user: { emailSubject, primaryEmail } }) => {
+			.forEach(({ port: { ditch }, hours, start, stop, user: { emailSubject, primaryEmail } }) => {
 				if (primaryEmail) {
 					const schedule = { ditch, hours: formatHours(hours), schedule: formatDatesOneLiner({ start, stop }) }
 					if (emails[primaryEmail]) emails[primaryEmail].schedules.push(schedule)

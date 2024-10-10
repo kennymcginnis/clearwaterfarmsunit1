@@ -31,6 +31,17 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	})
 
 	const userSchedule = await prisma.userSchedule.findMany({
+		select: {
+			port: {
+				select: {
+					id: true,
+					ditch: true,
+				},
+			},
+			hours: true,
+			start: true,
+			stop: true,
+		},
 		where: { user: { username }, hours: { gt: 0 } },
 		orderBy: { start: 'desc' },
 	})
@@ -133,12 +144,12 @@ export default function NotesRoute() {
 			<CardContent className="space-y-2">
 				<main className="flex h-full min-h-[400px] flex-col">
 					<table className="w-full">
-						{userSchedules.map(({ ditch, hours, formatted }, index) => {
+						{userSchedules.map(({ port: { ditch }, hours, formatted }, index) => {
 							const [start, stop] = formatted
 							return (
 								<tr
 									key={`userSchedules-${index}`}
-									className="flex w-full flex-row justify-between gap-1 rounded-lg bg-muted p-2 mb-1"
+									className="mb-1 flex w-full flex-row justify-between gap-1 rounded-lg bg-muted p-2"
 								>
 									<td className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
 										Ditch: {ditch}

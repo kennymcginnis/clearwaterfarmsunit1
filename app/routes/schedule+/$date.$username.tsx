@@ -26,6 +26,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			restriction: true,
 			ports: {
 				select: {
+					id: true,
 					ditch: true,
 				},
 			},
@@ -59,7 +60,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 	const userSchedule = await prisma.userSchedule.findMany({
 		select: {
-			ditch: true,
+			port: {
+				select: {
+					id: true,
+					ditch: true,
+				},
+			},
 			hours: true,
 			start: true,
 			stop: true,
@@ -67,15 +73,16 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		where: {
 			user: { username },
 			scheduleId: schedule.id,
+			port: { }
 		},
 	})
 
 	const userSchedules = userSchedule.map(us => ({ ...us, schedule: formatDates({ start: us.start, stop: us.stop }) }))
 	for (const port of user.ports) {
-		const found = userSchedules.some(us => us.ditch === port.ditch)
+		const found = userSchedules.some(us => us.port.id === port.id)
 		if (!found) {
 			userSchedules.push({
-				ditch: port.ditch,
+				port,
 				hours: user.defaultHours,
 				start: null,
 				stop: null,
@@ -93,11 +100,12 @@ export default function UserSchedule() {
 	return (
 		<div className="m-auto flex h-full w-[50%] min-w-[350px] flex-col content-between gap-4 p-4">
 			{userSchedules.map(userSchedule => {
+				const ditch = userSchedule.port.ditch
 				switch (schedule.state) {
 					case 'open':
 						return (
 							<UserScheduleEditor
-								key={`schedule-${userSchedule.ditch}`}
+								key={`schedule-${ditch}`}
 								user={user}
 								schedule={schedule}
 								userSchedule={userSchedule}
@@ -105,12 +113,12 @@ export default function UserSchedule() {
 						)
 					case 'closed':
 						return (
-							<UserScheduleTimeline key={`timeline-${userSchedule.ditch}`} user={user} userSchedule={userSchedule} />
+							<UserScheduleTimeline key={`timeline-${ditch}`} user={user} userSchedule={userSchedule} />
 						)
 					case 'pending':
 					case 'locked':
 						return (
-							<div key={`locked-${userSchedule.ditch}`}>
+							<div key={`locked-${ditch}`}>
 								<Card>
 									<CardContent>
 										<Icon name="lock-closed" className="mb-1 mr-2 scale-100 max-md:scale-125"></Icon>
@@ -121,7 +129,7 @@ export default function UserSchedule() {
 						)
 					default:
 						return (
-							<div key={`locked-${userSchedule.ditch}`}>
+							<div key={`locked-${ditch}`}>
 								<Card>
 									<CardContent>
 										<Icon name="lock-closed" className="mb-1 mr-2 scale-100 max-md:scale-125"></Icon>

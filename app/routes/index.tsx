@@ -1,7 +1,7 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { type LoaderFunctionArgs, json } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
-import { formatDistanceToNow , subDays } from 'date-fns'
+import { formatDistanceToNow, subDays } from 'date-fns'
 import { z } from 'zod'
 import { DisplayField } from '#app/components/forms'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
@@ -40,8 +40,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		select: { enabled: true },
 		where: { name: 'stripe-payments' },
 	})) ?? { enabled: false }
-	const success = Boolean(query.get('payment') === 'success' ?? false)
-	const cancelled = Boolean(query.get('payment') === 'cancelled' ?? false)
+	const success = Boolean(query.get('payment') === 'success')
+	const cancelled = Boolean(query.get('payment') === 'cancelled')
 
 	const date = new Date(document.updatedAt)
 	const timeAgo = formatDistanceToNow(date)
@@ -70,7 +70,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 				defaultHours: true,
 				restricted: true,
 				restriction: true,
-				ports: { select: { ditch: true } },
+				ports: { select: { id: true, ditch: true } },
 			},
 			where: { id: userId },
 		})
@@ -92,7 +92,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 		const userSchedules = {
 			select: {
-				ditch: true,
+				port: {
+					select: {
+						id: true,
+						ditch: true,
+					},
+				},
 				hours: true,
 				start: true,
 				stop: true,
@@ -289,7 +294,10 @@ function OpenSchedule({
 	}
 	userSchedules: {
 		open: {
-			ditch: number
+			port: {
+				id: string
+				ditch: number
+			}
 			hours: number | null
 			previous: number | null
 		}[]
@@ -312,7 +320,7 @@ function OpenSchedule({
 				{userSchedules.open ? (
 					userSchedules.open.map(userSchedule => (
 						<UserScheduleEditor
-							key={`schedule-${userSchedule.ditch}`}
+							key={`schedule-${userSchedule.port.ditch}`}
 							user={user}
 							schedule={open}
 							previous={userSchedule.previous}
@@ -340,7 +348,10 @@ function ClosedSchedule({
 	}
 	userSchedules: {
 		closed: {
-			ditch: number
+			port: {
+				id: string
+				ditch: number
+			}
 			hours: number | null
 			schedule: string[]
 		}[]
@@ -359,7 +370,7 @@ function ClosedSchedule({
 			<CardContent className="flex-col">
 				{userSchedules.closed ? (
 					userSchedules.closed.map(userSchedule => (
-						<UserScheduleTimeline key={`timeline-${userSchedule.ditch}`} user={user} userSchedule={userSchedule} />
+						<UserScheduleTimeline key={`timeline-${userSchedule.port.ditch}`} user={user} userSchedule={userSchedule} />
 					))
 				) : (
 					<MissingUserSchedule schedule={userSchedules.closed} />

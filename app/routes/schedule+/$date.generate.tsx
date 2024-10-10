@@ -87,6 +87,7 @@ const SearchResultsSchema = z.array(
 	z.object({
 		userId: z.string(),
 		display: z.string(),
+		portId: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		entry: z.string(),
@@ -111,13 +112,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	} else {
 		const rawUsers = await prisma.$queryRaw`
 			SELECT User.id AS userId, User.display, 
-	  				 Port.ditch, Port.position, Port.entry, Port.section, 
+						 Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
 	  				 UserSchedule.hours, UserSchedule.start, UserSchedule.stop
 	  		FROM User
 	  	 INNER JOIN Port ON User.id = Port.userId
 	  	  LEFT JOIN UserSchedule
 	  	    ON User.id = UserSchedule.userId
-	  	   AND Port.ditch = UserSchedule.ditch
+	  	   AND Port.ditch = UserSchedule.portId
 	  	   AND UserSchedule.scheduleId = ${schedule.id}
 	  	 WHERE User.active
 	  	 ORDER BY Port.ditch, Port.position
@@ -143,20 +144,18 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			return ditch * 100 + position
 		}
 
-		for (let { ditch, position, entry, section, ...member } of result.data) {
+		for (let { ditch, position, ...rest } of result.data) {
 			const order = sortOrder(ditch, position)
 
 			await prisma.timeline.create({
 				data: {
 					id: generatePublicId(),
 					scheduleId: schedule.id,
-					entry,
 					order,
 					date,
 					ditch,
 					position,
-					section,
-					...member,
+					...rest,
 					updatedBy: userId,
 				},
 			})
@@ -236,10 +235,10 @@ export async function action({ request }: ActionFunctionArgs) {
 		}
 		case 'submit': {
 			const timeline = await prisma.timeline.findMany({ where: { scheduleId, hours: { gt: 0 } } })
-			timeline.forEach(async ({ userId, scheduleId, ditch, start, stop }) => {
+			timeline.forEach(async ({ userId, scheduleId, portId, start, stop }) => {
 				await prisma.userSchedule.update({
 					data: { start, stop },
-					where: { userId_ditch_scheduleId: { userId, ditch, scheduleId } },
+					where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
 				})
 			})
 

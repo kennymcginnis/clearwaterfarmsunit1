@@ -163,6 +163,7 @@ model Timeline {
   userId  String
   display String?
 
+  portId   String
   ditch    Int
   position Int
   entry    String
@@ -179,11 +180,10 @@ model Timeline {
 model UserSchedule {
   user       User     @relation(fields: [userId], references: [id])
   userId     String
-  ditch      Int
   schedule   Schedule @relation(fields: [scheduleId], references: [id])
   scheduleId String
-  port       Port?    @relation(fields: [portId], references: [id])
-  portId     String?
+  port       Port     @relation(fields: [portId], references: [id])
+  portId     String
 
   hours Float
   start DateTime?
@@ -192,7 +192,7 @@ model UserSchedule {
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 
-  @@id([userId, ditch, scheduleId])
+  @@id([userId, scheduleId, portId])
 }
 
 model Meeting {

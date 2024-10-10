@@ -339,7 +339,7 @@ export function getRequiredEnvVar(key: string, env = process.env): string {
 }
 
 export type UserSchedule = {
-	ditch: number
+	port: { id: string; ditch: number }
 	hours: number | null
 	start: Date | null
 	stop: Date | null
@@ -350,11 +350,11 @@ export type UserSchedules = UserSchedule[]
 
 export function formatUserSchedule(
 	user: {
-		ports: { ditch: number }[]
+		ports: { id: string; ditch: number }[]
 	},
 	userSchedules:
 		| {
-				ditch: number
+				port: { id: string; ditch: number }
 				start: Date | null
 				stop: Date | null
 				hours: number
@@ -362,7 +362,7 @@ export function formatUserSchedule(
 		| undefined,
 	previousUserSchedules?:
 		| {
-				ditch: number
+				port: { id: string; ditch: number }
 				start: Date | null
 				stop: Date | null
 				hours: number
@@ -371,13 +371,13 @@ export function formatUserSchedule(
 ): UserSchedules {
 	return user.ports.map(port => {
 		const empty = {
-			ditch: port.ditch,
+			port: { id: port.id, ditch: port.ditch },
 			hours: null,
 			start: null,
 			stop: null,
 		}
-		const found = userSchedules?.find(us => us.ditch === port.ditch) ?? empty
-		const { hours } = previousUserSchedules?.find(us => us.ditch === port.ditch) ?? empty
+		const found = userSchedules?.find(us => us.port.ditch === port.ditch) ?? empty
+		const { hours } = previousUserSchedules?.find(us => us.port.ditch === port.ditch) ?? empty
 		return {
 			...found,
 			previous: hours,
