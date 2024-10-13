@@ -31,6 +31,8 @@ export const getPaginatedContacts = async (request: Request) => {
 		display: true,
 		member: true,
 		quickbooks: true,
+		stripeId: true,
+		userAddress: { select: { address: { select: { address: true } } } },
 		phones: { select: { id: true, type: true, number: true } },
 		emailSubject: true,
 		primaryEmail: true,
@@ -47,7 +49,13 @@ export const getPaginatedContacts = async (request: Request) => {
 	if (tableParams.search) {
 		filter.where = {
 			...filter.where,
-			OR: [{ display: { contains: tableParams.search } }, { quickbooks: { contains: tableParams.search } }],
+			OR: [
+				{ display: { contains: tableParams.search } },
+				{ member: { contains: tableParams.search } },
+				{ quickbooks: { contains: tableParams.search } },
+				{ userAddress: { some: { address: { address: { contains: tableParams.search } } } } },
+				{ phones: { some: { number: { contains: tableParams.search } } } },
+			],
 		}
 	}
 
@@ -108,6 +116,7 @@ const ContactsFormSchema = z.object({
 	member: z.string().optional(),
 	quickbooks: z.string().optional(),
 	emailSubject: z.string().optional(),
+	secondarySubject: z.string().optional(),
 	primaryEmail: EmailSchema.optional(),
 	secondaryEmail: EmailSchema.optional(),
 	phoneId: z.string().optional(),

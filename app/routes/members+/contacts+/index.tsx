@@ -4,11 +4,14 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
 import { Link, useLoaderData, useFetcher } from '@remix-run/react'
 import clsx from 'clsx'
-import { type FormEvent } from 'react'
+import parsePhoneNumber from 'libphonenumber-js'
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
 import { z } from 'zod'
 import DisplayFilters from '#app/components/DisplayFilters'
 import Dropdown from '#app/components/Dropdown/Dropdown'
 import { PaginationComponent } from '#app/components/pagination'
+import { SearchBar } from '#app/components/search-bar.tsx'
 import { Button } from '#app/components/ui/button'
 import { Card, CardContent, CardTitle, CardHeader, CardFooter } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon'
@@ -49,94 +52,125 @@ type ChangesType = {
 
 export default function ContactsRoute() {
 	const { contacts, tableParams, displays, total } = useLoaderData<typeof loader>()
+	const [showUpload, setShowUpload] = useState(false)
+	const toggleShowUpload = () => setShowUpload(!showUpload)
+
 	const fetcher = useFetcher()
 
 	const handleChange = (changes: ChangesType) => fetcher.submit(changes, { method: 'POST' })
-	const Header = ({ header, className }: { header: string; className: string }) => {
-		return (
-			<div
-				key={`header-${header}`}
-				className={cn(
-					'flex h-8 px-4 py-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
-					className,
-				)}
-			>
-				{header.toUpperCase()}
-			</div>
-		)
-	}
 
 	const SortableHeader = ({ header, className }: { header: string; className: string }) => {
 		const isSortingUp = tableParams.sort === header && tableParams.direction === 'asc'
 		const isSortingDown = tableParams.sort === header && tableParams.direction === 'desc'
 		return (
-			<Link
-				key={`header-${header}`}
-				className={cn(
-					'flex h-8 px-4 py-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
-					className,
-				)}
-				to={getNewTableUrl(baseUrl, tableParams, 'sort', header !== 'intent' ? header : undefined)}
-			>
-				{header.toUpperCase()}
-				{header !== 'intent' && isSortingUp && <ChevronUpIcon className="ml-auto w-4" />}
-				{header !== 'intent' && isSortingDown && <ChevronDownIcon className="ml-auto w-4" />}
-			</Link>
+			<Button variant="default" asChild>
+				<Link
+					key={`header-${header}`}
+					className={cn(
+						'flex px-4 py-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+						className,
+					)}
+					to={getNewTableUrl(baseUrl, tableParams, 'sort', header !== 'intent' ? header : undefined)}
+				>
+					{header.toUpperCase()}
+					{header !== 'intent' && isSortingUp && <ChevronUpIcon className="ml-auto w-4" />}
+					{header !== 'intent' && isSortingDown && <ChevronDownIcon className="ml-auto w-4" />}
+				</Link>
+			</Button>
 		)
 	}
 
 	const baseUrl = '/members/contacts'
 	return (
-		<Card className="m-auto mt-2 flex w-full flex-col items-center justify-center gap-1 rounded-none bg-accent px-0 pb-4">
-			<CardHeader className="flex w-full flex-row flex-wrap gap-2 self-center p-4">
-				<div></div>
+		<Card className="m-auto mt-2 flex flex-col items-center justify-center gap-1 bg-accent px-0 pb-4">
+			<CardHeader className="flex w-full flex-row flex-wrap gap-2 self-center border-b-sky-950 p-4">
 				<div className="flex flex-col items-center">
 					<CardTitle>Member Contact List</CardTitle>
 				</div>
 				<div className="flex gap-2">
 					<Button>
 						<Link reloadDocument to={`/resources/download/contacts`}>
-							<Icon name="download" size="md">
-								Contacts
-							</Icon>
+							<Icon name="download">Contacts</Icon>
 						</Link>
 					</Button>
+					<Button onClick={toggleShowUpload}>
+						<Icon name="upload">Upload</Icon>
+						{showUpload ? (
+							<ChevronDown
+								className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
+								aria-hidden="true"
+							/>
+						) : (
+							<ChevronUp
+								className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
+								aria-hidden="true"
+							/>
+						)}
+					</Button>
 				</div>
-			</CardHeader>
-			<CardContent className="space-y-2 overflow-auto">
-				<div className="grid grid-cols-12 gap-1">
-					<div className="col-span-1">
-						<Button asChild variant="secondary" className="w-full">
-							<Link to={baseUrl}>
-								<Icon name="reset" className="scale-100 max-md:scale-125">
-									<span className="max-md:hidden">Reset Table</span>
-								</Icon>
-							</Link>
-						</Button>
+				{showUpload ? (
+					<div className="mt-2 flex w-full flex-row justify-end space-x-2">
+						<fetcher.Form method="post" encType="multipart/form-data" action="/members/contacts/upload">
+							<input aria-label="File" type="file" accept=".csv" name="selected_csv" />
+							<Button type="submit" name="intent" value="upload-contacts" className="btn btn-sm">
+								Upload CSV
+							</Button>
+						</fetcher.Form>
 					</div>
-					<div className="col-span-2">
-						<DisplayFilters
-							baseUrl={baseUrl}
-							dropdownDefault="All Members"
-							displays={displays}
-							tableParams={tableParams}
-						/>
+				) : null}
+			</CardHeader>
+			<CardContent className="w-full space-y-2 overflow-auto">
+				<div className="flex flex-row flex-wrap justify-around gap-1 lg:flex-nowrap">
+					<div className="flex flex-col gap-1.5">
+						<div className="text-md ml-2 font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+							Filters:
+						</div>
+						<div className="flex flex-row gap-1">
+							<div className="w-48">
+								<Button asChild variant="secondary" className="w-full">
+									<Link to={baseUrl}>
+										<Icon name="reset" className="scale-100 max-md:scale-125">
+											<span className="max-md:hidden">Reset Table</span>
+										</Icon>
+									</Link>
+								</Button>
+							</div>
+							<div className="w-48">
+								<DisplayFilters
+									baseUrl={baseUrl}
+									dropdownDefault="All Members"
+									displays={displays}
+									tableParams={tableParams}
+								/>
+							</div>
+						</div>
+					</div>
+					<div className="flex w-full flex-col justify-end gap-1.5">
+						<div className="text-md ml-2 font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+							Search:
+						</div>
+						<SearchBar action="/members/contacts" status="idle" autoFocus autoSubmit />
+					</div>
+					<div className="flex flex-col gap-1.5">
+						<div className="text-md ml-2 font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+							Sorting:
+						</div>
+						<div className="flex flex-row gap-1">
+							<SortableHeader header="display" className="w-28" />
+							<SortableHeader header="quickbooks" className="w-36" />
+						</div>
 					</div>
 				</div>
 
-				<div className="grid w-full grid-cols-12 gap-1 border-b-2 p-2 pb-0">
-					<Header header="id" className="col-span-1" />
-					<SortableHeader header="display" className="col-span-1" />
-					<SortableHeader header="quickbooks" className="col-span-4" />
-					<Header header="phones" className="col-span-3" />
-					<Header header="emails" className="col-span-3" />
-				</div>
+				<Separator className="col-span-12 mb-1 mt-1 h-1 rounded-sm bg-sky-950" />
 				{contacts.map(
 					({
 						id: userId,
 						username,
 						display,
 						member,
+						stripeId,
+						userAddress,
 						quickbooks,
 						emailSubject,
 						primaryEmail,
@@ -144,69 +178,93 @@ export default function ContactsRoute() {
 						secondaryEmail,
 						phones,
 					}) => (
-						<div key={userId} className="grid grid-cols-12 gap-1">
-							<div className="col-span-1 flex flex-col">
-								<Label className="col-span-1 m-1" htmlFor="User Id" children="User Id" />
-								<Input className="col-span-1 bg-muted" id="User Id" readOnly={true} value={userId} />
+						<div key={userId} className="flex w-full flex-row flex-wrap gap-1">
+							<div className="flex w-full flex-row items-center">
+								<Input
+									className="text-md w-[180px] border-sky-950 bg-muted text-center"
+									id="User Id"
+									readOnly={true}
+									value={userId}
+								/>
 							</div>
-							<div className="col-span-1 flex flex-col">
-								<Label className="col-span-1 m-1" htmlFor="username" children="Username" />
+							<div className="flex flex-col">
+								<Label className="m-1" htmlFor="username" children="Username" />
 								<Input
 									id="username"
+									className="w-[180px]"
 									defaultValue={username ?? ''}
 									onBlur={e => handleChange({ userId, intent: 'username', username: e.currentTarget.value })}
 								/>
-								<Label className="col-span-1 m-1" htmlFor="display" children="Display" />
+								<Label className="m-1" htmlFor="display" children="Display Name" />
 								<Input
 									id="display"
+									className="w-[180px]"
 									defaultValue={display ?? ''}
 									onBlur={e => handleChange({ userId, intent: 'display', display: e.currentTarget.value })}
 								/>
+								<Label className="m-1" htmlFor="member" children="Stripe ID" />
+								<Input id="member" className="w-[180px]" readOnly={true} defaultValue={stripeId ?? ''} />
 							</div>
-							<div className="col-span-4 flex flex-col">
-								<Label className="col-span-4 m-1" htmlFor="member" children="Member Name" />
-								<Input
-									id="member"
-									defaultValue={member ?? ''}
-									onBlur={e => handleChange({ userId, intent: 'member', member: e.currentTarget.value })}
-								/>
-								<Label className="col-span-4 m-1" htmlFor="quickbooks" children="QuickBooks" />
+							<div className="flex flex-col">
+								<Label className="m-1" htmlFor="quickbooks" children="QuickBooks Name" />
 								<Input
 									id="quickbooks"
 									defaultValue={quickbooks ?? ''}
 									onBlur={e => handleChange({ userId, intent: 'quickbooks', quickbooks: e.currentTarget.value })}
 								/>
+								<Label className="m-1" htmlFor="member" children="CityProperty Name" />
+								<Input
+									id="member"
+									className="w-[600px]"
+									defaultValue={member ?? ''}
+									onBlur={e => handleChange({ userId, intent: 'member', member: e.currentTarget.value })}
+								/>
+								{userAddress.map(ua => (
+									<>
+										<Label className="m-1" htmlFor="address" children="Property Address" />
+										<Input id="address" className="w-[600px]" readOnly={true} defaultValue={ua.address.address ?? ''} />
+									</>
+								))}
 							</div>
-							<div className="col-span-3 flex flex-col">
-								{phones.map(({ id: phoneId, type, number }) => (
-									<div key={number} className="grid grid-cols-4">
-										<Label className="col-span-1 m-1" htmlFor="emailSubject" children="Type" />
-										<Label className="col-span-3 m-1" htmlFor="primaryEmail" children="Phone Number" />
-										<Input
-											id="type"
-											className="col-span-1 rounded-r-none capitalize"
-											defaultValue={type ?? ''}
-											onBlur={e =>
-												handleChange({ userId, intent: 'phone-type', phoneId, phoneType: e.currentTarget.value })
-											}
-										/>
-										<div key={number} className="col-span-3 flex flex-row">
+							<div className="flex flex-col">
+								{phones.map(({ id: phoneId, type, number }) => {
+									const phoneNumber = parsePhoneNumber(number, 'US')
+									const format = phoneNumber ? phoneNumber.formatNational() : ''
+									return (
+										<div key={number} className="grid w-[500px] grid-cols-4">
+											<Label className="col-span-1 m-1" htmlFor="emailSubject" children="Type" />
+											<Label className="col-span-3 m-1" htmlFor="primaryEmail" children="Phone Number" />
 											<Input
-												id="number"
-												className="rounded-none"
-												defaultValue={number ?? ''}
+												id="type"
+												className="col-span-1 rounded-r-none capitalize"
+												defaultValue={type ?? ''}
 												onBlur={e =>
-													handleChange({ userId, intent: 'phone-number', phoneId, phoneNumber: e.currentTarget.value })
+													handleChange({ userId, intent: 'phone-type', phoneId, phoneType: e.currentTarget.value })
 												}
 											/>
-											<DeletePhone phoneId={phoneId} />
+											<div key={number} className="col-span-3 flex flex-row">
+												<Input
+													id="number"
+													className="rounded-none"
+													defaultValue={format}
+													onBlur={e =>
+														handleChange({
+															userId,
+															intent: 'phone-number',
+															phoneId,
+															phoneNumber: e.currentTarget.value,
+														})
+													}
+												/>
+												<DeletePhone phoneId={phoneId} />
+											</div>
 										</div>
-									</div>
-								))}
+									)
+								})}
 								<CreatePhone key={`create-${userId}-${phones.length}`} userId={userId} index={phones.length} />
 							</div>
-							<div className="col-span-3 flex flex-col">
-								<div className="grid grid-cols-4">
+							<div className="flex flex-col">
+								<div className="grid w-[750px] grid-cols-4">
 									<Label className="col-span-1 m-1" htmlFor="emailSubject" children="Subject" />
 									<Label className="col-span-3 m-1" htmlFor="primaryEmail" children="Primary Email" />
 									<Input
@@ -243,7 +301,7 @@ export default function ContactsRoute() {
 									/>
 								</div>
 							</div>
-							<Separator className="col-span-12 mb-1 mt-1" />
+							<Separator className="col-span-12 mb-1 mt-1 h-0.5 rounded-sm bg-sky-950" />
 						</div>
 					),
 				)}
@@ -310,7 +368,7 @@ function CreatePhone({ userId, index }: { userId: string; index: number }) {
 	}
 
 	return (
-		<fetcher.Form method="POST" {...form.props} className="grid grid-cols-4" onBlur={handleSubmit}>
+		<fetcher.Form method="POST" {...form.props} className="grid w-[500px] grid-cols-4" onBlur={handleSubmit}>
 			<input type="hidden" name="userId" value={userId} />
 			<input type="hidden" name="intent" value="create-phone" />
 			<Label className="col-span-1 m-1" htmlFor="emailSubject" children="Type" />
