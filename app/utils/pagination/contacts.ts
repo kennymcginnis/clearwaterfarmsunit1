@@ -14,6 +14,7 @@ export type Contact = {
 	secondaryEmail?: string
 	phones: { id: string; type: string; number: string }[]
 	userAddress: { address: { address: string } }[]
+	ports: { ditch: number; position: number; section: string; entry: string }[]
 }
 
 export interface ContactData {

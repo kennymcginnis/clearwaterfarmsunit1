@@ -80,6 +80,9 @@ export default function ContactsRoute() {
 		)
 	}
 
+	const formatDitch = (ports: { ditch: number; position: number; section: string; entry: string }[]) =>
+		`[${ports[0].entry}] - ${ports.map(({ ditch, position,section }) => `Ditch ${ditch}.${`0${position}`.slice(-2)} - ${section}`).join(' & ')}` // ${section}-${entry}`
+
 	const baseUrl = '/members/contacts'
 	return (
 		<Card className="m-auto mt-2 flex flex-col items-center justify-center gap-1 bg-accent px-0 pb-4">
@@ -126,7 +129,7 @@ export default function ContactsRoute() {
 							Filters:
 						</div>
 						<div className="flex flex-row gap-1">
-							<div className="w-48">
+							<div className="w-[180px]">
 								<Button asChild variant="secondary" className="w-full">
 									<Link to={baseUrl}>
 										<Icon name="reset" className="scale-100 max-md:scale-125">
@@ -135,7 +138,7 @@ export default function ContactsRoute() {
 									</Link>
 								</Button>
 							</div>
-							<div className="w-48">
+							<div className="w-[180px]">
 								<DisplayFilters
 									baseUrl={baseUrl}
 									dropdownDefault="All Members"
@@ -177,15 +180,28 @@ export default function ContactsRoute() {
 						secondarySubject,
 						secondaryEmail,
 						phones,
+						ports,
 					}) => (
 						<div key={userId} className="flex w-full flex-row flex-wrap gap-1">
-							<div className="flex w-full flex-row items-center">
-								<Input
-									className="text-md w-[180px] border-sky-950 bg-muted text-center"
-									id="User Id"
-									readOnly={true}
-									value={userId}
-								/>
+							<div className="flex w-full flex-row items-center gap-1">
+								<Button asChild variant="outline">
+									<Link
+										id="User Id"
+										to={`/member/${username}/transactions`}
+										className="text-md w-[180px] border-sky-950 bg-muted text-center"
+									>
+										{userId}
+									</Link>
+								</Button>
+								<Button asChild variant="outline">
+									<Link
+										id="ditch"
+										to={`/member/${username}/irrigation`}
+										className="text-md min-w-[180px] border-sky-950 bg-muted text-center"
+									>
+										{formatDitch(ports)}
+									</Link>
+								</Button>
 							</div>
 							<div className="flex flex-col">
 								<Label className="m-1" htmlFor="username" children="Username" />
