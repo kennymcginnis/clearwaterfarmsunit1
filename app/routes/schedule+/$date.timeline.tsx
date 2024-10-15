@@ -200,20 +200,20 @@ function OneColumn({ users, scheduleDate }: { users: PositionDitchType; schedule
 					className={`mx-0.5 my-1 ${visible === '10-01' && 'bg-secondary underline underline-offset-4'}`}
 					onClick={() => handleToggleVisible('10-01')}
 				>
-					10-01
+					[10-01] (Ditches 1-4)
 				</Button>
 				<Button
 					variant="outline-link"
 					className={`mx-0.5 my-1 ${visible === '10-03' && 'bg-secondary underline underline-offset-4'}`}
 					onClick={() => handleToggleVisible('10-03')}
 				>
-					10-03
+					[10-03] (Ditches 5-8)
 				</Button>
 			</div>
 			<div className="flex w-full flex-row justify-center">
 				{Array.from({ length: 4 }, (_, i) => i + (visible === '10-01' ? 1 : 5)).map(i => (
 					<Button variant="outline-link" key={`#jump${i}`} asChild className="mx-0.5 my-1">
-						<Link to={`#d${i}`}>D{i}</Link>
+						<Link to={`#d${i}`}>Ditch {i}</Link>
 					</Button>
 				))}
 			</div>
