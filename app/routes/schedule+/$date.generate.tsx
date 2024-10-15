@@ -39,15 +39,6 @@ type UserType = {
 }
 type SidesType = { begins: Date; ends: Date; hours: number; irrigators: number; [key: string]: Date | number }
 type TimelinesType = { '10-01': SidesType; '10-03': SidesType; [key: string]: SidesType }
-// page0.West.5.['10-01'].hours
-// page1.North.7.['10-03'].hours
-const groupped: PositionDitchType = {
-	'0': { West: {}, East: {} },
-	'1': { North: {}, South: {} },
-	'2': { North: {}, South: {} },
-	'3': { North: {}, South: {} },
-	'4': { North: {}, South: {} },
-}
 type FirstDitchType = {
 	// ditch
 	[key: string]: {
@@ -171,6 +162,15 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		'9': { '10-01': { West: false, East: false }, '10-03': { West: false, East: false } },
 	}
 
+	// page0.West.5.['10-01'].hours
+	// page1.North.7.['10-03'].hours
+	const groupped: PositionDitchType = {
+		'0': { West: {}, East: {} },
+		'1': { North: {}, South: {} },
+		'2': { North: {}, South: {} },
+		'3': { North: {}, South: {} },
+		'4': { North: {}, South: {} },
+	}
 	for (let user of timeline) {
 		// user groupings
 		const { hours, start, stop, ditch, position, entry, section } = user
