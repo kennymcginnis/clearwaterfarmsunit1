@@ -10,6 +10,7 @@ interface User {
 	image: {
 		id: string
 	} | null
+	ports: { ditch: number; position: number; entry: string | null; section: string | null }[]
 	roles: {
 		name: string
 		permissions: {
@@ -32,7 +33,7 @@ export function useOptionalUser(): User | null | undefined {
 	return data.user
 }
 
-export function useOptionalAdminUser() {	
+export function useOptionalAdminUser() {
 	return useOptionalUser()?.roles.some(r => r.name === 'admin')
 }
 

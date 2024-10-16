@@ -9,7 +9,7 @@ import { Icon } from '#app/components/ui/icon'
 import { Separator } from '#app/components/ui/separator'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatDates, formatHrs } from '#app/utils/misc'
-import { useOptionalAdminUser } from '#app/utils/user'
+import { useOptionalUser } from '#app/utils/user'
 
 type TotalType = { [key: number]: { hours: number; irrigators: number } }
 type PositionDitchType = {
@@ -200,8 +200,10 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	} as const)
 }
 
-export default function PrintableTimelineRoute() {
-	const userIsAdmin = useOptionalAdminUser()
+export default function TimelineRoute() {
+	const user = useOptionalUser()
+	const userIsAdmin = user?.roles.some(r => r.name === 'admin')
+	const defaultUserEntry = user?.ports[0].entry
 	const data = useLoaderData<typeof loader>()
 	const { status, schedule, users } = data
 	const { id: scheduleId, date: scheduleDate } = schedule
@@ -221,7 +223,7 @@ export default function PrintableTimelineRoute() {
 			</div>
 			<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
 				<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
-					<OneColumn users={users} />
+					<OneColumn users={users} defaultUserEntry={defaultUserEntry} />
 					<TwoColumns users={users} />
 				</main>
 			</div>
@@ -229,8 +231,8 @@ export default function PrintableTimelineRoute() {
 	)
 }
 
-function OneColumn({ users }: { users: PositionDitchType }) {
-	const [visible, setVisible] = useState('10-01')
+function OneColumn({ users, defaultUserEntry }: { users: PositionDitchType; defaultUserEntry?: string | null}) {
+	const [visible, setVisible] = useState(defaultUserEntry ?? '10-01')
 	const handleToggleVisible = (value: string) => setVisible(value)
 	return (
 		<div className="m-auto block md:hidden">
@@ -372,9 +374,7 @@ function UserCard({ user }: { user: UserType }) {
 				<span className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
 					{position}: {display}
 				</span>
-				<span className="w-[10%] text-nowrap text-right text-body-sm">
-					{formatHrs(Number(hours))}
-				</span>
+				<span className="w-[10%] text-nowrap text-right text-body-sm">{formatHrs(Number(hours))}</span>
 				{schedule.map((row, r) => (
 					<span key={`row-${r}`} className="w-[30%] overflow-hidden text-ellipsis text-right text-body-sm">
 						{row}

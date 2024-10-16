@@ -110,6 +110,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 							username: true,
 							display: true,
 							image: { select: { id: true } },
+							ports: { select: { ditch: true, position: true, entry: true, section: true } },
 							roles: {
 								select: {
 									name: true,
@@ -153,7 +154,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 				select: { date: true },
 				where: { state: 'closed' },
 				orderBy: { date: 'desc' },
-				take: 2
+				take: 2,
 			}),
 		{
 			timings,
