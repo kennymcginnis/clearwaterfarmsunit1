@@ -6,17 +6,20 @@ export type Contact = {
 	username: string
 	display: string
 	member: string
+	stripeId: string
 	quickbooks: string
 	emailSubject?: string
 	primaryEmail?: string
 	secondarySubject?: string
 	secondaryEmail?: string
 	phones: { id: string; type: string; number: string }[]
+	userAddress: { address: { address: string } }[]
+	ports: { ditch: number; position: number; section: string; entry: string }[]
 }
 
 export interface ContactData {
 	contacts: Contact[]
-	displays: string[],
+	displays: string[]
 	tableParams: ContactTableParams
 	filters: string[]
 	total: number

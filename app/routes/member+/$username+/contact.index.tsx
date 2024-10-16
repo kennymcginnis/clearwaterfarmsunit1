@@ -1,6 +1,7 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
 import { Link, useLoaderData, type MetaFunction } from '@remix-run/react'
+import { parsePhoneNumber } from 'libphonenumber-js'
 import { DisplayField } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card'
@@ -96,14 +97,18 @@ export default function ContactRoute() {
 						labelProps={{ htmlFor: user.secondaryEmail ?? '', children: 'Secondary Email' }}
 						inputProps={{ defaultValue: user.secondaryEmail ?? '' }}
 					/>
-					{user.phones.map(phone => (
-						<DisplayField
-							key={phone.type}
-							className="col-span-4 capitalize"
-							labelProps={{ htmlFor: phone.type, children: `${phone.type} Number` }}
-							inputProps={{ defaultValue: phone.number }}
-						/>
-					))}
+					{user.phones.map(({ type, number }) => {
+						const phoneNumber = parsePhoneNumber(number, 'US')
+						const format = phoneNumber ? phoneNumber.formatNational() : ''
+						return (
+							<DisplayField
+								key={type}
+								className="col-span-4 capitalize"
+								labelProps={{ htmlFor: type, children: `${type} Number` }}
+								inputProps={{ defaultValue: format }}
+							/>
+						)
+					})}
 				</div>
 			</CardContent>
 		</Card>

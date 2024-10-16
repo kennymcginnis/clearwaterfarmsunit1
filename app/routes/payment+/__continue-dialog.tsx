@@ -35,12 +35,12 @@ export function PaymentsDialog({
 					<DialogTitle>Making an Online Payment</DialogTitle>
 					<DialogDescription>
 						<p>
-							Clearwater Farms POA uses <strong>Stipe</strong> to process online payments,
+							Clearwater Farms POA uses <strong>Stripe</strong> to process online payments,
 						</p>
 						<p>so you will be redirected to their checkout page.</p>
 						<br />
 						<p>
-							<strong>Stipe</strong> Payments allows for multiple types of payment options,
+							<strong>Stripe</strong> Payments allows for multiple types of payment options,
 						</p>
 						<p>but unlike Irrigation scheduling, it does not allow for fractions of units.</p>
 						<br />
@@ -59,7 +59,7 @@ export function PaymentsDialog({
 						)}
 						<br />
 						<p>
-							Additionally, <strong>Stipe</strong> charges 3% plus 30¢ per successful transactions. These additional
+							Additionally, <strong>Stripe</strong> charges 3% plus 30¢ per successful transactions. These additional
 							fees will not be added to your Irrigation balance.
 						</p>
 					</DialogDescription>
