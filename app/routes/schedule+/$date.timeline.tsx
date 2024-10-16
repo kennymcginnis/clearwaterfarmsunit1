@@ -8,7 +8,7 @@ import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon'
 import { Separator } from '#app/components/ui/separator'
 import { prisma } from '#app/utils/db.server.ts'
-import { formatDates, formatHours } from '#app/utils/misc'
+import { formatDates, formatHrs } from '#app/utils/misc'
 import { useOptionalAdminUser } from '#app/utils/user'
 
 type TotalType = { [key: number]: { hours: number; irrigators: number } }
@@ -35,6 +35,8 @@ type UserType = {
 	stop: Date | string | null
 	schedule: string[]
 	first?: boolean
+	middle?: boolean
+	last?: boolean
 }
 type FirstDitchType = {
 	// ditch
@@ -44,6 +46,13 @@ type FirstDitchType = {
 			// section
 			[key: string]: boolean
 		}
+	}
+}
+type LastDitchType = {
+	// ditch
+	[key: string]: {
+		// entry - for <td>
+		[key: string]: boolean
 	}
 }
 
@@ -119,7 +128,10 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		'6': { '10-03': { North: false, South: false } },
 		'7': { '10-03': { North: false, South: false } },
 		'8': { '10-03': { North: false, South: false } },
-		'9': { '10-01': { West: false, East: false }, '10-03': { West: false, East: false } },
+		'9': {
+			'10-01': { West: false, East: false },
+			'10-03': { West: false, East: false },
+		},
 	}
 
 	// page0.West.5.['10-01'].hours
@@ -147,11 +159,39 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			ditchTotals[ditch].irrigators += 1
 
 			if (!firsts[ditch][entry][section]) {
-				groupped[page][section][row][entry].first = true
+				if (section === 'North' || section === 'West') {
+					groupped[page][section][row][entry].first = true
+				} else {
+					groupped[page][section][row][entry].middle = true
+				}
 				firsts[ditch][entry][section] = true
 			}
 		}
 	}
+
+	const lasts: LastDitchType = {
+		'1': { '10-01': false },
+		'2': { '10-01': false },
+		'3': { '10-01': false },
+		'4': { '10-01': false },
+		'5': { '10-03': false },
+		'6': { '10-03': false },
+		'7': { '10-03': false },
+		'8': { '10-03': false },
+		'9': { '10-01': false, '10-03': false },
+	}
+
+	for (let user of result.data.reverse()) {
+		const { hours, ditch, position, entry, section } = user
+		const { page, row } = cell(ditch, position)
+		if (hours) {
+			if (!lasts[ditch][entry]) {
+				groupped[page][section][row][entry].last = true
+				lasts[ditch][entry] = true
+			}
+		}
+	}
+
 	return json({
 		status: 'idle',
 		schedule: { id: schedule.id, date: params.date, state: schedule.state },
@@ -181,15 +221,15 @@ export default function PrintableTimelineRoute() {
 			</div>
 			<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
 				<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
-					<OneColumn users={users} scheduleDate={scheduleDate} />
-					<TwoColumns users={users} scheduleDate={scheduleDate} />
+					<OneColumn users={users} />
+					<TwoColumns users={users} />
 				</main>
 			</div>
 		</div>
 	)
 }
 
-function OneColumn({ users, scheduleDate }: { users: PositionDitchType; scheduleDate: string }) {
+function OneColumn({ users }: { users: PositionDitchType }) {
 	const [visible, setVisible] = useState('10-01')
 	const handleToggleVisible = (value: string) => setVisible(value)
 	return (
@@ -235,9 +275,7 @@ function OneColumn({ users, scheduleDate }: { users: PositionDitchType; schedule
 									const user = users[page][section][row][visible]
 									return (
 										<tr className="w-full" key={`${row}`}>
-											<td className="w-[50%] p-0.5">
-												{user ? <UserCard scheduleDate={scheduleDate} user={user} /> : null}
-											</td>
+											<td className="w-[50%] p-0.5">{user ? <UserCard user={user} /> : null}</td>
 										</tr>
 									)
 								})}
@@ -256,7 +294,7 @@ function OneColumn({ users, scheduleDate }: { users: PositionDitchType; schedule
 	)
 }
 
-function TwoColumns({ users, scheduleDate }: { users: PositionDitchType; scheduleDate: string }) {
+function TwoColumns({ users }: { users: PositionDitchType }) {
 	return (
 		<div className="m-auto block max-md:hidden">
 			{Array.from({ length: 8 }, (_, i) => i + 1).map(i => (
@@ -286,12 +324,8 @@ function TwoColumns({ users, scheduleDate }: { users: PositionDitchType; schedul
 									const right = users[page][section][row]['10-03']
 									return (
 										<tr className="w-full" key={`${row}`}>
-											<td className="w-[50%] p-0.5">
-												{left ? <UserCard scheduleDate={scheduleDate} user={left} /> : null}
-											</td>
-											<td className="w-[50%] p-0.5">
-												{right ? <UserCard scheduleDate={scheduleDate} user={right} /> : null}
-											</td>
+											<td className="w-[50%] p-0.5">{left ? <UserCard user={left} /> : null}</td>
+											<td className="w-[50%] p-0.5">{right ? <UserCard user={right} /> : null}</td>
 										</tr>
 									)
 								})}
@@ -311,35 +345,43 @@ function TwoColumns({ users, scheduleDate }: { users: PositionDitchType; schedul
 	)
 }
 
-function UserCard({
-	scheduleDate,
-	user: { display, hours, position, schedule, first },
-}: {
-	scheduleDate: string
-	user: UserType
-}) {
+function UserCard({ user }: { user: UserType }) {
+	const { display, hours, position, schedule } = user
+
+	const backgroundColor = ({
+		hours,
+		first,
+		middle,
+		last,
+	}: {
+		hours: number | bigint | null
+		first?: boolean
+		middle?: boolean
+		last?: boolean
+	}) => {
+		if (!hours) return 'bg-muted-40'
+		if (first) return 'bg-green-900/70 border-1 border-secondary-foreground font-semibold'
+		if (last) return 'bg-red-900/70 border-1 border-secondary-foreground font-semibold'
+		if (middle) return 'bg-blue-900/70 border-1 border-secondary-foreground font-semibold'
+		return 'bg-muted border-1 border-secondary-foreground/40'
+	}
+
 	return (
-		<Link
-			to={`/timeline/${scheduleDate}/${display}`}
-			className={`flex rounded-lg ${hours ? (first ? 'bg-secondary' : 'bg-muted') : 'bg-muted-40'} ${first && 'border-1 border-secondary-foreground'} p-2`}
-		>
+		<div className={`flex rounded-lg p-2 ${backgroundColor(user)}`}>
 			<div className={`flex w-full flex-row justify-between gap-1`}>
-				<span className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
+				<span className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
 					{position}: {display}
 				</span>
-				<span className="w-[10%] overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">
-					{formatHours(Number(hours))}
+				<span className="w-[10%] text-nowrap text-right text-body-sm">
+					{formatHrs(Number(hours))}
 				</span>
 				{schedule.map((row, r) => (
-					<span
-						key={`row-${r}`}
-						className="w-[30%] overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground"
-					>
+					<span key={`row-${r}`} className="w-[30%] overflow-hidden text-ellipsis text-right text-body-sm">
 						{row}
 					</span>
 				))}
 			</div>
-		</Link>
+		</div>
 	)
 }
 
