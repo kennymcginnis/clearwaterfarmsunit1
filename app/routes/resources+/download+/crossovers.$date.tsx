@@ -26,14 +26,14 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		  FROM User
 		 INNER JOIN Port ON User.id = Port.userId
      INNER JOIN (
-      SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.start
+      SELECT UserSchedule.userId, UserSchedule.portId, UserSchedule.start
         FROM Schedule 
        INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
        WHERE Schedule.date = ${params.date}
 			   AND UserSchedule.hours > 0
          ) mid
 		    ON User.id = mid.userId
-		   AND Port.ditch = mid.ditch
+		   AND Port.id = mid.portId
 		 WHERE User.active
 		 ORDER BY mid.start
 	`

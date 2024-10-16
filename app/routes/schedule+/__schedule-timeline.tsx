@@ -10,24 +10,28 @@ export function UserScheduleTimeline({
 		display: string | null
 	}
 	userSchedule: {
-		ditch: number
+		port: {
+			id: string
+			ditch: number
+		}
 		hours: number | null
 		schedule: string[]
 	}
 }) {
+	const ditch = userSchedule.port.ditch
 	const schedule = userSchedule.hours
 		? userSchedule.schedule
 		: ['You did not sign up for Irrigation', 'on this schedule.']
 	return (
 		<Card className="mb-1">
 			<CardHeader>
-				<CardTitle>Ditch {userSchedule.ditch}</CardTitle>
+				<CardTitle>Ditch {ditch}</CardTitle>
 				<CardDescription>
 					{user.display} {formatHours(userSchedule.hours)}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-2">
-				<div key={userSchedule.ditch} className="flex flex-col">
+				<div key={ditch} className="flex flex-col">
 					{schedule.map((row, r) => (
 						<span
 							key={`row-${r}`}
