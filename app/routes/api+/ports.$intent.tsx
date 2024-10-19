@@ -36,7 +36,8 @@ export const action = async ({ params }: ActionFunctionArgs) => {
 		case 'userSchedules': {
 			const ports = await prisma.port.findMany()
 			await prisma.userSchedule.deleteMany({ where: { hours: 0 } })
-			const userSchedules = await prisma.userSchedule.findMany()
+			let updated = 0
+			const userSchedules = await prisma.userSchedule.findMany({ where: { portId: null } })
 			for (let { userId, ditch, scheduleId } of userSchedules) {
 				const port = ports.find(p => p.userId === userId && p.ditch === ditch)
 				if (port) {
@@ -44,9 +45,10 @@ export const action = async ({ params }: ActionFunctionArgs) => {
 						data: { portId: port.id },
 						where: { userId_ditch_scheduleId: { userId, ditch, scheduleId } },
 					})
+					updated++
 				}
 			}
-			return null
+			return `Complete. ${updated} updated.`
 		}
 		default:
 			invariantResponse(params.intent, `Intent not handled.`, { status: 404 })
