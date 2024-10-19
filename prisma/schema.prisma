@@ -169,6 +169,10 @@ model Timeline {
   entry    String
   section  String
 
+  first     Boolean?
+  crossover Boolean?
+  last      Boolean?
+
   hours Float
   start DateTime?
   stop  DateTime?
@@ -185,9 +189,13 @@ model UserSchedule {
   port       Port     @relation(fields: [portId], references: [id])
   portId     String
 
-  hours Float
-  start DateTime?
-  stop  DateTime?
+  hours  Float
+  start  DateTime?
+  stop   DateTime?
+
+  first     Boolean?
+  crossover Boolean?
+  last      Boolean?
 
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt

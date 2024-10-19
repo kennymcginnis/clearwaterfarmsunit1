@@ -1,77 +1,36 @@
 import { invariantResponse } from '@epic-web/invariant'
+import { type Prisma } from '@prisma/client'
 import { type ActionFunctionArgs, json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
-import { Form, Link, useLoaderData, useSubmit } from '@remix-run/react'
+import { Form, useLoaderData, useSubmit } from '@remix-run/react'
 import { add, parseISO } from 'date-fns'
 import { useState } from 'react'
-import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
+import { Badge } from '#app/components/ui/badge'
 import { Button } from '#app/components/ui/button'
 import { prisma } from '#app/utils/db.server.ts'
-import { formatDates, formatHours } from '#app/utils/misc'
+import { formatDates, formatHrs } from '#app/utils/misc'
 import { requireUserWithRole } from '#app/utils/permissions.ts'
 import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { useOptionalAdminUser } from '#app/utils/user'
+import {
+	assignChargesToSchedules,
+	backgroundColor,
+	borderColor,
+	SearchResultsSchema,
+	type UserScheduleType,
+} from '#app/utils/user-schedule.ts'
 
-type PositionDitchType = {
-	// page - for <table>
-	[key: string]: {
-		// section - for <tr dotted>
-		[key: string]: {
-			// position - for <tr>
-			[key: string]: {
-				// entry - for <td>
-				[key: string]: UserType
-			}
-		}
-	}
-}
-type UserType = {
-	userId: string
-	display: string | null
-	ditch: number
-	position: number
-	hours: number | bigint | null
-	start: Date | string | null
-	stop: Date | string | null
-	schedule: string[]
-	first?: boolean
-}
 type SidesType = { begins: Date; ends: Date; hours: number; irrigators: number; [key: string]: Date | number }
 type TimelinesType = { '10-01': SidesType; '10-03': SidesType; [key: string]: SidesType }
-type FirstDitchType = {
-	// ditch
-	[key: string]: {
-		// entry - for <td>
-		[key: string]: {
-			// section
-			[key: string]: boolean
-		}
-	}
-}
-const SearchResultsSchema = z.array(
-	z.object({
-		userId: z.string(),
-		display: z.string(),
-		portId: z.string(),
-		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
-		entry: z.string(),
-		section: z.string(),
-		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
-		start: z.date().nullable(),
-		stop: z.date().nullable(),
-	}),
-)
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const userId = await requireUserWithRole(request, 'admin')
-	const { date } = params
-	invariantResponse(date, 'Date parameter Not found', { status: 404 })
+	invariantResponse(params.date, 'Date parameter Not found', { status: 404 })
 
-	const schedule = await prisma.schedule.findFirst({ select: { id: true, state: true }, where: { date } })
+	const schedule = await prisma.schedule.findFirst({ select: { id: true, state: true }, where: { date: params.date } })
 	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 
-	let timeline = await prisma.timeline.findMany({ where: { date }, orderBy: { order: 'asc' } })
+	let timeline = await prisma.timeline.findMany({ where: { date: params.date }, orderBy: { order: 'asc' } })
 
 	if (timeline.length) {
 		// await prisma.timeline.deleteMany()
@@ -84,7 +43,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	  	 INNER JOIN Port ON User.id = Port.userId
 	  	  LEFT JOIN UserSchedule
 	  	    ON User.id = UserSchedule.userId
-	  	   AND Port.ditch = UserSchedule.portId
+	  	   AND Port.id = UserSchedule.portId
 	  	   AND UserSchedule.scheduleId = ${schedule.id}
 	  	 WHERE User.active
 	  	 ORDER BY Port.ditch, Port.position
@@ -110,21 +69,25 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			return ditch * 100 + position
 		}
 
-		for (let { ditch, position, ...rest } of result.data) {
-			const order = sortOrder(ditch, position)
+		const updated: UserScheduleType[] = assignChargesToSchedules(result.data)
 
-			await prisma.timeline.create({
-				data: {
+		for (let { schedule: ignored, ditch, position, hours, ...updates } of updated) {
+			const ordered = sortOrder(ditch, position)
+
+			if (hours) {
+				const data: Prisma.TimelineCreateInput = {
+					...updates,
 					id: generatePublicId(),
 					scheduleId: schedule.id,
-					order,
-					date,
+					hours: Number(hours),
+					order: ordered,
+					date: params.date,
 					ditch,
 					position,
-					...rest,
 					updatedBy: userId,
-				},
-			})
+				}
+				await prisma.timeline.create({ data })
+			}
 		}
 		timeline = await prisma.timeline.findMany({ where: { date: params.date }, orderBy: { order: 'asc' } })
 	}
@@ -149,20 +112,22 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			irrigators: 0,
 		},
 	}
-	const firsts: FirstDitchType = {
-		'1': { '10-01': { North: false, South: false } },
-		'2': { '10-01': { North: false, South: false } },
-		'3': { '10-01': { North: false, South: false } },
-		'4': { '10-01': { North: false, South: false } },
-		'5': { '10-03': { North: false, South: false } },
-		'6': { '10-03': { North: false, South: false } },
-		'7': { '10-03': { North: false, South: false } },
-		'8': { '10-03': { North: false, South: false } },
-		'9': { '10-01': { West: false, East: false }, '10-03': { West: false, East: false } },
-	}
 
 	// page0.West.5.['10-01'].hours
 	// page1.North.7.['10-03'].hours
+	type PositionDitchType = {
+		// page - for <table>
+		[key: string]: {
+			// section - for <tr dotted>
+			[key: string]: {
+				// position - for <tr>
+				[key: string]: {
+					// entry - for <td>
+					[key: string]: UserScheduleType
+				}
+			}
+		}
+	}
 	const groupped: PositionDitchType = {
 		'0': { West: {}, East: {} },
 		'1': { North: {}, South: {} },
@@ -181,11 +146,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		if (hours) {
 			timelines[entry].hours += hours
 			timelines[entry].irrigators += 1
-
-			if (!firsts[ditch][entry][section]) {
-				groupped[page][section][row][entry].first = true
-				firsts[ditch][entry][section] = true
-			}
 		}
 		if (start && start < timelines[entry].begins) timelines[entry].begins = start
 		if (stop && stop > timelines[entry].ends) timelines[entry].ends = stop
@@ -205,7 +165,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 	return json({
 		status: 'idle',
-		schedule: { id: schedule.id, date, state: schedule.state },
+		schedule: { id: schedule.id, date: params.date, state: schedule.state },
 		users: groupped,
 		timelines,
 	} as const)
@@ -238,13 +198,16 @@ export async function action({ request }: ActionFunctionArgs) {
 		}
 		case 'submit': {
 			const timeline = await prisma.timeline.findMany({ where: { scheduleId, hours: { gt: 0 } } })
-			timeline.forEach(async ({ userId, scheduleId, portId, start, stop }) => {
-				await prisma.userSchedule.update({
-					data: { start, stop },
-					where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
-				})
+			timeline.forEach(async ({ userId, scheduleId, portId, start, stop, first, crossover, last }) => {
+				try {
+					await prisma.userSchedule.update({
+						data: { start, stop, first, crossover, last },
+						where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
+					})
+				} catch (error) {
+					console.error(error)
+				}
 			})
-
 			await prisma.timeline.deleteMany()
 
 			return redirectWithToast(`/schedule/${schedule.date}/timeline`, {
@@ -257,7 +220,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	async function updateSection({ begins, ends, entry }: { begins?: Date; ends?: Date; entry: string }) {
 		const timeline = await prisma.timeline.findMany({ where: { scheduleId, entry }, orderBy: { order: 'asc' } })
-
 		if (begins) {
 			let start,
 				stop = begins
@@ -289,7 +251,7 @@ export default function GenerateTimelineRoute() {
 	const toggleShowAll = () => setShowAll(!showAll)
 
 	const { status, schedule, users, timelines } = data
-	const { id: scheduleId, date: scheduleDate } = schedule
+	const { id: scheduleId } = schedule
 
 	const [timestamps, setTimestamps] = useState(timelines)
 	const getTimestamp = (ev: any): string => {
@@ -411,18 +373,10 @@ export default function GenerateTimelineRoute() {
 												return (
 													<tr className="w-[100%]" key={`${row}`}>
 														<td className="w-[50%] border-r px-1 py-0.5">
-															{left && (left.hours || showAll) ? (
-																<UserCard scheduleDate={scheduleDate} user={left} />
-															) : (
-																<div></div>
-															)}
+															{left && (left.hours || showAll) ? <UserCard user={left} /> : <div></div>}
 														</td>
 														<td className="w-[50%] border-l px-1 py-0.5">
-															{right && (right.hours || showAll) ? (
-																<UserCard scheduleDate={scheduleDate} user={right} />
-															) : (
-																<div></div>
-															)}
+															{right && (right.hours || showAll) ? <UserCard user={right} /> : <div></div>}
 														</td>
 													</tr>
 												)
@@ -446,34 +400,46 @@ export default function GenerateTimelineRoute() {
 }
 
 function UserCard({
-	scheduleDate,
-	user: { display, hours, position, schedule, first },
+	user: { display, hours, position, schedule, first, crossover, last },
 }: {
-	scheduleDate: string
-	user: UserType
+	user: UserScheduleType
 }) {
 	return (
-		<Link
-			to={`/timeline/${scheduleDate}/${display}`}
-			className={`flex rounded-lg ${hours ? 'bg-muted' : 'bg-muted-40'} ${first && 'border-1 border-secondary-foreground'} p-2`}
+		<div
+			className={`flex rounded-lg ${hours ? 'border-1 border-secondary-foreground bg-muted' : 'bg-muted-40'} p-2 ${borderColor({ first, crossover, last })}`}
 		>
-			<div className="flex w-full flex-row justify-between gap-1">
-				<span className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm text-muted-foreground">
+			<div className="grid w-full grid-cols-10 justify-between gap-1">
+				<span className="col-span-2 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
 					{position}: {display}
 				</span>
-				<span className="w-[10%] overflow-hidden text-ellipsis text-nowrap text-right text-body-sm text-muted-foreground">
-					{formatHours(Number(hours))}
+				<span className="col-span-1 overflow-hidden text-ellipsis text-nowrap text-right text-body-sm">
+					{formatHrs(Number(hours))}
 				</span>
-				{schedule.map((row, r) => (
-					<span
-						key={`row-${r}`}
-						className="w-[30%] overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground"
-					>
-						{row}
-					</span>
-				))}
+				{schedule &&
+					schedule.map((row, r) => (
+						<span key={`row-${r}`} className="col-span-3 overflow-hidden text-ellipsis text-right text-body-sm">
+							{row}
+						</span>
+					))}
+				<div className="col-span-1 flex flex-col items-start gap-1">
+					{first && (
+						<Badge className={`ml-2 capitalize ${backgroundColor('first')}`} variant="outline">
+							{'First'}
+						</Badge>
+					)}
+					{crossover && (
+						<Badge className={`ml-2 capitalize ${backgroundColor('crossover')}`} variant="outline">
+							{'Crossover'}
+						</Badge>
+					)}
+					{last && (
+						<Badge className={`ml-2 capitalize ${backgroundColor('last')}`} variant="outline">
+							{'Last'}
+						</Badge>
+					)}
+				</div>
 			</div>
-		</Link>
+		</div>
 	)
 }
 

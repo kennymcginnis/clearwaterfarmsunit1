@@ -132,11 +132,11 @@ const UploadSignupSchema = z.array(
 )
 export async function action({ request, params }: ActionFunctionArgs) {
 	await requireUserWithRole(request, 'admin')
-	const { id: scheduleId } = await prisma.schedule.findFirst({
+	const schedule = await prisma.schedule.findFirst({
 		select: { id: true },
 		where: { date: params.date },
 	})
-	invariantResponse(scheduleId, 'Not found', { status: 404 })
+	invariantResponse(schedule, 'Schedule Not found', { status: 404 })
 
 	const uploadHandler: UploadHandler = composeUploadHandlers(csvUploadHandler, createMemoryUploadHandler())
 	const formData = await parseMultipartFormData(request, uploadHandler)
