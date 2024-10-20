@@ -2,14 +2,15 @@ import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { Link, useLoaderData } from '@remix-run/react'
 import { useState } from 'react'
-import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
+import { Badge } from '#app/components/ui/badge'
 import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon'
 import { Separator } from '#app/components/ui/separator'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatDates, formatHrs } from '#app/utils/misc'
 import { useOptionalUser } from '#app/utils/user'
+import { backgroundColor, borderColor, SearchResultsSchema, type UserScheduleType } from '#app/utils/user-schedule.ts'
 
 type TotalType = { [key: number]: { hours: number; irrigators: number } }
 type PositionDitchType = {
@@ -20,79 +21,29 @@ type PositionDitchType = {
 			// position - for <tr>
 			[key: string]: {
 				// entry - for <td>
-				[key: string]: UserType
+				[key: string]: UserScheduleType
 			}
 		}
 	}
 }
-type UserType = {
-	id: string
-	display: string
-	ditch: number
-	position: number
-	hours: number | bigint | null
-	start: Date | string | null
-	stop: Date | string | null
-	schedule: string[]
-	first?: boolean
-	middle?: boolean
-	last?: boolean
-}
-type FirstDitchType = {
-	// ditch
-	[key: string]: {
-		// entry - for <td>
-		[key: string]: {
-			// section
-			[key: string]: boolean
-		}
-	}
-}
-type LastDitchType = {
-	// ditch
-	[key: string]: {
-		// entry - for <td>
-		[key: string]: boolean
-	}
-}
-
-const SearchResultsSchema = z.array(
-	z.object({
-		id: z.string(),
-		display: z.string(),
-		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
-		entry: z.string(),
-		section: z.string(),
-		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
-		start: z.date().nullable(),
-		stop: z.date().nullable(),
-	}),
-)
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	invariantResponse(params.date, 'Date parameter Not found', { status: 404 })
 
-	const schedule = await prisma.schedule.findFirst({
-		select: { id: true, state: true },
-		where: { date: params.date },
-	})
+	const schedule = await prisma.schedule.findFirst({ select: { id: true, state: true }, where: { date: params.date } })
 	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.display, 
-					 Port.ditch, Port.position, Port.entry, Port.section, 
-					 mid.hours, mid.start, mid.stop
-		  FROM User
+		SELECT User.id AS userId, User.display, 
+					 Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+					 UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
+					 UserSchedule.first, UserSchedule.crossover, UserSchedule.last
+			FROM User
 		 INNER JOIN Port ON User.id = Port.userId
-      LEFT JOIN (
-				SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
-				  FROM Schedule 
-				 INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
-				 WHERE Schedule.id = ${schedule?.id}
-			) mid
-		    ON User.id = mid.userId
-		   AND Port.ditch = mid.ditch
+		  LEFT JOIN UserSchedule
+		    ON User.id = UserSchedule.userId
+		   AND Port.id = UserSchedule.portId
+		   AND UserSchedule.scheduleId = ${schedule.id}
 		 WHERE User.active
 		 ORDER BY Port.ditch, Port.position
 	`
@@ -119,21 +70,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		return { page: 0, row: position < 15 ? position : position - 14 }
 	}
 
-	const firsts: FirstDitchType = {
-		'1': { '10-01': { North: false, South: false } },
-		'2': { '10-01': { North: false, South: false } },
-		'3': { '10-01': { North: false, South: false } },
-		'4': { '10-01': { North: false, South: false } },
-		'5': { '10-03': { North: false, South: false } },
-		'6': { '10-03': { North: false, South: false } },
-		'7': { '10-03': { North: false, South: false } },
-		'8': { '10-03': { North: false, South: false } },
-		'9': {
-			'10-01': { West: false, East: false },
-			'10-03': { West: false, East: false },
-		},
-	}
-
 	// page0.West.5.['10-01'].hours
 	// page1.North.7.['10-03'].hours
 	const groupped: PositionDitchType = {
@@ -157,38 +93,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		if (hours) {
 			ditchTotals[ditch].hours += hours
 			ditchTotals[ditch].irrigators += 1
-
-			if (!firsts[ditch][entry][section]) {
-				if (section === 'North' || section === 'West') {
-					groupped[page][section][row][entry].first = true
-				} else {
-					groupped[page][section][row][entry].middle = true
-				}
-				firsts[ditch][entry][section] = true
-			}
-		}
-	}
-
-	const lasts: LastDitchType = {
-		'1': { '10-01': false },
-		'2': { '10-01': false },
-		'3': { '10-01': false },
-		'4': { '10-01': false },
-		'5': { '10-03': false },
-		'6': { '10-03': false },
-		'7': { '10-03': false },
-		'8': { '10-03': false },
-		'9': { '10-01': false, '10-03': false },
-	}
-
-	for (let user of result.data.reverse()) {
-		const { hours, ditch, position, entry, section } = user
-		const { page, row } = cell(ditch, position)
-		if (hours) {
-			if (!lasts[ditch][entry]) {
-				groupped[page][section][row][entry].last = true
-				lasts[ditch][entry] = true
-			}
 		}
 	}
 
@@ -231,7 +135,7 @@ export default function TimelineRoute() {
 	)
 }
 
-function OneColumn({ users, defaultUserEntry }: { users: PositionDitchType; defaultUserEntry?: string | null}) {
+function OneColumn({ users, defaultUserEntry }: { users: PositionDitchType; defaultUserEntry?: string | null }) {
 	const [visible, setVisible] = useState(defaultUserEntry ?? '10-01')
 	const handleToggleVisible = (value: string) => setVisible(value)
 	return (
@@ -347,39 +251,43 @@ function TwoColumns({ users }: { users: PositionDitchType }) {
 	)
 }
 
-function UserCard({ user }: { user: UserType }) {
-	const { display, hours, position, schedule } = user
-
-	const backgroundColor = ({
-		hours,
-		first,
-		middle,
-		last,
-	}: {
-		hours: number | bigint | null
-		first?: boolean
-		middle?: boolean
-		last?: boolean
-	}) => {
-		if (!hours) return 'bg-muted-40'
-		if (first) return 'bg-green-900/70 border-1 border-secondary-foreground font-semibold'
-		if (last) return 'bg-red-900/70 border-1 border-secondary-foreground font-semibold'
-		if (middle) return 'bg-blue-900/70 border-1 border-secondary-foreground font-semibold'
-		return 'bg-muted border-1 border-secondary-foreground/40'
-	}
-
+function UserCard({
+	user: { display, hours, position, schedule, first, crossover, last },
+}: {
+	user: UserScheduleType
+}) {
 	return (
-		<div className={`flex rounded-lg p-2 ${backgroundColor(user)}`}>
-			<div className={`flex w-full flex-row justify-between gap-1`}>
-				<span className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
+		<div
+			className={`flex rounded-lg ${hours ? 'border-1 border-secondary-foreground bg-muted' : 'bg-muted-40'} p-2 ${borderColor({ first, crossover, last })}`}
+		>
+			<div className={`grid w-full grid-cols-10 justify-between gap-1`}>
+				<span className="col-span-2 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
 					{position}: {display}
 				</span>
-				<span className="w-[10%] text-nowrap text-right text-body-sm">{formatHrs(Number(hours))}</span>
-				{schedule.map((row, r) => (
-					<span key={`row-${r}`} className="w-[30%] overflow-hidden text-ellipsis text-right text-body-sm">
-						{row}
-					</span>
-				))}
+				<span className="col-span-1 text-nowrap text-right text-body-sm">{formatHrs(Number(hours))}</span>
+				{schedule &&
+					schedule.map((row, r) => (
+						<span key={`row-${r}`} className="col-span-3 overflow-hidden text-ellipsis text-right text-body-sm">
+							{row}
+						</span>
+					))}
+				<div className="col-span-1 flex flex-col items-start gap-1">
+					{first && (
+						<Badge className={`ml-2 capitalize ${backgroundColor('first')}`} variant="outline">
+							{'First'}
+						</Badge>
+					)}
+					{crossover && (
+						<Badge className={`ml-2 capitalize ${backgroundColor('crossover')}`} variant="outline">
+							{'Crossover'}
+						</Badge>
+					)}
+					{last && (
+						<Badge className={`ml-2 capitalize ${backgroundColor('last')}`} variant="outline">
+							{'Last'}
+						</Badge>
+					)}
+				</div>
 			</div>
 		</div>
 	)

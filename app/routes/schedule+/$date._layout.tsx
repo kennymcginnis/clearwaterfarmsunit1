@@ -5,15 +5,11 @@ import { prisma } from '#app/utils/db.server.ts'
 import { formatDay } from '#app/utils/misc'
 
 export async function loader({ params }: LoaderFunctionArgs) {
-	if (!params?.date) {
-		return redirect('/schedules')
-	}
-
+	if (!params?.date) return redirect('/schedules')
 	const schedule = await prisma.schedule.findFirstOrThrow({
 		select: { date: true, deadline: true, costPerHour: true, source: true },
 		where: { date: params.date },
 	})
-
 	return json({ status: 'idle', schedule } as const)
 }
 

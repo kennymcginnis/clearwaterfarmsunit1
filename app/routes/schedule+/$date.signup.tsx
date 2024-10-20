@@ -76,13 +76,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			FROM User
 			INNER JOIN Port ON User.id = Port.userId
 			LEFT JOIN (
-				 SELECT UserSchedule.userId, UserSchedule.ditch, UserSchedule.hours, UserSchedule.updatedBy
+				 SELECT UserSchedule.userId, UserSchedule.portId, UserSchedule.hours, UserSchedule.updatedBy
 					 FROM Schedule 
 					INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
 					WHERE Schedule.id = ${schedule?.id}
 			) mid
 				 ON User.id = mid.userId
-				AND Port.ditch = mid.ditch
+				AND Port.id = mid.portId
 			WHERE User.active
 				AND (User.username LIKE ${like} OR User.member LIKE ${like})
 			ORDER BY Port.ditch, Port.position
@@ -125,8 +125,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 const UploadSignupSchema = z.array(
 	z.object({
-		id: z.string(),
-		ditch: z.coerce.number().int().min(1).max(9),
+		userId: z.string(),
+		portId: z.string(),
 		hours: z.coerce.number().multipleOf(0.5).min(0).max(99).nullable(),
 	}),
 )
@@ -136,7 +136,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		select: { id: true },
 		where: { date: params.date },
 	})
-	invariantResponse(schedule, 'Not found', { status: 404 })
+	invariantResponse(schedule, 'Schedule Not found', { status: 404 })
 
 	const uploadHandler: UploadHandler = composeUploadHandlers(csvUploadHandler, createMemoryUploadHandler())
 	const formData = await parseMultipartFormData(request, uploadHandler)
@@ -149,30 +149,35 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	if (!result.success) return json({ status: 'error', error: result.error.message } as const, { status: 400 })
 
 	const existing = await prisma.userSchedule.findMany({
-		select: { userId: true, ditch: true, scheduleId: true, hours: true },
+		select: {
+			userId: true,
+			scheduleId: true,
+			portId: true,
+			hours: true,
+		},
 		where: { scheduleId: schedule.id },
 	})
 
 	const existingMap = existing.reduce(
 		(agg, cur) => {
-			if (agg[cur.userId]) agg[cur.userId][cur.ditch] = cur
-			else agg[cur.userId] = { [cur.ditch]: cur }
+			if (agg[cur.userId]) agg[cur.userId][cur.portId] = cur
+			else agg[cur.userId] = { [cur.portId]: cur }
 			return agg
 		},
-		{} as { [key: string]: { [key: string]: { userId: string; scheduleId: string; ditch: number; hours: number } } },
+		{} as { [key: string]: { [key: string]: { userId: string; scheduleId: string; portId: string; hours: number } } },
 	)
 
-	for (let { id, ditch, hours } of result.data) {
-		if (hours == null || hours === existingMap?.[id]?.[ditch]?.hours) continue
+	for (let { userId, portId, hours } of result.data) {
+		if (hours == null || hours === existingMap?.[userId]?.[portId]?.hours) continue
 		await prisma.userSchedule.upsert({
-			select: { scheduleId: true, ditch: true, userId: true },
+			select: { userId: true, scheduleId: true, portId: true },
 			where: {
-				userId_ditch_scheduleId: { userId: id, ditch, scheduleId: schedule.id },
+				userId_scheduleId_portId: { userId, scheduleId: schedule.id, portId },
 			},
 			create: {
-				userId: id,
-				ditch,
+				userId,
 				scheduleId: schedule.id,
+				portId,
 				hours,
 			},
 			update: { hours },
@@ -341,7 +346,7 @@ function UserCard({ userSchedule }: { userSchedule: UserScheduleType }) {
 	return (
 		<div
 			// to={`/schedule/${scheduleDate}/${userSchedule.username}`}
-			className={`grid w-44 grid-cols-4 items-center justify-end rounded-lg px-5 py-3 border-1  
+			className={`border-1 grid w-44 grid-cols-4 items-center justify-end rounded-lg px-5 py-3  
 				${formatColors(userSchedule)}
 			`}
 		>

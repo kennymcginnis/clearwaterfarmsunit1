@@ -19,6 +19,7 @@ import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
 const UserScheduleEditorSchema = z.object({
 	userId: z.string(),
 	scheduleId: z.string(),
+	portId: z.string(),
 	ditch: z.number(),
 	hours: z.number().min(0).max(12).optional().default(0),
 })
@@ -32,15 +33,15 @@ export async function action({ request }: ActionFunctionArgs) {
 	if (submission.intent !== 'submit') return json({ status: 'idle', submission })
 
 	if (submission.value) {
-		const { userId, ditch, scheduleId, hours } = submission.value
+		const { userId, scheduleId, portId, ditch, hours } = submission.value
 
 		await prisma.userSchedule.upsert({
-			select: { userId: true, ditch: true, scheduleId: true },
-			where: { userId_ditch_scheduleId: { userId, ditch, scheduleId } },
+			select: { userId: true, scheduleId: true, portId: true },
+			where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
 			create: {
 				userId,
 				scheduleId,
-				ditch,
+				portId,
 				hours,
 				updatedBy: currentUser,
 			},
@@ -78,7 +79,10 @@ export function UserScheduleEditor({
 		source: string
 	}
 	userSchedule: {
-		ditch: number
+		port: {
+			id: string
+			ditch: number
+		}
 		hours: number | null
 	}
 	previous?: number | null
@@ -113,14 +117,15 @@ export function UserScheduleEditor({
 	})
 
 	return (
-		<Card key={userSchedule.ditch}>
+		<Card key={userSchedule.port.ditch}>
 			<scheduleEditor.Form method="POST" {...form.props}>
 				<AuthenticityTokenInput />
 				<input type="hidden" name="userId" value={user.id} />
 				<input type="hidden" name="scheduleId" value={schedule.id} />
-				<input type="hidden" name="ditch" value={userSchedule.ditch} />
+				<input type="hidden" name="portId" value={userSchedule.port.id} />
+				<input type="hidden" name="ditch" value={userSchedule.port.ditch} />
 				<CardHeader>
-					<CardTitle>Ditch {userSchedule.ditch}</CardTitle>
+					<CardTitle>Ditch {userSchedule.port.ditch}</CardTitle>
 					<CardDescription>{user.display}</CardDescription>
 				</CardHeader>
 				<CardDescription className="mx-3 mb-0 mt-1.5 rounded-sm border-2 border-blue-900 p-2 text-center text-blue-700">
