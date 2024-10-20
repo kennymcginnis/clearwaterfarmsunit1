@@ -10,5 +10,6 @@ seed()
 async function seed() {
 	console.log('🌱 Seeding...')
 	console.time(`🌱 Database has been seeded`)
+
 	console.timeEnd(`🌱 Database has been seeded`)
 }
