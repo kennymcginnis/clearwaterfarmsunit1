@@ -7,8 +7,7 @@
 */
 -- RedefineTables
 PRAGMA foreign_keys=OFF;
-DROP TABLE if exists "new_UserSchedule";
-CREATE TABLE "new_UserSchedule" (
+CREATE TABLE "newer_UserSchedule" (
     "userId" TEXT NOT NULL,
     "scheduleId" TEXT NOT NULL,
     "portId" TEXT NOT NULL,
@@ -23,8 +22,8 @@ CREATE TABLE "new_UserSchedule" (
     CONSTRAINT "UserSchedule_scheduleId_fkey" FOREIGN KEY ("scheduleId") REFERENCES "Schedule" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "UserSchedule_portId_fkey" FOREIGN KEY ("portId") REFERENCES "Port" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
-INSERT INTO "new_UserSchedule" ("portId", "hours", "scheduleId", "start", "stop", "updatedAt", "updatedBy", "userId") SELECT "portId", "hours", "scheduleId", "start", "stop", "updatedAt", "updatedBy", "userId" FROM "UserSchedule";
+INSERT INTO "newer_UserSchedule" ("portId", "hours", "scheduleId", "start", "stop", "updatedAt", "updatedBy", "userId") SELECT "portId", "hours", "scheduleId", "start", "stop", "updatedAt", "updatedBy", "userId" FROM "UserSchedule";
 DROP TABLE "UserSchedule";
-ALTER TABLE "new_UserSchedule" RENAME TO "UserSchedule";
+ALTER TABLE "newer_UserSchedule" RENAME TO "UserSchedule";
 PRAGMA foreign_key_check;
 PRAGMA foreign_keys=ON;
