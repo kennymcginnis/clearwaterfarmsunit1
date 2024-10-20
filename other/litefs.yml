@@ -31,7 +31,6 @@ lease:
 exec:
   - cmd: node ./other/setup-swap.js
 
-  - cmd: npx prisma migrate resolve --rolled-back "20241019235524_port_id_primary_key_v2"
   - cmd: npx prisma migrate deploy
     if-candidate: true
 
