@@ -7,6 +7,7 @@
 */
 -- RedefineTables
 PRAGMA foreign_keys=OFF;
+DROP TABLE if exists "new_UserSchedule";
 CREATE TABLE "new_UserSchedule" (
     "userId" TEXT NOT NULL,
     "scheduleId" TEXT NOT NULL,
