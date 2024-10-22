@@ -6,6 +6,8 @@ import * as React from 'react'
 import { useSpinDelay } from 'spin-delay'
 import { extendTailwindMerge } from 'tailwind-merge'
 import { extendedTheme } from './extended-theme.ts'
+import { parseAcceptLanguage } from 'intl-parse-accept-language'
+import { getHints } from './client-hints.tsx'
 
 export function getUserImgSrc(imageId?: string | null, userId?: string | null) {
 	if (imageId) return `/resources/user-images/${imageId}`
@@ -462,3 +464,25 @@ export const formatHrs = (hours: number | null) => (!hours ? '' : hours === 1 ? 
 
 export const formatBalance = (balance: number): string =>
 	!balance ? '' : balance % 1 === 0 ? `$${balance}` : `$${balance}0`
+
+export function getDateTimeFormat(request: Request, options?: Intl.DateTimeFormatOptions) {
+	const locales = parseAcceptLanguage(request.headers.get('accept-language'), {
+		validate: Intl.DateTimeFormat.supportedLocalesOf,
+	})
+	const locale = locales[0] ?? 'en-US'
+
+	// change your default options here
+	const defaultOptions: Intl.DateTimeFormatOptions = {
+		year: 'numeric',
+		month: 'numeric',
+		day: 'numeric',
+		hour: 'numeric',
+		minute: 'numeric',
+	}
+	options = {
+		...defaultOptions,
+		...options,
+		timeZone: options?.timeZone ?? getHints(request).timeZone ?? 'UTC',
+	}
+	return new Intl.DateTimeFormat(locale, options)
+}

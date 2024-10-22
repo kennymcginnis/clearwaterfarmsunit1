@@ -9,7 +9,7 @@ import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
-import { formatDates, formatHrs } from '#app/utils/misc'
+import { formatDates, formatHrs, getDateTimeFormat } from '#app/utils/misc'
 import { backgroundColor, borderColor, SearchResultsSchema } from '#app/utils/user-schedule.ts'
 
 export type UserScheduleType = {
@@ -39,21 +39,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const port = await prisma.port.findFirst({ select: { entry: true }, where: { userId } })
 	const entry = port?.entry ?? '10-01'
 
-	const toUTC = (d: Date): Date =>
-		new Date(
-			d.getUTCFullYear(),
-			d.getUTCMonth(),
-			d.getUTCDate(),
-			d.getUTCHours(),
-			d.getUTCMinutes(),
-			d.getUTCSeconds(),
-			d.getUTCMilliseconds(),
-		)
-	const nowInUTC = toUTC(new Date())
-	const yesterday = subDays(nowInUTC, 1)
-	const tomorrow = addDays(nowInUTC, 1)
-
-	const serverTime = new Date()
+	const time = getDateTimeFormat(request).format(new Date())
+	const yesterday = subDays(time, 1)
+	const tomorrow = addDays(time, 1)
 
 	const rawUsers = await prisma.$queryRaw`
     SELECT User.id AS userId, User.display, 
@@ -85,17 +73,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	): { isCurrentSchedule: boolean; distanceToNow: string } => {
 		if (!start || !stop) return { isCurrentSchedule: false, distanceToNow: '' }
 		// return ''
-		const finished = isBefore(stop, serverTime)
+		const finished = isBefore(stop, time)
 		if (finished) {
-			const distance = formatDistance(stop, serverTime, { addSuffix: true })
+			const distance = formatDistance(stop, time, { addSuffix: true })
 			return { isCurrentSchedule: false, distanceToNow: `Finished ${distance}` }
 		} else {
-			const isCurrentSchedule = isBefore(start, serverTime) && isAfter(stop, serverTime)
+			const isCurrentSchedule = isBefore(start, time) && isAfter(stop, time)
 			if (isCurrentSchedule) {
-				const distance = formatDistanceStrict(serverTime, stop)
+				const distance = formatDistanceStrict(time, stop)
 				return { isCurrentSchedule, distanceToNow: `Irrigating another ${distance}` }
 			} /*Starts in */ else {
-				const distance = formatDistance(start, serverTime, { addSuffix: true })
+				const distance = formatDistance(start, time, { addSuffix: true })
 				return { isCurrentSchedule, distanceToNow: `Starts ${distance}` }
 			}
 		}
