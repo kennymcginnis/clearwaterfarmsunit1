@@ -1,169 +1,224 @@
-// import { invariantResponse } from '@epic-web/invariant'
-// import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
-// import { useLoaderData } from '@remix-run/react'
-// import { addDays, subDays } from 'date-fns'
-// import { useState } from 'react'
-// import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
-// import { Button } from '#app/components/ui/button'
-// import { prisma } from '#app/utils/db.server.ts'
-// import { formatDates, formatHrs } from '#app/utils/misc'
-// import { useOptionalUser } from '#app/utils/user'
-// import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '#app/components/ui/carousel'
+import { invariantResponse } from '@epic-web/invariant'
+import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
+import { useLoaderData } from '@remix-run/react'
+import { formatDistanceToNow, subDays, isBefore, isAfter, addDays, format } from 'date-fns'
+import { useState } from 'react'
+import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
+import { Badge } from '#app/components/ui/badge'
+import { Button } from '#app/components/ui/button'
+import { Icon } from '#app/components/ui/icon.tsx'
+import { getUserId } from '#app/utils/auth.server'
+import { prisma } from '#app/utils/db.server.ts'
+import { formatDates, formatHrs } from '#app/utils/misc'
+import { backgroundColor, borderColor, SearchResultsSchema } from '#app/utils/user-schedule.ts'
 
-// type UserType = {
-// 	id: string
-// 	display: string
-// }
-// type PortType = {
-// 	ditch: number
-// 	position: number
-// 	entry: string
-// 	section: string
-// }
-// type UserScheduleType = {
-// 	hours: number
-// 	start: Date | string | null
-// 	stop: Date | string | null
-// 	user: UserType
-// 	port: PortType
-// 	schedule: string[]
-// }
-// type SortedSchedulesType = { [key: string]: UserScheduleType[] }
+export type UserScheduleType = {
+	userId: string
+	portId: string
+	display: string | null
+	ditch: number
+	position: number
+	entry: string
+	section: string
+	hours: number | bigint | null
+	start: Date | string | null
+	stop: Date | string | null
+	schedule?: string[]
+	first?: boolean | null
+	crossover?: boolean | null
+	last?: boolean | null
+	isCurrentUser?: boolean | null
+	isCurrentSchedule?: boolean | null
+	distanceToNow?: string | null
+}
 
-// export async function loader() {
-// 	const yesterday = subDays(new Date(), 12)
-// 	const tomorrow = addDays(new Date(), 2)
-// 	const userSchedules = await prisma.userSchedule.findMany({
-// 		select: {
-// 			hours: true,
-// 			start: true,
-// 			stop: true,
-// 			user: { select: { id: true, display: true } },
-// 			port: { select: { ditch: true, position: true, entry: true, section: true } },
-// 		},
-// 		where: {
-// 			hours: { gt: 0 },
-// 			start: { gte: yesterday },
-// 			stop: { lt: tomorrow },
-// 		},
-// 		orderBy: { start: 'asc' },
-// 	})
-// 	invariantResponse(userSchedules.length, 'Schedule Not found', { status: 404 })
-// 	const schedules: SortedSchedulesType = userSchedules.reduce(
-// 		(agg, cur) =>
-// 			(
-// 				// @ts-ignore
-// 				agg[cur.port?.entry].push({ ...cur, schedule: formatDates({ start: cur.start, stop: cur.stop }) }), agg
-// 			),
-// 		{
-// 			'10-01': [],
-// 			'10-03': [],
-// 		},
-// 	)
+type SortedSchedulesType = { [key: string]: { [key: number]: UserScheduleType[] } }
 
-// 	return json({ status: 'idle', schedules } as const)
-// }
+export async function loader({ request }: LoaderFunctionArgs) {
+	const userId = await getUserId(request)
+	const port = await prisma.port.findFirst({ select: { entry: true }, where: { userId } })
+	const entry = port?.entry ?? '10-01'
 
-// export default function TimelineRoute() {
-// 	const user = useOptionalUser()
-// 	const defaultUserEntry = user?.ports[0].entry
+	const now = new Date()
+	const yesterday = subDays(now, 1)
+	const tomorrow = addDays(now, 1)
 
-// 	const { status, schedules } = useLoaderData<typeof loader>()
-// 	if (status !== 'idle') return null
+	const rawUsers = await prisma.$queryRaw`
+    SELECT User.id AS userId, User.display, 
+           Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+           UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
+           UserSchedule.first, UserSchedule.crossover, UserSchedule.last
+      FROM User
+     INNER JOIN Port ON User.id = Port.userId
+      LEFT JOIN UserSchedule
+        ON User.id = UserSchedule.userId
+       AND Port.id = UserSchedule.portId
+     WHERE User.active
+       AND UserSchedule.start >= ${yesterday}
+       AND UserSchedule.start <= ${tomorrow}
+     ORDER BY UserSchedule.start ASC
+  `
 
-// 	const [visible, setVisible] = useState(defaultUserEntry ?? '10-01')
-// 	const handleToggleVisible = (value: string) => setVisible(value)
+	const result = SearchResultsSchema.safeParse(rawUsers)
+	if (!result.success) {
+		return json({ status: 'error', schedules: {}, entry, first: yesterday, last: tomorrow } as const, { status: 400 })
+	}
+	invariantResponse(result.data.length, 'No UserSchedules found', { status: 404 })
+	const first = format(result.data[0].start ?? yesterday, 'eee, MMM dd, h:mmaaa')
+	const last = format(result.data[result.data.length - 1].stop ?? tomorrow, 'eee, MMM dd, h:mmaaa')
 
-// 	return (
-// 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
-// 			<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
-// 				<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
-// 					<div className="m-auto block md:hidden">
-// 						<div className="flex w-full flex-row justify-center">
-// 							<Button
-// 								variant="outline-link"
-// 								className={`mx-0.5 my-1 ${visible === '10-01' && 'bg-secondary underline underline-offset-4'}`}
-// 								onClick={() => handleToggleVisible('10-01')}
-// 							>
-// 								[10-01] (Ditches 1-4)
-// 							</Button>
-// 							<Button
-// 								variant="outline-link"
-// 								className={`mx-0.5 my-1 ${visible === '10-03' && 'bg-secondary underline underline-offset-4'}`}
-// 								onClick={() => handleToggleVisible('10-03')}
-// 							>
-// 								[10-03] (Ditches 5-8)
-// 							</Button>
-// 						</div>
-// 						<Carousel opts={{ align: 'start' }} orientation="vertical" className="w-full max-w-xs">
-// 							<CarouselContent className="-mt-1 h-[200px]">
-// 								{schedules[visible].map(userSchedule => (
-// 									<UserCard user={userSchedule} />
-// 								))}
-// 							</CarouselContent>
-// 							<CarouselPrevious />
-// 							<CarouselNext />
-// 						</Carousel>
-// 					</div>
-// 				</main>
-// 			</div>
-// 		</div>
-// 	)
-// }
+	const distanceToNow = (start: Date | null): string => {
+		if (!start) return ''
+		return `Start${isBefore(start, now) ? 'ed' : 's'} ${formatDistanceToNow(start, { addSuffix: true })}`
+	}
 
-// function UserCard({ user: userSchedule }: { user: UserScheduleType }) {
-// 	const {
-// 		hours,
-// 		port: { position },
-// 		user: { display },
-// 		schedule,
-// 	} = userSchedule
+	const isCurrent = (start: Date | null, stop: Date | null): boolean => {
+		if (!start || !stop) return false
+		return isBefore(start, now) && isAfter(stop, now)
+	}
 
-// 	const backgroundColor = ({
-// 		hours,
-// 		first,
-// 		middle,
-// 		last,
-// 	}: {
-// 		hours: number | bigint | null
-// 		first?: boolean
-// 		middle?: boolean
-// 		last?: boolean
-// 	}) => {
-// 		if (!hours) return 'bg-muted-40'
-// 		if (first) return 'bg-green-900/70 border-1 border-secondary-foreground font-semibold'
-// 		if (last) return 'bg-red-900/70 border-1 border-secondary-foreground font-semibold'
-// 		if (middle) return 'bg-blue-900/70 border-1 border-secondary-foreground font-semibold'
-// 		return 'bg-muted border-1 border-secondary-foreground/40'
-// 	}
+	const schedules: SortedSchedulesType = {}
+	for (let userSchedule of result.data) {
+		// user groupings
+		const { start, stop, ditch, entry } = userSchedule
+		const userType = {
+			...userSchedule,
+			schedule: formatDates({ start, stop }),
+			isCurrentUser: userSchedule.userId === userId,
+			isCurrentSchedule: isCurrent(start, stop),
+			distanceToNow: distanceToNow(start),
+		}
+		if (!schedules[entry]) schedules[entry] = { [ditch]: [userType] }
+		else if (!schedules[entry][ditch]) schedules[entry][ditch] = [userType]
+		else schedules[entry][ditch].push(userType)
+	}
+	return json({ status: 'idle', schedules, entry, first, last } as const)
+}
 
-// 	return (
-// 		<CarouselItem className={`flex rounded-lg p-2 ${backgroundColor(userSchedule)}`}>
-// 			<div className={`flex w-full flex-row justify-between gap-1`}>
-// 				<span className="w-[30%] overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
-// 					{position}: {display}
-// 				</span>
-// 				<span className="w-[10%] text-nowrap text-right text-body-sm">{formatHrs(Number(hours))}</span>
-// 				{schedule.map((row, r) => (
-// 					<span key={`row-${r}`} className="w-[30%] overflow-hidden text-ellipsis text-right text-body-sm">
-// 						{row}
-// 					</span>
-// 				))}
-// 			</div>
-// 		</CarouselItem>
-// 	)
-// }
+export default function TimelineRoute() {
+	const { status, schedules, entry, first, last } = useLoaderData<typeof loader>()
 
-// export const meta: MetaFunction<null, { 'routes/schedule+/$date/timeline': typeof loader }> = ({ params }) => {
-// 	return [
-// 		{ title: `Irrigation Timeline | ${params.date}` },
-// 		{
-// 			name: 'description',
-// 			content: `Clearwater Farms 1 Irrigation Timeline`,
-// 		},
-// 	]
-// }
+	const [visible, setVisible] = useState(entry)
+	const handleToggleVisible = (value: string) => setVisible(value)
 
-// export function ErrorBoundary() {
-// 	return <GeneralErrorBoundary />
-// }
+	if (!schedules || status !== 'idle') return null
+
+	return (
+		<div className="flex flex-col items-center">
+			<div className="flex flex-row justify-center">
+				<div className="flex flex-col gap-1">
+					<div className="border-1 my-1 flex justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-2xl text-white">
+						<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+						Where is the water currently?
+						<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+					</div>
+					<div className="flex w-full flex-row items-end justify-around">
+						<div className={`border-1 flex rounded-lg p-2 ${borderColor({ first: true })}`}>
+							<strong>From (-24hrs):&nbsp;</strong>
+							{first}
+						</div>
+						<div className="flex flex-row justify-center">
+							<Button
+								variant="outline-link"
+								className={`mx-0.5 my-1 text-nowrap ${visible === '10-01' && 'bg-secondary underline underline-offset-4'}`}
+								onClick={() => handleToggleVisible('10-01')}
+							>
+								[10-01] (Ditches 1-4)
+							</Button>
+							<Button
+								variant="outline-link"
+								className={`mx-0.5 my-1 text-nowrap ${visible === '10-03' && 'bg-secondary underline underline-offset-4'}`}
+								onClick={() => handleToggleVisible('10-03')}
+							>
+								[10-03] (Ditches 5-8)
+							</Button>
+						</div>
+						<div className={`border-1 flex rounded-lg p-2 ${borderColor({ last: true })}`}>
+							<strong>To (+24hrs):&nbsp;</strong>
+							{last}
+						</div>
+					</div>
+					{Object.keys(schedules[visible]).map(ditch => (
+						<>
+							<div className="mt-2 rounded-md bg-primary p-2 text-center text-body-lg text-secondary">
+								{`[${visible}] Ditch ${ditch}`}
+							</div>
+							{schedules[visible][Number(ditch)].map(userSchedule => (
+								<UserCard key={`${userSchedule.start}`} userSchedule={userSchedule} />
+							))}
+						</>
+					))}
+				</div>
+			</div>
+		</div>
+	)
+}
+
+function UserCard({
+	userSchedule: {
+		display,
+		hours,
+		position,
+		schedule,
+		first,
+		crossover,
+		last,
+		isCurrentUser,
+		isCurrentSchedule,
+		distanceToNow,
+	},
+}: {
+	userSchedule: UserScheduleType
+}) {
+	return (
+		<div
+			className={`border-1 flex rounded-lg border-secondary-foreground ${isCurrentSchedule ? 'bg-sky-800   text-white' : isCurrentUser ? 'bg-secondary' : 'bg-muted-40'} p-2 ${borderColor({ first, crossover, last })}`}
+		>
+			{isCurrentSchedule && <div id="now" />}
+			<div className={`grid w-full grid-flow-row-dense grid-cols-12 justify-between gap-1`}>
+				<span className="col-span-2 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
+					{position}: {display}
+				</span>
+				<div className="col-span-2">{distanceToNow}</div>
+				<span className="col-span-1 text-nowrap text-right text-body-sm">{formatHrs(Number(hours))}</span>
+				{schedule &&
+					schedule.map((row, r) => (
+						<span key={`row-${r}`} className="col-span-3 overflow-hidden text-ellipsis text-right text-body-sm">
+							{row}
+						</span>
+					))}
+				<div className="col-span-1 flex flex-col items-start gap-1">
+					{first && (
+						<Badge className={`ml-2 capitalize ${backgroundColor('first')}`} variant="outline">
+							{'First'}
+						</Badge>
+					)}
+					{crossover && (
+						<Badge className={`ml-2 capitalize ${backgroundColor('crossover')}`} variant="outline">
+							{'Crossover'}
+						</Badge>
+					)}
+					{last && (
+						<Badge className={`ml-2 capitalize ${backgroundColor('last')}`} variant="outline">
+							{'Last'}
+						</Badge>
+					)}
+				</div>
+			</div>
+		</div>
+	)
+}
+
+export const meta: MetaFunction<null, { 'routes/schedule+/$date/timeline': typeof loader }> = ({ params }) => {
+	return [
+		{ title: `Irrigation Timeline | ${params.date}` },
+		{
+			name: 'description',
+			content: `Clearwater Farms 1 Irrigation Timeline`,
+		},
+	]
+}
+
+export function ErrorBoundary() {
+	return <GeneralErrorBoundary />
+}

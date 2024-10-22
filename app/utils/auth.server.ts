@@ -57,9 +57,7 @@ export async function requireSelfOrAdmin(
 
 export async function requireAnonymous(request: Request) {
 	const userId = await getUserId(request)
-	if (userId) {
-		throw redirect('/')
-	}
+	if (userId) throw redirect('/')
 }
 
 export async function login({ username, password }: { username: User['username']; password: string }) {

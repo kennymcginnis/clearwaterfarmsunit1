@@ -1,6 +1,6 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { type LoaderFunctionArgs, json } from '@remix-run/node'
-import { useLoaderData } from '@remix-run/react'
+import { Link, useLoaderData } from '@remix-run/react'
 import { formatDistanceToNow, subDays } from 'date-fns'
 import { z } from 'zod'
 import { DisplayField } from '#app/components/forms'
@@ -232,7 +232,15 @@ export default function HomeRoute() {
 						</div>
 					</div>
 				) : null}
-
+				<Link
+					to="/irrigation"
+					style={{ width: 'clamp(352px, 75%, 720px)' }}
+					className="border-1 my-1 flex justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white"
+				>
+					<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+					Where is the water currently?
+					<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+				</Link>
 				<div id="columns" className="m-auto flex h-full flex-wrap justify-center gap-4 p-4">
 					<div id="closed" className="w-[352px] flex-col">
 						<CardDescription className="text-center">Most Recently Closed Schedule:</CardDescription>

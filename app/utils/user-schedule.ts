@@ -11,10 +11,10 @@ export const borderColor = ({
 }) => {
 	let output = ''
 	// overwrite blue with green - prioritizing green
-	if (crossover) output = 'rounded-bottom border-t-4 border-t-blue-900/70'
-	if (first) output = 'border-t-4 border-t-green-900/70'
+	if (crossover) output = 'rounded-bottom border-t-4 border-t-blue-900/70 '
+	if (first) output = 'border-t-4 border-t-green-900/70 '
 	// append bottom
-	if (last) output += 'border-b-4 border-b-red-900/70'
+	if (last) output += 'border-b-4 border-b-red-900/70 '
 	return output
 }
 
