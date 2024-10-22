@@ -1,13 +1,13 @@
 import { useFormAction, useNavigation, Link, type LinkProps } from '@remix-run/react'
 import { clsx, type ClassValue } from 'clsx'
 import { format, parse } from 'date-fns'
+import { parseAcceptLanguage } from 'intl-parse-accept-language'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as React from 'react'
 import { useSpinDelay } from 'spin-delay'
 import { extendTailwindMerge } from 'tailwind-merge'
-import { extendedTheme } from './extended-theme.ts'
-import { parseAcceptLanguage } from 'intl-parse-accept-language'
 import { getHints } from './client-hints.tsx'
+import { extendedTheme } from './extended-theme.ts'
 
 export function getUserImgSrc(imageId?: string | null, userId?: string | null) {
 	if (imageId) return `/resources/user-images/${imageId}`
