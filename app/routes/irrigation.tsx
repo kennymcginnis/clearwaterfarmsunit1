@@ -39,7 +39,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const port = await prisma.port.findFirst({ select: { entry: true }, where: { userId } })
 	const entry = port?.entry ?? '10-01'
 
-	const now = new Date()
+	const toUTC = (d: Date): Date =>
+		new Date(
+			d.getUTCFullYear(),
+			d.getUTCMonth(),
+			d.getUTCDate(),
+			d.getUTCHours(),
+			d.getUTCMinutes(),
+			d.getUTCSeconds(),
+			d.getUTCMilliseconds(),
+		)
+	const now = toUTC(new Date())
+
 	const yesterday = subDays(now, 1)
 	const tomorrow = addDays(now, 1)
 
@@ -69,12 +80,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	const distanceToNow = (start: Date | null): string => {
 		if (!start) return ''
-		return `Start${isBefore(start, now) ? 'ed' : 's'} ${formatDistanceToNow(start, { addSuffix: true })}`
+		const distance = formatDistanceToNow(toUTC(start), { addSuffix: true })
+		return `Start${distance.startsWith('in') ? 's' : 'ed'} ${distance}`
 	}
 
 	const isCurrent = (start: Date | null, stop: Date | null): boolean => {
 		if (!start || !stop) return false
-		return isBefore(start, now) && isAfter(stop, now)
+		return isBefore(toUTC(start), now) && isAfter(toUTC(stop), now)
 	}
 
 	const schedules: SortedSchedulesType = {}
