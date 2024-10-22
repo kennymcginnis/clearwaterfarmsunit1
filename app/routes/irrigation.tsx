@@ -1,8 +1,7 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
-import { subDays, addDays, format } from 'date-fns'
-// import { formatDistanceToNow, subDays, isBefore, isAfter, addDays, format } from 'date-fns'
+import { formatDistance, formatDistanceStrict, subDays, isBefore, isAfter, addDays, format } from 'date-fns'
 import { useState } from 'react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Badge } from '#app/components/ui/badge'
@@ -50,10 +49,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 			d.getUTCSeconds(),
 			d.getUTCMilliseconds(),
 		)
-	const now = toUTC(new Date())
+	const nowInUTC = toUTC(new Date())
 
-	const yesterday = subDays(now, 1)
-	const tomorrow = addDays(now, 1)
+	const serverTime = new Date()
+	const yesterday = subDays(serverTime, 1)
+	const tomorrow = addDays(serverTime, 1)
 
 	const rawUsers = await prisma.$queryRaw`
     SELECT User.id AS userId, User.display, 
@@ -76,32 +76,42 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		return json({ status: 'error', schedules: {}, entry, first: yesterday, last: tomorrow } as const, { status: 400 })
 	}
 	invariantResponse(result.data.length, 'No UserSchedules found', { status: 404 })
-	const first = format(result.data[0].start ?? yesterday, 'eee, MMM dd, h:mmaaa')
-	const last = format(result.data[result.data.length - 1].stop ?? tomorrow, 'eee, MMM dd, h:mmaaa')
+	const first = format(/* result.data[0].start ?? */ yesterday, 'eee, MMM dd, h:mmaaa')
+	const last = format(/* result.data[result.data.length - 1].stop ?? */ tomorrow, 'eee, MMM dd, h:mmaaa')
 
-	const distanceToNow = (start: Date | null): string => {
-		if (!start) return ''
-		return ''
-		// const distance = formatDistanceToNow(toUTC(start), { addSuffix: true })
-		// return `Start${distance.startsWith('in') ? 's' : 'ed'} ${distance}`
-	}
-
-	const isCurrent = (start: Date | null, stop: Date | null): boolean => {
-		if (!start || !stop) return false
-		return false
-		// return isBefore(toUTC(start), now) && isAfter(toUTC(stop), now)
+	const calcDistanceToNow = (
+		start: Date | null,
+		stop: Date | null,
+	): { isCurrentSchedule: boolean; distanceToNow: string } => {
+		if (!start || !stop) return { isCurrentSchedule: false, distanceToNow: '' }
+		// return ''
+		const finished = isBefore(stop, nowInUTC)
+		if (finished) {
+			const distance = formatDistance(stop, nowInUTC, { addSuffix: true })
+			return { isCurrentSchedule: false, distanceToNow: `Finished ${distance}` }
+		} else {
+			const isCurrentSchedule = isBefore(start, nowInUTC) && isAfter(stop, nowInUTC)
+			if (isCurrentSchedule) {
+				const distance = formatDistanceStrict(nowInUTC, stop)
+				return { isCurrentSchedule, distanceToNow: `Irrigating another ${distance}` }
+			} /*Starts in */ else {
+				const distance = formatDistance(start, nowInUTC, { addSuffix: true })
+				return { isCurrentSchedule, distanceToNow: `Starts ${distance}` }
+			}
+		}
 	}
 
 	const schedules: SortedSchedulesType = {}
 	for (let userSchedule of result.data) {
 		// user groupings
 		const { start, stop, ditch, entry } = userSchedule
+		const { isCurrentSchedule, distanceToNow } = calcDistanceToNow(start, stop)
 		const userType = {
 			...userSchedule,
 			schedule: formatDates({ start, stop }),
 			isCurrentUser: userSchedule.userId === userId,
-			isCurrentSchedule: isCurrent(start, stop),
-			distanceToNow: distanceToNow(start),
+			isCurrentSchedule,
+			distanceToNow,
 		}
 		if (!schedules[entry]) schedules[entry] = { [ditch]: [userType] }
 		else if (!schedules[entry][ditch]) schedules[entry][ditch] = [userType]
@@ -122,14 +132,14 @@ export default function TimelineRoute() {
 		<div className="flex flex-col items-center">
 			<div className="flex flex-row justify-center">
 				<div className="flex flex-col gap-1">
-					<div className="border-1 my-1 flex justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-2xl text-white">
+					<div className="border-1 my-1 flex justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white">
 						<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
-						Where is the water currently?
+						Where is the water currently? **Note: Work in Progress**
 						<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
 					</div>
 					<div className="flex w-full flex-row items-end justify-around">
 						<div className={`border-1 flex rounded-lg p-2 ${borderColor({ first: true })}`}>
-							<strong>From (-24hrs):&nbsp;</strong>
+							<strong>From:&nbsp;</strong>
 							{first}
 						</div>
 						<div className="flex flex-row justify-center">
@@ -149,7 +159,7 @@ export default function TimelineRoute() {
 							</Button>
 						</div>
 						<div className={`border-1 flex rounded-lg p-2 ${borderColor({ last: true })}`}>
-							<strong>To (+24hrs):&nbsp;</strong>
+							<strong>To:&nbsp;</strong>
 							{last}
 						</div>
 					</div>
