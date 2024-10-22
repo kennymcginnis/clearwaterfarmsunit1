@@ -1,7 +1,8 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
-import { formatDistanceToNow, subDays, isBefore, isAfter, addDays, format } from 'date-fns'
+import { subDays, addDays, format } from 'date-fns'
+// import { formatDistanceToNow, subDays, isBefore, isAfter, addDays, format } from 'date-fns'
 import { useState } from 'react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Badge } from '#app/components/ui/badge'
@@ -80,13 +81,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	const distanceToNow = (start: Date | null): string => {
 		if (!start) return ''
-		const distance = formatDistanceToNow(toUTC(start), { addSuffix: true })
-		return `Start${distance.startsWith('in') ? 's' : 'ed'} ${distance}`
+		return ''
+		// const distance = formatDistanceToNow(toUTC(start), { addSuffix: true })
+		// return `Start${distance.startsWith('in') ? 's' : 'ed'} ${distance}`
 	}
 
 	const isCurrent = (start: Date | null, stop: Date | null): boolean => {
 		if (!start || !stop) return false
-		return isBefore(toUTC(start), now) && isAfter(toUTC(stop), now)
+		return false
+		// return isBefore(toUTC(start), now) && isAfter(toUTC(stop), now)
 	}
 
 	const schedules: SortedSchedulesType = {}
