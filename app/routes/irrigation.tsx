@@ -50,10 +50,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 			d.getUTCMilliseconds(),
 		)
 	const nowInUTC = toUTC(new Date())
+	const yesterday = subDays(nowInUTC, 1)
+	const tomorrow = addDays(nowInUTC, 1)
 
 	const serverTime = new Date()
-	const yesterday = subDays(serverTime, 1)
-	const tomorrow = addDays(serverTime, 1)
 
 	const rawUsers = await prisma.$queryRaw`
     SELECT User.id AS userId, User.display, 
@@ -85,17 +85,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	): { isCurrentSchedule: boolean; distanceToNow: string } => {
 		if (!start || !stop) return { isCurrentSchedule: false, distanceToNow: '' }
 		// return ''
-		const finished = isBefore(stop, nowInUTC)
+		const finished = isBefore(stop, serverTime)
 		if (finished) {
-			const distance = formatDistance(stop, nowInUTC, { addSuffix: true })
+			const distance = formatDistance(stop, serverTime, { addSuffix: true })
 			return { isCurrentSchedule: false, distanceToNow: `Finished ${distance}` }
 		} else {
-			const isCurrentSchedule = isBefore(start, nowInUTC) && isAfter(stop, nowInUTC)
+			const isCurrentSchedule = isBefore(start, serverTime) && isAfter(stop, serverTime)
 			if (isCurrentSchedule) {
-				const distance = formatDistanceStrict(nowInUTC, stop)
+				const distance = formatDistanceStrict(serverTime, stop)
 				return { isCurrentSchedule, distanceToNow: `Irrigating another ${distance}` }
 			} /*Starts in */ else {
-				const distance = formatDistance(start, nowInUTC, { addSuffix: true })
+				const distance = formatDistance(start, serverTime, { addSuffix: true })
 				return { isCurrentSchedule, distanceToNow: `Starts ${distance}` }
 			}
 		}
