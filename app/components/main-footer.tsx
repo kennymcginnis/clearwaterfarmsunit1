@@ -45,8 +45,8 @@ Waddell, Arizona 85355`
 								</h2>
 							</Link>
 							<ul className="font-medium text-gray-500 dark:text-gray-400">
-								<li className="mb-4">Laurie Morgan:</li>
-								<li>(623) 326-1875</li>
+								<li className="mb-4">Britt Callahan:</li>
+								<li>(623) 341-5895</li>
 							</ul>
 						</div>
 					</div>

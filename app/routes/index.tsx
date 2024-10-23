@@ -237,9 +237,11 @@ export default function HomeRoute() {
 					style={{ width: 'clamp(352px, 75%, 720px)' }}
 					className="border-1 my-1 flex justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white"
 				>
-					<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+					<Icon name="link-2" className="mx-1 h-8 w-8 p-1 hover:scale-125" aria-hidden="true" />
+					<Icon name="droplets" className="mx-1 mr-0 h-8 w-8 p-1" aria-hidden="true" />
 					Where is the water currently?
-					<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+					<Icon name="droplet" className="mx-1 ml-0 h-8 w-8 p-1" aria-hidden="true" />
+					<Icon name="arrow-right" className="mx-1 ml-0 h-8 w-8 p-1 hover:scale-125" aria-hidden="true" />
 				</Link>
 				<div id="columns" className="m-auto flex h-full flex-wrap justify-center gap-4 p-4">
 					<div id="closed" className="w-[352px] flex-col">
@@ -276,6 +278,16 @@ export default function HomeRoute() {
 	} else {
 		return (
 			<>
+				<div
+					style={{ width: 'clamp(352px, 75%, 720px)' }}
+					className="m-auto mt-2 rounded-md border-2 border-secondary px-3 py-1 text-center align-bottom"
+				>
+					For website access, questions or comments, please send an email to:
+					<br />
+					<strong>Ken McGinnis&nbsp;</strong>
+					<Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="id-card" />
+					kenneth.j.mcginnis@gmail.com
+				</div>
 				<Card className="m-6 flex flex-col items-center gap-5">
 					<CardHeader className="m-auto w-[50%] flex-col items-center border-none">
 						<CardTitle className="pt-3">Clearwater Farms Unit 1</CardTitle>

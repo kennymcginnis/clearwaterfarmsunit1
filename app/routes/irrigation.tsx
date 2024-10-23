@@ -9,7 +9,7 @@ import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
-import { formatDates, formatHrs, getDateTimeFormat } from '#app/utils/misc'
+import { formatDates, formatHrs, formatHours, getDateTimeFormat } from '#app/utils/misc'
 import { backgroundColor, borderColor, SearchResultsSchema } from '#app/utils/user-schedule.ts'
 
 export type UserScheduleType = {
@@ -64,8 +64,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		return json({ status: 'error', schedules: {}, entry, first: yesterday, last: tomorrow } as const, { status: 400 })
 	}
 	invariantResponse(result.data.length, 'No UserSchedules found', { status: 404 })
-	const first = format(/* result.data[0].start ?? */ yesterday, 'eee, MMM dd, h:mmaaa')
-	const last = format(/* result.data[result.data.length - 1].stop ?? */ tomorrow, 'eee, MMM dd, h:mmaaa')
+	const first = format(result.data[0].start ?? yesterday, 'eee, MMM dd, h:mmaaa')
+	const last = format(result.data[result.data.length - 1].stop ?? tomorrow, 'eee, MMM dd, h:mmaaa')
 
 	const calcDistanceToNow = (
 		start: Date | null,
@@ -117,52 +117,51 @@ export default function TimelineRoute() {
 	if (!schedules || status !== 'idle') return null
 
 	return (
-		<div className="flex flex-col items-center">
-			<div className="flex flex-row justify-center">
-				<div className="flex flex-col gap-1">
-					<div className="border-1 my-1 flex justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white">
-						<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
-						Where is the water currently? **Note: Work in Progress**
-						<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
-					</div>
-					<div className="flex w-full flex-row items-end justify-around">
-						<div className={`border-1 flex rounded-lg p-2 ${borderColor({ first: true })}`}>
-							<strong>From:&nbsp;</strong>
-							{first}
-						</div>
-						<div className="flex flex-row justify-center">
-							<Button
-								variant="outline-link"
-								className={`mx-0.5 my-1 text-nowrap ${visible === '10-01' && 'bg-secondary underline underline-offset-4'}`}
-								onClick={() => handleToggleVisible('10-01')}
-							>
-								[10-01] (Ditches 1-4)
-							</Button>
-							<Button
-								variant="outline-link"
-								className={`mx-0.5 my-1 text-nowrap ${visible === '10-03' && 'bg-secondary underline underline-offset-4'}`}
-								onClick={() => handleToggleVisible('10-03')}
-							>
-								[10-03] (Ditches 5-8)
-							</Button>
-						</div>
-						<div className={`border-1 flex rounded-lg p-2 ${borderColor({ last: true })}`}>
-							<strong>To:&nbsp;</strong>
-							{last}
-						</div>
-					</div>
-					{Object.keys(schedules[visible]).map(ditch => (
-						<>
-							<div className="mt-2 rounded-md bg-primary p-2 text-center text-body-lg text-secondary">
-								{`[${visible}] Ditch ${ditch}`}
-							</div>
-							{schedules[visible][Number(ditch)].map(userSchedule => (
-								<UserCard key={`${userSchedule.start}`} userSchedule={userSchedule} />
-							))}
-						</>
-					))}
+		<div className="m-auto flex min-w-[80%] flex-col items-center gap-1 p-1">
+			<div
+				id="title-row"
+				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white hover:animate-bounce"
+			>
+				<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+				Where is the water currently?
+				<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+			</div>
+			<div id="header-row" className="flex w-full flex-row items-end justify-between">
+				<div id="from-label" className={`border-1 rounded-lg p-2 ${borderColor({ first: true })}`}>
+					<strong>From:&nbsp;</strong>
+					{first}
+				</div>
+				<div id="entry-toggle" className="flex flex-col justify-center md:flex-row">
+					<Button
+						variant="outline-link"
+						className={`m-1 w-40 text-nowrap ${visible === '10-01' && 'bg-secondary underline underline-offset-4'}`}
+						onClick={() => handleToggleVisible('10-01')}
+					>
+						[10-01] (Ditches 1-4)
+					</Button>
+					<Button
+						variant="outline-link"
+						className={`m-1 w-40 text-nowrap ${visible === '10-03' && 'bg-secondary underline underline-offset-4'}`}
+						onClick={() => handleToggleVisible('10-03')}
+					>
+						[10-03] (Ditches 5-8)
+					</Button>
+				</div>
+				<div id="to-label" className={`border-1 rounded-lg p-2 ${borderColor({ last: true })}`}>
+					<strong>To:&nbsp;</strong>
+					{last}
 				</div>
 			</div>
+			{Object.keys(schedules[visible]).map(ditch => (
+				<>
+					<div className="mt-2 w-full rounded-md bg-primary p-2 text-center text-body-lg text-secondary">
+						{`[${visible}] Ditch ${ditch}`}
+					</div>
+					{schedules[visible][Number(ditch)].map(userSchedule => (
+						<UserCard key={`${userSchedule.start}`} userSchedule={userSchedule} />
+					))}
+				</>
+			))}
 		</div>
 	)
 }
@@ -185,38 +184,48 @@ function UserCard({
 }) {
 	return (
 		<div
-			className={`border-1 flex rounded-lg border-secondary-foreground ${isCurrentSchedule ? 'bg-sky-800   text-white' : isCurrentUser ? 'bg-secondary' : 'bg-muted-40'} p-2 ${borderColor({ first, crossover, last })}`}
+			id="user-row"
+			className={`border-1 flex w-full flex-col items-start justify-between rounded-lg border-secondary-foreground p-2 pl-4 md:flex-row md:items-center
+					${isCurrentSchedule ? 'bg-sky-800 text-white' : isCurrentUser ? 'bg-secondary' : 'bg-muted-40'} 
+					${borderColor({ first, crossover, last })}`}
 		>
-			{isCurrentSchedule && <div id="now" />}
-			<div className={`grid w-full grid-flow-row-dense grid-cols-12 justify-between gap-1`}>
-				<span className="col-span-2 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
-					{position}: {display}
-				</span>
-				<div className="col-span-2">{distanceToNow}</div>
-				<span className="col-span-1 text-nowrap text-right text-body-sm">{formatHrs(Number(hours))}</span>
-				{schedule &&
-					schedule.map((row, r) => (
-						<span key={`row-${r}`} className="col-span-3 overflow-hidden text-ellipsis text-right text-body-sm">
-							{row}
-						</span>
-					))}
-				<div className="col-span-1 flex flex-col items-start gap-1">
-					{first && (
-						<Badge className={`ml-2 capitalize ${backgroundColor('first')}`} variant="outline">
-							{'First'}
-						</Badge>
-					)}
-					{crossover && (
-						<Badge className={`ml-2 capitalize ${backgroundColor('crossover')}`} variant="outline">
-							{'Crossover'}
-						</Badge>
-					)}
-					{last && (
-						<Badge className={`ml-2 capitalize ${backgroundColor('last')}`} variant="outline">
-							{'Last'}
-						</Badge>
-					)}
+			<div id="position-username" className="min-w-40 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
+				{position}: {display}
+			</div>
+			<div id="start-stop-schedules" className="flex min-w-80 flex-col items-start justify-between lg:flex-row">
+				<div id="distance-to-now" className="min-w-52">
+					{distanceToNow}
 				</div>
+				<div id="hours" className="min-w-20 pr-2 text-body-sm">
+					<div className="flex lg:hidden">Irrigated {formatHours(Number(hours))}</div>
+					<div className="flex text-right max-lg:hidden">{formatHrs(Number(hours))}</div>
+				</div>
+			</div>
+			{schedule ? (
+				<div id="start-stop-schedules" className="flex flex-col items-start justify-between lg:flex-row">
+					{schedule.map((row, r) => (
+						<div key={`row-${r}`} className="min-w-44 overflow-hidden text-ellipsis text-body-sm">
+							{row}
+						</div>
+					))}
+				</div>
+			) : null}
+			<div id="charges-pills" className="flex min-w-20 flex-col items-end gap-1">
+				{first && (
+					<Badge className={`ml-2 capitalize ${backgroundColor('first')}`} variant="outline">
+						{'First'}
+					</Badge>
+				)}
+				{crossover && (
+					<Badge className={`ml-2 capitalize ${backgroundColor('crossover')}`} variant="outline">
+						{'Crossover'}
+					</Badge>
+				)}
+				{last && (
+					<Badge className={`ml-2 capitalize ${backgroundColor('last')}`} variant="outline">
+						{'Last'}
+					</Badge>
+				)}
 			</div>
 		</div>
 	)
