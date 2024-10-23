@@ -231,9 +231,9 @@ function UserCard({
 	)
 }
 
-export const meta: MetaFunction<null, { 'routes/schedule+/$date/timeline': typeof loader }> = ({ params }) => {
+export const meta: MetaFunction<null, { 'routes/irrigation': typeof loader }> = () => {
 	return [
-		{ title: `Irrigation Timeline | ${params.date}` },
+		{ title: 'Irrigation | Water Location' },
 		{
 			name: 'description',
 			content: `Clearwater Farms 1 Irrigation Timeline`,
