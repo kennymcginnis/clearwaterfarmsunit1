@@ -32,6 +32,7 @@ CREATE TABLE "new_Timeline" (
 INSERT INTO "new_Timeline" ("crossover", "date", "display", "ditch", "entry", "first", "hours", "id", "last", "order", "position", "scheduleId", "section", "start", "stop", "updatedAt", "updatedBy", "userId") SELECT "crossover", "date", "display", "ditch", "entry", "first", "hours", "id", "last", "order", "position", "scheduleId", "section", "start", "stop", "updatedAt", "updatedBy", "userId" FROM "Timeline";
 DROP TABLE "Timeline";
 ALTER TABLE "new_Timeline" RENAME TO "Timeline";
+DROP TABLE IF EXISTS "new_UserSchedule"
 CREATE TABLE "new_UserSchedule" (
     "userId" TEXT NOT NULL,
     "scheduleId" TEXT NOT NULL,

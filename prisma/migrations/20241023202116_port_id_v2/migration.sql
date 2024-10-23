@@ -1,4 +1,4 @@
-DROP TABLE "Timeline";
+DROP TABLE IF EXISTS "Timeline";
 CREATE TABLE "Timeline" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "scheduleId" TEXT NOT NULL,
