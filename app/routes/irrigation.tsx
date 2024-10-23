@@ -67,6 +67,44 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const first = format(result.data[0].start ?? yesterday, 'eee, MMM dd, h:mmaaa')
 	const last = format(result.data[result.data.length - 1].stop ?? tomorrow, 'eee, MMM dd, h:mmaaa')
 
+	const ten01 = result.data.some(row => row.entry === '10-01')
+	const ten03 = result.data.some(row => row.entry === '10-03')
+
+	if (!ten01) {
+		const ten01Users = await prisma.$queryRaw`
+      SELECT User.id AS userId, User.display, 
+             Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+             UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
+             UserSchedule.first, UserSchedule.crossover, UserSchedule.last
+        FROM User
+       INNER JOIN Port ON User.id = Port.userId
+        LEFT JOIN UserSchedule
+          ON User.id = UserSchedule.userId
+         AND Port.id = UserSchedule.portId
+       WHERE Port.entry = '10-01'
+		   ORDER BY UserSchedule.start DESC
+		   LIMIT 1`
+		const ten01result = SearchResultsSchema.safeParse(ten01Users)
+		if (ten01result.success && ten01result.data.length) result.data.push(ten01result.data[0])
+	}
+	if (!ten03) {
+		const ten03Users = await prisma.$queryRaw`
+      SELECT User.id AS userId, User.display, 
+             Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+             UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
+             UserSchedule.first, UserSchedule.crossover, UserSchedule.last
+        FROM User
+       INNER JOIN Port ON User.id = Port.userId
+        LEFT JOIN UserSchedule
+          ON User.id = UserSchedule.userId
+         AND Port.id = UserSchedule.portId
+       WHERE Port.entry = '10-03'
+		   ORDER BY UserSchedule.start DESC
+		   LIMIT 1`
+		const ten03result = SearchResultsSchema.safeParse(ten03Users)
+		if (ten03result.success && ten03result.data.length) result.data.push(ten03result.data[0])
+	}
+
 	const calcDistanceToNow = (
 		start: Date | null,
 		stop: Date | null,
@@ -117,10 +155,10 @@ export default function TimelineRoute() {
 	if (!schedules || status !== 'idle') return null
 
 	return (
-		<div className="m-auto flex min-w-[80%] flex-col items-center gap-1 p-1">
+		<div className="mx-auto flex h-dvh min-w-[80%] flex-col gap-1 p-1">
 			<div
 				id="title-row"
-				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white hover:animate-bounce"
+				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white"
 			>
 				<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
 				Where is the water currently?
@@ -197,8 +235,8 @@ function UserCard({
 					{distanceToNow}
 				</div>
 				<div id="hours" className="min-w-20 pr-2 text-body-sm">
-					<div className="flex lg:hidden">Irrigated {formatHours(Number(hours))}</div>
-					<div className="flex text-right max-lg:hidden">{formatHrs(Number(hours))}</div>
+					<div className="flex lg:hidden">Signed up for {formatHours(Number(hours))}</div>
+					<div className="float-right flex max-lg:hidden">{formatHrs(Number(hours))}</div>
 				</div>
 			</div>
 			{schedule ? (
