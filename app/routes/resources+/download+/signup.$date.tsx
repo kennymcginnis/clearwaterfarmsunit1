@@ -4,10 +4,13 @@ import { z } from 'zod'
 import { prisma } from '#app/utils/db.server.ts'
 
 const UserSearchResultSchema = z.object({
-	id: z.string(),
+	userId: z.string(),
 	display: z.string(),
-	ditch: z.number(),
-	position: z.number(),
+	portId: z.string(),
+	ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
+	position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
+	entry: z.string(),
+	section: z.string(),
 	hours: z.bigint().or(z.number()).nullable(),
 })
 
@@ -17,7 +20,9 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	if (!params?.date) return redirect('/schedules')
 
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.display, Port.ditch, Port.position, UserSchedule.hours
+		SELECT User.id AS userId, User.display, 
+           Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+           UserSchedule.hours
 		  FROM User
 		 INNER JOIN Port ON User.id = Port.userId
       LEFT JOIN (
@@ -42,9 +47,9 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	const file = createReadableStreamFromReadable(
 		Readable.from(
 			[
-				['id', 'display', 'ditch', 'position', 'hours'].join(','),
-				...result.data.map(({ id, display, ditch, position, hours }) =>
-					[id, `"${display}"`, ditch, position, hours].join(','),
+				['userId', 'display', 'portId', 'ditch', 'position', 'entry', 'section', 'hours'].join(','),
+				...result.data.map(({ userId, display, portId, ditch, position, entry, section, hours }) =>
+					[userId, `"${display}"`, portId, ditch, position, entry, section, hours].join(','),
 				),
 			].join('\n'),
 		),
