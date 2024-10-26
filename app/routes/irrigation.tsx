@@ -2,7 +2,7 @@ import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
 import { formatDistance, formatDistanceStrict, subDays, isBefore, isAfter, addDays, format } from 'date-fns'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Badge } from '#app/components/ui/badge'
 import { Button } from '#app/components/ui/button'
@@ -32,11 +32,23 @@ export type UserScheduleType = {
 	distanceToNow?: string | null
 }
 
+type DistanceType = {
+	isCurrentSchedule: boolean
+	distanceToNow: string
+	start: number
+	stop: number
+}
+
+export type DistancesType = {
+	// userId-portId: string
+	[key: string]: DistanceType
+}
+
 type SortedSchedulesType = { [key: string]: { [key: number]: UserScheduleType[] } }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-	const userId = await getUserId(request)
-	const port = await prisma.port.findFirst({ select: { entry: true }, where: { userId } })
+	const currentUserId = await getUserId(request)
+	const port = await prisma.port.findFirst({ select: { entry: true }, where: { userId: currentUserId } })
 	const entry = port?.entry ?? '10-01'
 
 	const time = getDateTimeFormat(request).format(new Date())
@@ -61,7 +73,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	const result = SearchResultsSchema.safeParse(rawUsers)
 	if (!result.success) {
-		return json({ status: 'error', schedules: {}, entry, first: yesterday, last: tomorrow } as const, { status: 400 })
+		return json({ status: 'error', schedules: {}, distances: {}, entry, first: yesterday, last: tomorrow } as const, {
+			status: 400,
+		})
 	}
 	invariantResponse(result.data.length, 'No UserSchedules found', { status: 404 })
 	const first = format(result.data[0].start ?? yesterday, 'eee, MMM dd, h:mmaaa')
@@ -105,64 +119,84 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		if (ten03result.success && ten03result.data.length) result.data.push(ten03result.data[0])
 	}
 
-	const calcDistanceToNow = (
-		start: Date | null,
-		stop: Date | null,
-	): { isCurrentSchedule: boolean; distanceToNow: string } => {
-		if (!start || !stop) return { isCurrentSchedule: false, distanceToNow: '' }
-		// return ''
-		const finished = isBefore(stop, time)
-		if (finished) {
-			const distance = formatDistance(stop, time, { addSuffix: true })
-			return { isCurrentSchedule: false, distanceToNow: `Finished ${distance}` }
-		} else {
-			const isCurrentSchedule = isBefore(start, time) && isAfter(stop, time)
-			if (isCurrentSchedule) {
-				const distance = formatDistanceStrict(time, stop)
-				return { isCurrentSchedule, distanceToNow: `Irrigating another ${distance}` }
-			} /*Starts in */ else {
-				const distance = formatDistance(start, time, { addSuffix: true })
-				return { isCurrentSchedule, distanceToNow: `Starts ${distance}` }
-			}
-		}
-	}
-
 	const schedules: SortedSchedulesType = {}
+	const distances: DistancesType = {}
 	for (let userSchedule of result.data) {
 		// user groupings
-		const { start, stop, ditch, entry } = userSchedule
-		const { isCurrentSchedule, distanceToNow } = calcDistanceToNow(start, stop)
+		const { userId, portId, entry, ditch, start, stop } = userSchedule
 		const userType = {
 			...userSchedule,
 			schedule: formatDates({ start, stop }),
-			isCurrentUser: userSchedule.userId === userId,
-			isCurrentSchedule,
-			distanceToNow,
+			isCurrentUser: userId === currentUserId,
 		}
 		if (!schedules[entry]) schedules[entry] = { [ditch]: [userType] }
 		else if (!schedules[entry][ditch]) schedules[entry][ditch] = [userType]
 		else schedules[entry][ditch].push(userType)
+
+		const { isCurrentSchedule, distanceToNow } = calcDistanceToNow(Number(start), Number(stop), time)
+		distances[`${userId}-${portId}`] = { start: Number(start), stop: Number(stop), isCurrentSchedule, distanceToNow }
 	}
-	return json({ status: 'idle', schedules, entry, first, last } as const)
+	return json({ status: 'idle', schedules, distances, entry, first, last } as const)
+}
+
+const calcDistanceToNow = (
+	start: number,
+	stop: number,
+	time: string | Date,
+): { isCurrentSchedule: boolean; distanceToNow: string } => {
+	if (!start || !stop) return { isCurrentSchedule: false, distanceToNow: '' }
+	// return ''
+	const finished = isBefore(stop, time)
+	if (finished) {
+		const distance = formatDistance(stop, time, { addSuffix: true })
+		return { isCurrentSchedule: false, distanceToNow: `Finished ${distance}` }
+	} else {
+		const isCurrentSchedule = isBefore(start, time) && isAfter(stop, time)
+		if (isCurrentSchedule) {
+			const distance = formatDistanceStrict(time, stop)
+			return { isCurrentSchedule, distanceToNow: `Irrigating another ${distance}` }
+		} /*Starts in */ else {
+			const distance = formatDistance(start, time, { addSuffix: true })
+			return { isCurrentSchedule, distanceToNow: `Starts ${distance}` }
+		}
+	}
 }
 
 export default function TimelineRoute() {
-	const { status, schedules, entry, first, last } = useLoaderData<typeof loader>()
+	const { status, schedules, distances, entry, first, last } = useLoaderData<typeof loader>()
 
 	const [visible, setVisible] = useState(entry)
+	const [localDistances, setLocalDistances] = useState(distances)
+	const [lastUpdated, setLastUpdated] = useState(format(new Date(), 'MM/dd/yyyy h:mm:ssaaa'))
 	const handleToggleVisible = (value: string) => setVisible(value)
+
+	const clock = () => {
+		let date = new Date()
+		const d = { ...localDistances }
+		for (let [key, { start, stop }] of Object.entries(d)) {
+			const { isCurrentSchedule, distanceToNow } = calcDistanceToNow(start, stop, date)
+			d[key] = { start, stop, isCurrentSchedule, distanceToNow }
+		}
+		setLocalDistances(d)
+		setLastUpdated(date.toLocaleTimeString())
+	}
+	useEffect(() => {
+		setInterval(clock, 5 /*min */ * 60 * 1000)
+	}, [])
 
 	if (!schedules || status !== 'idle') return null
 
 	return (
-		<div className="mx-auto flex h-dvh min-w-[80%] flex-col gap-1 p-1">
+		<div className="h-vh mx-auto flex min-w-[80%] flex-col gap-1 p-1">
 			<div
 				id="title-row"
-				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white"
+				className="border-1 my-1 flex w-full items-center justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-white"
 			>
+				<div className="flex-1">** Updates every 5 minutes.</div>
 				<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
-				Where is the water currently?
+				<div className="text-xl">Where is the water currently?</div>
 				<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+				<div className="w-full flex-1 text-right">Updated: {lastUpdated}</div>
 			</div>
 			<div id="header-row" className="flex w-full flex-row items-end justify-between">
 				<div id="from-label" className={`border-1 rounded-lg p-2 ${borderColor({ first: true })}`}>
@@ -196,7 +230,12 @@ export default function TimelineRoute() {
 						{`[${visible}] Ditch ${ditch}`}
 					</div>
 					{schedules[visible][Number(ditch)].map(userSchedule => (
-						<UserCard key={`${userSchedule.start}`} userSchedule={userSchedule} />
+						<UserCard
+							key={`${userSchedule.start}`}
+							userSchedule={userSchedule}
+							// @ts-ignore
+							distance={localDistances[`${userSchedule.userId}-${userSchedule.portId}`]}
+						/>
 					))}
 				</>
 			))}
@@ -205,20 +244,11 @@ export default function TimelineRoute() {
 }
 
 function UserCard({
-	userSchedule: {
-		display,
-		hours,
-		position,
-		schedule,
-		first,
-		crossover,
-		last,
-		isCurrentUser,
-		isCurrentSchedule,
-		distanceToNow,
-	},
+	userSchedule: { display, hours, position, schedule, first, crossover, last, isCurrentUser },
+	distance: { isCurrentSchedule, distanceToNow },
 }: {
 	userSchedule: UserScheduleType
+	distance: DistanceType
 }) {
 	return (
 		<div
