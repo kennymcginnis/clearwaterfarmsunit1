@@ -37,6 +37,7 @@ export const backgroundColor = (charge: string) => {
 export const SearchResultsSchema = z.array(
 	z.object({
 		userId: z.string(),
+		quickbooks: z.string().optional(),
 		display: z.string(),
 		portId: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
@@ -122,4 +123,98 @@ export const assignChargesToSchedules = (schedules: UserScheduleType[]) => {
 		}
 		return schedule
 	})
+}
+
+type DitchSectionType = {
+	[key: string]: { [key: string]: { [key: string]: { first: boolean; description: string } } }
+}
+export const crossover: DitchSectionType = {
+	'1': {
+		'10-01': {
+			North: {
+				first: false,
+				description: 'Ditch 9 to Ditch 1 (Open Ditch 1, then Close Ditch 9)',
+			},
+			South: { first: false, description: 'Crossover @ Ditch 1 and Orangewood' },
+		},
+	},
+	'2': {
+		'10-01': {
+			North: {
+				first: false,
+				description: 'Ditch 1 to Ditch 2 (Open Ditch 2, then Close Ditch 1)',
+			},
+			South: { first: false, description: 'Crossover @ Ditch 2 and Orangewood' },
+		},
+	},
+	'3': {
+		'10-01': {
+			North: {
+				first: false,
+				description: 'Ditch 2 to Ditch 3 (Open Ditch 3, then Close Ditch 2)',
+			},
+			South: { first: false, description: 'Crossover @ Ditch 3 and Orangewood' },
+		},
+	},
+	'4': {
+		'10-01': {
+			North: {
+				first: false,
+				description: 'Ditch 3 to Ditch 4 (Open Ditch 4, then Close Ditch 3)',
+			},
+			South: { first: false, description: 'Crossover @ Ditch 4 and Orangewood' },
+		},
+	},
+	'5': {
+		'10-03': {
+			North: {
+				first: false,
+				description: 'Ditch 9 to Ditch 5 (Open Ditch 5, then Close Ditch 9)',
+			},
+			South: { first: false, description: 'Crossover @ Ditch 5 and Orangewood' },
+		},
+	},
+	'6': {
+		'10-03': {
+			North: {
+				first: false,
+				description: 'Ditch 5 to Ditch 6 (Open Ditch 6, then Close Ditch 5)',
+			},
+			South: { first: false, description: 'Crossover @ Ditch 6 and Orangewood' },
+		},
+	},
+	'7': {
+		'10-03': {
+			North: {
+				first: false,
+				description: 'Ditch 6 at Ditch 7 (Open Ditch 7, then Close Ditch 6)',
+			},
+			South: { first: false, description: 'Crossover @ Ditch 7 and Orangewood' },
+		},
+	},
+	'8': {
+		'10-03': {
+			North: {
+				first: false,
+				description: 'Ditch 7 to Ditch 8 (Open Ditch 8, then Close Ditch 7)',
+			},
+			South: { first: false, description: 'Crossover @ Ditch 8 and Orangewood' },
+		},
+	},
+	'9': {
+		'10-01': {
+			West: {
+				first: false,
+				description: '10-01 starts (Open Ditch 9, then Close Ditch 4)',
+			},
+			East: { first: false, description: 'Crossover @ Ditch 9 and 185th' },
+		},
+		'10-03': {
+			West: {
+				first: false,
+				description: '10-03 starts (Open Ditch 9, then Close Ditch 8)',
+			},
+			East: { first: false, description: 'Crossover @ Ditch 9 and 181st' },
+		},
+	},
 }

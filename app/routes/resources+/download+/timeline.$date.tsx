@@ -1,44 +1,31 @@
 import { Readable } from 'node:stream'
-import { json, redirect, createReadableStreamFromReadable, type LoaderFunctionArgs } from '@remix-run/node'
-import { z } from 'zod'
+import { invariantResponse } from '@epic-web/invariant'
+import { json, createReadableStreamFromReadable, type LoaderFunctionArgs } from '@remix-run/node'
 import { prisma } from '#app/utils/db.server.ts'
-
-const UserSearchResultSchema = z.object({
-	id: z.string(),
-	display: z.string(),
-	ditch: z.number(),
-	position: z.number(),
-	entry: z.string(),
-	section: z.string(),
-	hours: z.bigint().or(z.number()).nullable(),
-	start: z.date().nullable(),
-	stop: z.date().nullable(),
-})
-
-const UserSearchResultsSchema = z.array(UserSearchResultSchema)
+import { SearchResultsSchema } from '#app/utils/user-schedule.ts'
 
 export async function loader({ params }: LoaderFunctionArgs) {
-	if (!params?.date) return redirect('/schedules')
+	invariantResponse(params.date, 'Date parameter Not found', { status: 404 })
+
+	const schedule = await prisma.schedule.findFirst({ select: { id: true, state: true }, where: { date: params.date } })
+	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.display, 
-					 Port.ditch, Port.position, Port.entry, Port.section, 
-					 UserSchedule.hours, UserSchedule.start, UserSchedule.stop
+		SELECT User.id AS userId, User.display, 
+           Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+					 UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
+					 UserSchedule.first, UserSchedule.crossover, UserSchedule.last
 		  FROM User
 		 INNER JOIN Port ON User.id = Port.userId
-      LEFT JOIN (
-				SELECT UserSchedule.userId, UserSchedule.portId, UserSchedule.hours, UserSchedule.start, UserSchedule.stop
-				  FROM Schedule 
-				 INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
-				 WHERE Schedule.date = ${params.date}
-			   ) UserSchedule
+		  LEFT JOIN UserSchedule
 		    ON User.id = UserSchedule.userId
 		   AND Port.id = UserSchedule.portId
+		   AND UserSchedule.scheduleId = ${schedule.id}
 		 WHERE User.active
 		 ORDER BY Port.ditch, Port.position
 	`
 
-	const result = UserSearchResultsSchema.safeParse(rawUsers)
+	const result = SearchResultsSchema.safeParse(rawUsers)
 	if (!result.success) {
 		return json({ status: 'error', error: result.error.message } as const, {
 			status: 400,
@@ -48,9 +35,38 @@ export async function loader({ params }: LoaderFunctionArgs) {
 	const file = createReadableStreamFromReadable(
 		Readable.from(
 			[
-				['id', 'display', 'ditch', 'position', 'hours', 'start', 'stop'].join(','),
-				...result.data.map(({ id, display, ditch, position, hours, start, stop }) =>
-					[id, `"${display}"`, ditch, position, hours, start?.toISOString(), stop?.toISOString()].join(','),
+				[
+					'userId',
+					'display',
+					'portId',
+					'ditch',
+					'position',
+					'entry',
+					'section',
+					'hours',
+					'start',
+					'stop',
+					'first',
+					'crossover',
+					'last',
+				].join(','),
+				...result.data.map(
+					({ userId, display, portId, ditch, position, entry, section, hours, start, stop, first, crossover, last }) =>
+						[
+							userId,
+							`"${display}"`,
+							portId,
+							ditch,
+							position,
+							entry,
+							section,
+							hours,
+							start?.toISOString(),
+							stop?.toISOString(),
+							first ? 'First' : '',
+							crossover ? 'Crossover' : '',
+							last ? 'Last' : '',
+						].join(','),
 				),
 			].join('\n'),
 		),

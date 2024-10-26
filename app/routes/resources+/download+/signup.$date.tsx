@@ -1,5 +1,6 @@
 import { Readable } from 'node:stream'
-import { json, redirect, createReadableStreamFromReadable, type LoaderFunctionArgs } from '@remix-run/node'
+import { invariantResponse } from '@epic-web/invariant'
+import { json, createReadableStreamFromReadable, type LoaderFunctionArgs } from '@remix-run/node'
 import { z } from 'zod'
 import { prisma } from '#app/utils/db.server.ts'
 
@@ -17,7 +18,10 @@ const UserSearchResultSchema = z.object({
 const UserSearchResultsSchema = z.array(UserSearchResultSchema)
 
 export async function loader({ params }: LoaderFunctionArgs) {
-	if (!params?.date) return redirect('/schedules')
+	invariantResponse(params.date, 'Date parameter Not found', { status: 404 })
+
+	const schedule = await prisma.schedule.findFirst({ select: { id: true, state: true }, where: { date: params.date } })
+	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 
 	const rawUsers = await prisma.$queryRaw`
 		SELECT User.id AS userId, User.display, 
@@ -25,14 +29,10 @@ export async function loader({ params }: LoaderFunctionArgs) {
            UserSchedule.hours
 		  FROM User
 		 INNER JOIN Port ON User.id = Port.userId
-      LEFT JOIN (
-				SELECT UserSchedule.userId, UserSchedule.portId, UserSchedule.hours
-				  FROM Schedule 
-				 INNER JOIN UserSchedule ON Schedule.id = UserSchedule.scheduleId
-				 WHERE Schedule.date = ${params.date}
-			) UserSchedule
+		  LEFT JOIN UserSchedule
 		    ON User.id = UserSchedule.userId
 		   AND Port.id = UserSchedule.portId
+		   AND UserSchedule.scheduleId = ${schedule.id}
 		 WHERE User.active
 		 ORDER BY Port.ditch, Port.position
 	`

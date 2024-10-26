@@ -223,32 +223,45 @@ function UserCard({
 	return (
 		<div
 			id="user-row"
-			className={`border-1 flex w-full flex-col items-start justify-between rounded-lg border-secondary-foreground p-2 pl-4 md:flex-row md:items-center
+			className={`border-1 flex w-full flex-row justify-between rounded-lg border-secondary-foreground p-2 pl-4 md:flex-row md:items-center
 					${isCurrentSchedule ? 'bg-sky-800 text-white' : isCurrentUser ? 'bg-secondary' : 'bg-muted-40'} 
 					${borderColor({ first, crossover, last })}`}
 		>
-			<div id="position-username" className="min-w-40 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
-				{position}: {display}
+			<div
+				id="user-details"
+				className="flex w-full flex-col justify-around rounded-lg border-secondary-foreground p-2 md:flex-row md:items-center"
+			>
+				<div
+					id="position-username"
+					className="flex flex-row overflow-hidden text-ellipsis text-nowrap text-left text-body-sm"
+				>
+					<div id="position" className="ml-0 flex w-6 justify-end max-md:hidden">
+						{position}:&nbsp;
+					</div>
+					<strong id="username" className="min-w-40">
+						{display}
+					</strong>
+				</div>
+				<div id="start-stop-schedules" className="flex min-w-80 flex-col justify-between lg:flex-row">
+					<div id="distance-to-now" className="min-w-52 text-body-sm">
+						{distanceToNow}
+					</div>
+					<div id="hours" className="min-w-20 pr-2 text-body-sm">
+						<div className="flex lg:hidden">Signed up for {formatHours(Number(hours))}</div>
+						<strong className="float-right flex max-lg:hidden">{formatHrs(Number(hours))}</strong>
+					</div>
+				</div>
+				{schedule ? (
+					<div id="start-stop-schedules" className="flex flex-col justify-between lg:flex-row">
+						{schedule.map((row, r) => (
+							<div key={`row-${r}`} className="min-w-44 overflow-hidden text-ellipsis text-body-sm">
+								{row}
+							</div>
+						))}
+					</div>
+				) : null}
 			</div>
-			<div id="start-stop-schedules" className="flex min-w-80 flex-col items-start justify-between lg:flex-row">
-				<div id="distance-to-now" className="min-w-52">
-					{distanceToNow}
-				</div>
-				<div id="hours" className="min-w-20 pr-2 text-body-sm">
-					<div className="flex lg:hidden">Signed up for {formatHours(Number(hours))}</div>
-					<div className="float-right flex max-lg:hidden">{formatHrs(Number(hours))}</div>
-				</div>
-			</div>
-			{schedule ? (
-				<div id="start-stop-schedules" className="flex flex-col items-start justify-between lg:flex-row">
-					{schedule.map((row, r) => (
-						<div key={`row-${r}`} className="min-w-44 overflow-hidden text-ellipsis text-body-sm">
-							{row}
-						</div>
-					))}
-				</div>
-			) : null}
-			<div id="charges-pills" className="flex min-w-20 flex-col items-end gap-1">
+			<div id="charges-pills" className="flex h-full min-w-20 flex-col items-end gap-1">
 				{first && (
 					<Badge className={`ml-2 capitalize ${backgroundColor('first')}`} variant="outline">
 						{'First'}

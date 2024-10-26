@@ -404,8 +404,13 @@ export function formatDates({
 	if (start.getDay() === stop.getDay()) {
 		return [format(start, 'eee, MMM do'), `${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}`]
 	} else {
-		return [format(start, 'eee, MMM dd, h:mmaaa'), format(stop, 'eee, MMM dd, h:mmaaa')]
+		return [formatDate(start), formatDate(stop)]
 	}
+}
+
+export function formatDate(start: Date | null): string {
+	if (!start) return ''
+	return format(start, 'eee, MMM dd, h:mmaaa')
 }
 
 export function formatPrintableDates({ start, stop }: { start: Date | null; stop: Date | null }): string {
@@ -414,8 +419,7 @@ export function formatPrintableDates({ start, stop }: { start: Date | null; stop
 		return `"${format(start, 'eee, MMM do')}
 ${format(start, 'h:mmaaa')} - ${format(stop, 'h:mmaaa')}"`
 	} else {
-		return `"${format(start, 'eee, MMM dd, h:mmaaa')} -
-${format(stop, 'eee, MMM dd, h:mmaaa')}"`
+		return `"${formatDate(start)} - ${formatDate(stop)}"`
 	}
 }
 
@@ -424,7 +428,7 @@ export function formatDatesOneLiner({ start, stop }: { start: Date | null; stop:
 	if (start.getDay() === stop.getDay()) {
 		return `${format(start, 'eee, MMM do')}, ${format(start, 'h:mmaaa')} - ${format(stop, 'h:mmaaa')}`
 	} else {
-		return `${format(start, 'eee, MMM dd, h:mmaaa')} ─ ${format(stop, 'eee, MMM dd, h:mmaaa')}`
+		return `${formatDate(start)} ─ ${formatDate(stop)}`
 	}
 }
 
