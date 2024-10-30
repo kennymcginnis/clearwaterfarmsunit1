@@ -132,9 +132,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		// user groupings
 		const { start, stop, ditch, entry } = userSchedule
 		const { isCurrentSchedule, distanceToNow } = calcDistanceToNow(start, stop)
+		const schedule = formatDates({ start, stop })
 		const userType = {
 			...userSchedule,
-			schedule: formatDates({ start, stop }),
+			schedule,
 			isCurrentUser: userSchedule.userId === userId,
 			isCurrentSchedule,
 			distanceToNow,
@@ -155,7 +156,7 @@ export default function TimelineRoute() {
 	if (!schedules || status !== 'idle') return null
 
 	return (
-		<div className="mx-auto flex h-dvh min-w-[80%] flex-col gap-1 p-1">
+		<div className="h-vh mx-auto flex min-w-[80%] flex-col gap-1 p-1">
 			<div
 				id="title-row"
 				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white"

@@ -7,6 +7,7 @@ import { GeneralErrorBoundary } from '#app/components/error-boundary'
 import { Field } from '#app/components/forms.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button'
+import { type FormattedPortHoursType } from '#app/types.ts'
 import { requireSelfOrAdmin, requireUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { useIsPending, formatHours, formatDates } from '#app/utils/misc'
@@ -46,7 +47,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		orderBy: { start: 'desc' },
 	})
 
-	const userSchedules = userSchedule.map(({ start, stop, ...us }) => ({
+	const userSchedules: FormattedPortHoursType = userSchedule.map(({ start, stop, ...us }) => ({
 		...us,
 		formatted: formatDates({ start, stop }),
 	}))
@@ -131,7 +132,7 @@ export default function NotesRoute() {
 							value={updateDefaultsActionIntent}
 							form={form.id}
 							disabled={isPending}
-							status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
+							status={fetcher.state !== 'idle' ? 'pending' : (fetcher.data?.status ?? 'idle')}
 						>
 							Submit
 						</StatusButton>

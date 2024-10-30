@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { DisplayField } from '#app/components/forms'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
 import { Icon } from '#app/components/ui/icon'
+import { type PortType, type ScheduleType, type UserType } from '#app/types.ts'
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { parseMdx } from '#app/utils/mdx-bundler.server'
@@ -96,6 +97,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 					select: {
 						id: true,
 						ditch: true,
+						position: true,
+						entry: true,
+						section: true,
 					},
 				},
 				hours: true,
@@ -181,7 +185,7 @@ export default function HomeRoute() {
 		open,
 		closed,
 		userSchedules,
-		payment: { enabled, success, cancelled },
+		payment: { success, cancelled },
 	} = useLoaderData<typeof loader>()
 	if (user) {
 		return (
@@ -222,13 +226,9 @@ export default function HomeRoute() {
 							className={`flex items-center text-xl font-semibold ${balance < 0 ? 'text-foreground-destructive' : 'text-green-900'}`}
 						>
 							<div className="w-full text-center">Irrigation Balance: {USDollar.format(balance)}</div>
-							{enabled ? (
-								<>
-									<PaymentsDialog userId={user.id} stripeId={user.stripeId} balance={balance} />
-									<PaymentSuccess open={success} username={user.username} />
-									<PaymentCancelled open={cancelled} username={user.username} />
-								</>
-							) : null}
+							<PaymentsDialog userId={user.id} stripeId={user.stripeId} balance={balance} />
+							<PaymentSuccess open={success} username={user.username} />
+							<PaymentCancelled open={cancelled} username={user.username} />
 						</div>
 					</div>
 				) : null}
@@ -301,34 +301,13 @@ export default function HomeRoute() {
 }
 
 function OpenSchedule({
+	user,
 	open,
 	userSchedules,
-	user,
 }: {
-	open: {
-		id: string
-		date: string
-		deadline: string
-		source: string
-		costPerHour: number
-	}
-	userSchedules: {
-		open: {
-			port: {
-				id: string
-				ditch: number
-			}
-			hours: number | null
-			previous: number | null
-		}[]
-	}
-	user: {
-		id: string
-		display: string | null
-		defaultHours: number
-		restricted: boolean | null
-		restriction: string | null
-	}
+	user: UserType
+	open: ScheduleType
+	userSchedules: { open: { port: PortType; hours: number | null; previous?: number | null }[] }
 }) {
 	return (
 		<Card className="bg-muted">

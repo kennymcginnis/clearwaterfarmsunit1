@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as React from 'react'
 import { useSpinDelay } from 'spin-delay'
 import { extendTailwindMerge } from 'tailwind-merge'
+import { type PortType, type UserScheduleType } from '#app/types.ts'
 import { getHints } from './client-hints.tsx'
 import { extendedTheme } from './extended-theme.ts'
 
@@ -340,37 +341,11 @@ export function getRequiredEnvVar(key: string, env = process.env): string {
 	throw new Error(`Environment variable ${key} is not defined`)
 }
 
-export type UserSchedule = {
-	port: { id: string; ditch: number }
-	hours: number | null
-	start: Date | null
-	stop: Date | null
-	previous: number | null
-	schedule: string[]
-}
-export type UserSchedules = UserSchedule[]
-
 export function formatUserSchedule(
-	user: {
-		ports: { id: string; ditch: number }[]
-	},
-	userSchedules:
-		| {
-				port: { id: string; ditch: number }
-				start: Date | null
-				stop: Date | null
-				hours: number
-		  }[]
-		| undefined,
-	previousUserSchedules?:
-		| {
-				port: { id: string; ditch: number }
-				start: Date | null
-				stop: Date | null
-				hours: number
-		  }[]
-		| undefined,
-): UserSchedules {
+	user: { ports: PortType[] },
+	userSchedules?: UserScheduleType[],
+	previousUserSchedules?: UserScheduleType[],
+): UserScheduleType[] {
 	return user.ports.map(port => {
 		const empty = {
 			port: { id: port.id, ditch: port.ditch },
@@ -383,7 +358,7 @@ export function formatUserSchedule(
 		return {
 			...found,
 			previous: hours,
-			schedule: formatDates({ start: found?.start, stop: found?.stop }),
+			schedule: formatDates({ start: found?.start as Date, stop: found?.stop as Date }),
 		}
 	})
 }
@@ -393,13 +368,7 @@ export function formatDay(deadline: string): string {
 	return format(deadlineDate, 'eeee')
 }
 
-export function formatDates({
-	start,
-	stop,
-}: {
-	start: Date | null | undefined
-	stop: Date | null | undefined
-}): string[] {
+export function formatDates({ start, stop }: { start: Date | null; stop: Date | null }): string[] {
 	if (!start || !stop) return ['', '']
 	if (start.getDay() === stop.getDay()) {
 		return [format(start, 'eee, MMM do'), `${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}`]

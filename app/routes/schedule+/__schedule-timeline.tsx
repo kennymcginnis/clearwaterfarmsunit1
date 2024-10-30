@@ -1,23 +1,8 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '#app/components/ui/card'
+import { type UserScheduleType, type UserType } from '#app/types.ts'
 import { formatHours } from '#app/utils/misc'
 
-export function UserScheduleTimeline({
-	user,
-	userSchedule,
-}: {
-	user: {
-		id: string
-		display: string | null
-	}
-	userSchedule: {
-		port: {
-			id: string
-			ditch: number
-		}
-		hours: number | null
-		schedule: string[]
-	}
-}) {
+export function UserScheduleTimeline({ user, userSchedule }: { user: UserType; userSchedule: UserScheduleType }) {
 	const ditch = userSchedule.port.ditch
 	const schedule = userSchedule.hours
 		? userSchedule.schedule

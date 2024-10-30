@@ -1,4 +1,5 @@
-import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
+import { invariantResponse } from '@epic-web/invariant'
+import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
@@ -13,7 +14,19 @@ import { UserScheduleTimeline } from './__schedule-timeline'
 export { action }
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const { date, username } = params
-	if (!date || !username) return redirect('/schedules')
+	invariantResponse(date, 'Date parameter Not found', { status: 404 })
+	invariantResponse(username, 'Username parameter Not found', { status: 404 })
+
+	const schedule = await prisma.schedule.findFirst({
+		select: {
+			id: true,
+			state: true,
+			source: true,
+		},
+		where: { date },
+	})
+	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
+
 	await requireSelfOrAdmin({ request, params }, { redirectTo: `/schedule/${date}` })
 
 	const user = await prisma.user.findFirstOrThrow({
@@ -28,11 +41,57 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 				select: {
 					id: true,
 					ditch: true,
+					position: true,
+					entry: true,
+					section: true,
 				},
 			},
 		},
 		where: { username },
 	})
+
+	const existing = await prisma.userSchedule.findMany({
+		select: {
+			user: { select: { username: true } },
+			port: {
+				select: {
+					id: true,
+					ditch: true,
+					position: true,
+					entry: true,
+					section: true,
+				},
+			},
+			hours: true,
+			start: true,
+			stop: true,
+		},
+		where: { scheduleId: schedule.id },
+		orderBy: { port: { ditch: 'asc', position: 'asc' } },
+	})
+
+	/*
+	type ChargesType = {
+		[key: number]: { first: Boolean; last: Boolean; crossover: Boolean }
+	}
+
+	const charges: ChargesType = user.ports.reduce((agg, port) => {
+		const first = existing.some(us => us.port.ditch === port.ditch && us.port.position < port.position) ?? false
+		const last = existing.some(us => us.port.ditch === port.ditch && us.port.position > port.position) ?? false
+		const crossover =
+			port.section === 'South' || port.section === 'East'
+				? existing.some(
+						us =>
+							us.port.ditch === port.ditch &&
+							us.port.entry === port.entry &&
+							us.port.section === port.section &&
+							us.port.position < port.position,
+					)
+				: false
+		agg[port.ditch] = { first, last, crossover }
+		return agg
+	}, {} as ChargesType)
+	*/
 
 	const UserSearchResultsSchema = z.array(z.object({ balance: z.number() }))
 	const currentBalance = await prisma.$queryRaw`
@@ -49,40 +108,15 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		user.restricted = true
 	}
 
-	const schedule = await prisma.schedule.findFirstOrThrow({
-		select: {
-			id: true,
-			state: true,
-			source: true,
-		},
-		where: { date },
-	})
-
-	const userSchedule = await prisma.userSchedule.findMany({
-		select: {
-			port: {
-				select: {
-					id: true,
-					ditch: true,
-				},
-			},
-			hours: true,
-			start: true,
-			stop: true,
-		},
-		where: {
-			user: { username },
-			scheduleId: schedule.id,
-			port: { }
-		},
-	})
-
-	const userSchedules = userSchedule.map(us => ({ ...us, schedule: formatDates({ start: us.start, stop: us.stop }) }))
+	const userSchedules = existing
+		.filter(us => us.user.username === username)
+		.map(us => ({ ...us, schedule: formatDates({ start: us.start, stop: us.stop }) }))
 	for (const port of user.ports) {
 		const found = userSchedules.some(us => us.port.id === port.id)
 		if (!found) {
 			userSchedules.push({
 				port,
+				user: { username },
 				hours: user.defaultHours,
 				start: null,
 				stop: null,
@@ -90,13 +124,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			})
 		}
 	}
-
-	return json({ user, schedule, userSchedules })
+	return json({ user, schedule, userSchedules /*, charges */ })
 }
 
 export default function UserSchedule() {
-	const { user, schedule, userSchedules } = useLoaderData<typeof loader>()
-
+	const { user, schedule, userSchedules /*, charges */ } = useLoaderData<typeof loader>()
 	return (
 		<div className="m-auto flex h-full w-[50%] min-w-[350px] flex-col content-between gap-4 p-4">
 			{userSchedules.map(userSchedule => {
@@ -112,9 +144,7 @@ export default function UserSchedule() {
 							/>
 						)
 					case 'closed':
-						return (
-							<UserScheduleTimeline key={`timeline-${ditch}`} user={user} userSchedule={userSchedule} />
-						)
+						return <UserScheduleTimeline key={`timeline-${ditch}`} user={user} userSchedule={userSchedule} />
 					case 'pending':
 					case 'locked':
 						return (

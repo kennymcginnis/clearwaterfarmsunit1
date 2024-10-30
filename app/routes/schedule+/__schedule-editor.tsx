@@ -9,6 +9,7 @@ import { ErrorList, Field } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button'
 import { Card, CardHeader, CardFooter, CardContent, CardTitle, CardDescription } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
+import { type PortType, type UserType } from '#app/types.ts'
 import { requireUserId } from '#app/utils/auth.server.ts'
 import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
@@ -67,24 +68,9 @@ export function UserScheduleEditor({
 	userSchedule,
 	previous,
 }: {
-	user: {
-		id: string
-		display: string | null
-		defaultHours: number
-		restricted: boolean | null
-		restriction: string | null
-	}
-	schedule: {
-		id: string
-		source: string
-	}
-	userSchedule: {
-		port: {
-			id: string
-			ditch: number
-		}
-		hours: number | null
-	}
+	user: UserType
+	schedule: { id: string; source: string }
+	userSchedule: { port: PortType; hours: number | null }
 	previous?: number | null
 }) {
 	const scheduleEditor = useFetcher<typeof action>()
@@ -155,7 +141,7 @@ export function UserScheduleEditor({
 				{canEdit ? (
 					<CardFooter className="flex items-center justify-between gap-2 px-2 pb-2">
 						<div className="flex gap-1">
-							{user.defaultHours > 0 ? (
+							{user?.defaultHours ? (
 								<Button variant="secondary" type="reset" onClick={handleDefault}>
 									Default
 								</Button>
