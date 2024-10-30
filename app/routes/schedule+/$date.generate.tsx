@@ -297,7 +297,7 @@ export default function GenerateTimelineRoute() {
 						<div className="flex w-[72%] flex-row flex-wrap place-content-center">
 							<div className="justify-content-right flex w-[50%] flex-row flex-wrap">
 								<div className="min-w-[300px] max-w-[50%] p-2">
-									<div className="flex pl-2 text-body-lg font-semibold">Starts:</div>
+									<div className="flex pl-2 text-body-lg font-semibold">[10-01] Starts:</div>
 									<input
 										className="float-right w-full rounded-sm bg-secondary p-2 text-body-lg"
 										aria-label="Date and time"
@@ -309,7 +309,7 @@ export default function GenerateTimelineRoute() {
 									<div className="float-left pl-2 text-body-md">Total Hours: {timelines['10-01'].hours}</div>
 								</div>
 								<div className="min-w-[300px] max-w-[50%] border-r p-2">
-									<div className="flex pl-2 text-body-lg font-semibold">Ends:</div>
+									<div className="flex pl-2 text-body-lg font-semibold">[10-03] Ends:</div>
 									<input
 										className="float-right w-full rounded-sm bg-secondary p-2 text-body-lg"
 										aria-label="Date and time"

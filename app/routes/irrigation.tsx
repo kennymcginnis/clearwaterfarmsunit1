@@ -155,7 +155,7 @@ export default function TimelineRoute() {
 	if (!schedules || status !== 'idle') return null
 
 	return (
-		<div className="mx-auto flex h-dvh min-w-[80%] flex-col gap-1 p-1">
+		<div className="mx-auto flex h-vh min-w-[80%] flex-col gap-1 p-1">
 			<div
 				id="title-row"
 				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white"
