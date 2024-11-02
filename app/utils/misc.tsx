@@ -340,57 +340,66 @@ export function getRequiredEnvVar(key: string, env = process.env): string {
 	throw new Error(`Environment variable ${key} is not defined`)
 }
 
+export type PortType = {
+	id: string
+	ditch: number
+	position: number
+	entry: string | null
+	section: string | null
+}
 export type UserSchedule = {
-	port: { id: string; ditch: number }
+	port: PortType
 	hours: number | null
 	start: Date | null
 	stop: Date | null
+	first: boolean
+	crossover: boolean
+	last: boolean
 	previous: number | null
 	schedule: string[]
 }
-export type UserSchedules = UserSchedule[]
-
 export function formatUserSchedule(
 	user: {
-		ports: { id: string; ditch: number }[]
+		id: string
+		ports: PortType[]
 	},
-	userSchedules:
-		| {
-				port: { id: string; ditch: number }
-				start: Date | null
-				stop: Date | null
-				hours: number
-		  }[]
-		| undefined,
-	previousUserSchedules?:
-		| {
-				port: { id: string; ditch: number }
-				start: Date | null
-				stop: Date | null
-				hours: number
-		  }[]
-		| undefined,
-): UserSchedules {
+	userSchedules?: {
+		userId: string
+		port: PortType
+		start: Date | null
+		stop: Date | null
+		hours: number
+	}[],
+	previousUserSchedules?: {
+		userId: string
+		port: PortType
+		hours: number
+	}[],
+): UserSchedule[] {
 	return user.ports.map(port => {
-		const empty = {
-			port: { id: port.id, ditch: port.ditch },
-			hours: null,
-			start: null,
-			stop: null,
-		}
-		const found = userSchedules?.find(us => us.port.ditch === port.ditch) ?? empty
-		const { hours } = previousUserSchedules?.find(us => us.port.ditch === port.ditch) ?? empty
-		return {
-			...found,
-			previous: hours,
-			schedule: formatDates({ start: found?.start, stop: found?.stop }),
+		const empty = { port, hours: null, start: null, stop: null }
+		const { hours: previous } = previousUserSchedules?.find(us => us.port.ditch === port.ditch) ?? empty
+		if (userSchedules) {
+			const found = userSchedules.find(us => us.userId === user.id && us.port.ditch === port.ditch) ?? empty
+			const firstDitch = userSchedules.find(us => us.port.ditch === port.ditch)
+			const first = firstDitch ? firstDitch.userId === user.id || firstDitch.port.position > port.position : true
+			const section = userSchedules.find(us => us.port.ditch === port.ditch && us.port.section === port.section)
+			const crossover = section ? section.userId === user.id || section.port.position > port.position : true
+			const lastDitch = userSchedules.reverse().find(us => us.port.ditch === port.ditch)
+			const last = lastDitch ? lastDitch.userId === user.id || lastDitch.port.position < port.position : true
+			const schedule = formatDates({ start: found?.start, stop: found?.stop })
+			return { ...found, previous, schedule, first, crossover, last }
+		} else {
+			const schedule = formatDates({ start: null, stop: null })
+			return { ...empty, previous, schedule, first: true, crossover: true, last: true }
 		}
 	})
 }
 
-export function formatDay(deadline: string): string {
+export function formatDay(deadline?: string): string {
+	if (!deadline) return ''
 	const deadlineDate = parse(deadline, 'yyyy-MM-dd', new Date())
-	return format(deadlineDate, 'eeee')
+	return format(deadlineDate, 'eee, MMM dd')
 }
 
 export function formatDates({

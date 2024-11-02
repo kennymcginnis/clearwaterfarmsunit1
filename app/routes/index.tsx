@@ -70,7 +70,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 				defaultHours: true,
 				restricted: true,
 				restriction: true,
-				ports: { select: { id: true, ditch: true } },
+				ports: { select: { id: true, ditch: true, position: true, entry: true, section: true } },
 			},
 			where: { id: userId },
 		})
@@ -92,17 +92,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 		const userSchedules = {
 			select: {
+				userId: true,
 				port: {
 					select: {
 						id: true,
 						ditch: true,
+						position: true,
+						entry: true,
+						section: true,
 					},
 				},
 				hours: true,
 				start: true,
 				stop: true,
 			},
-			where: { userId },
 		}
 
 		const allSchedules = await prisma.schedule.findMany({
@@ -318,6 +321,9 @@ function OpenSchedule({
 				id: string
 				ditch: number
 			}
+			first: boolean
+			crossover: boolean
+			last: boolean
 			hours: number | null
 			previous: number | null
 		}[]
@@ -333,8 +339,8 @@ function OpenSchedule({
 	return (
 		<Card className="bg-muted">
 			<CardHeader className="flex-col items-center">
-				<CardTitle>Open Until: {open.deadline}</CardTitle>
-				<CardDescription>Sign-Up Deadline {formatDay(open.deadline)} at 7pm</CardDescription>
+				<CardTitle>Schedule Dated: {open.date}</CardTitle>
+				<CardDescription>Open until: {formatDay(open.deadline)}, 7:00pm</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-2">
 				{userSchedules.open ? (

@@ -6,6 +6,7 @@ import { type SetStateAction, useState } from 'react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { z } from 'zod'
 import { ErrorList, Field } from '#app/components/forms.tsx'
+import { Badge } from '#app/components/ui/badge.tsx'
 import { Button } from '#app/components/ui/button'
 import { Card, CardHeader, CardFooter, CardContent, CardTitle, CardDescription } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
@@ -14,6 +15,7 @@ import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatHours, useIsPending } from '#app/utils/misc.tsx'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
+import { backgroundColor } from '#app/utils/user-schedule.ts'
 import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
 
 const UserScheduleEditorSchema = z.object({
@@ -83,6 +85,9 @@ export function UserScheduleEditor({
 			id: string
 			ditch: number
 		}
+		first: boolean
+		crossover: boolean
+		last: boolean
 		hours: number | null
 	}
 	previous?: number | null
@@ -134,7 +139,24 @@ export function UserScheduleEditor({
 						: 'You have not signed up for hours.'}
 				</CardDescription>
 				<CardContent>
-					<div className="flex flex-col gap-2">
+					<div className="flex flex-col">
+						<div id="charges-pills" className="flex w-full flex-row justify-end">
+							{userSchedule.first && (
+								<Badge className={`ml-1 capitalize ${backgroundColor('first')}`} variant="outline">
+									{'First'}
+								</Badge>
+							)}
+							{userSchedule.crossover && (
+								<Badge className={`ml-1 capitalize ${backgroundColor('crossover')}`} variant="outline">
+									{'Crossover'}
+								</Badge>
+							)}
+							{userSchedule.last && (
+								<Badge className={`ml-1 capitalize ${backgroundColor('last')}`} variant="outline">
+									{'Last'}
+								</Badge>
+							)}
+						</div>
 						<Field
 							className="md:w-[250px]"
 							labelProps={{ children: 'Hours' }}

@@ -21,7 +21,7 @@ export function UserScheduleTimeline({
 	const ditch = userSchedule.port.ditch
 	const schedule = userSchedule.hours
 		? userSchedule.schedule
-		: ['You did not sign up for Irrigation', 'on this schedule.']
+		: ['You did not sign up for', 'Irrigation on this schedule.']
 	return (
 		<Card className="mb-1">
 			<CardHeader>
