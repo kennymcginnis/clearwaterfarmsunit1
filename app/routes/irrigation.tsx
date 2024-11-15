@@ -32,7 +32,13 @@ export type UserScheduleType = {
 	distanceToNow?: string | null
 }
 
-type SortedSchedulesType = { [key: string]: { [key: number]: UserScheduleType[] } }
+type SortedSchedulesType = {
+	// entry
+	[key: string]: {
+		// ditch
+		[key: number]: UserScheduleType[]
+	}
+}
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const userId = await getUserId(request)
@@ -154,8 +160,12 @@ export default function TimelineRoute() {
 
 	if (!schedules || status !== 'idle') return null
 
+	const sorting: { [key: string]: number[] } = {
+		'10-01': [9, 1, 2, 3, 4],
+		'10-03': [9, 5, 6, 7, 8],
+	}
 	return (
-		<div className="mx-auto flex h-vh min-w-[80%] flex-col gap-1 p-1">
+		<div className="h-vh mx-auto flex min-w-[80%] flex-col gap-1 p-1">
 			<div
 				id="title-row"
 				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white"
@@ -190,18 +200,27 @@ export default function TimelineRoute() {
 					{last}
 				</div>
 			</div>
-			{Object.keys(schedules[visible]).map(ditch => (
-				<>
-					<div className="mt-2 w-full rounded-md bg-primary p-2 text-center text-body-lg text-secondary">
-						{`[${visible}] Ditch ${ditch}`}
-					</div>
-					{schedules[visible][Number(ditch)].map(userSchedule => (
-						<UserCard key={`${userSchedule.start}`} userSchedule={userSchedule} />
-					))}
-				</>
-			))}
+			{sorting[visible].map(ditch =>
+				schedules?.[visible]?.[ditch]
+					? schedules[visible][ditch].map((userSchedule, i) => (
+							<>
+								<DitchHeader visible={i === 0} entry={visible} ditch={ditch} />
+								<UserCard key={`${userSchedule.start}`} userSchedule={userSchedule} />
+							</>
+						))
+					: null,
+			)}
 		</div>
 	)
+}
+
+
+function DitchHeader({ visible, entry, ditch }: { visible: boolean; entry: string; ditch: number }) {
+	return visible ? (
+		<div className="mt-2 w-full rounded-md bg-primary p-2 text-center text-body-lg text-secondary">
+			{`[${entry}] Ditch ${ditch}`}
+		</div>
+	) : null
 }
 
 function UserCard({
