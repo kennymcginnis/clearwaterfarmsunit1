@@ -67,7 +67,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export const RestrictionsFormSchema = z.object({
 	userId: z.string(),
-	intent: z.string(),
+	intent: z.enum(['restricted', 'restriction']),
 	restricted: z
 		.enum(['true', 'false', 'null'])
 		.transform(value => (value === 'null' ? null : value === 'true'))
@@ -75,11 +75,18 @@ export const RestrictionsFormSchema = z.object({
 	restriction: z.string().optional(),
 })
 export async function action({ request }: ActionFunctionArgs) {
+	const userId = await requireUserWithRole(request, 'admin')
 	const formData = await request.formData()
 	const submission = parse(formData, { schema: RestrictionsFormSchema })
 	invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
 
 	const { userId: id, intent, restricted, restriction } = submission.value
+
+	const current = await prisma.user.findFirst({
+		select: { restricted: true, restriction: true },
+		where: { id },
+	})
+	invariantResponse(current, 'Invalid userId', { status: 404 })
 
 	switch (intent) {
 		case 'restricted': {
@@ -87,16 +94,28 @@ export async function action({ request }: ActionFunctionArgs) {
 				data: { restricted, restriction },
 				where: { id },
 			})
-			return null
+			break
 		}
 		case 'restriction': {
 			await prisma.user.update({
 				data: { restriction: restriction ?? null },
 				where: { id },
 			})
-			return null
+			break
 		}
 	}
+
+	await prisma.userAudit.create({
+		data: {
+			userId: id,
+			field: intent,
+			from: String(current?.[intent]) ?? '',
+			to: String(submission.value?.[intent]) ?? '',
+			updatedAt: new Date(),
+			updatedBy: userId,
+		},
+	})
+
 	return json({ status: 'error', submission } as const, { status: 400 })
 }
 

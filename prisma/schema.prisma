@@ -47,6 +47,16 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+model UserAudit {
+  userId    String
+  field     String
+  from      String
+  to        String
+  updatedBy String   @default("Admin")
+  updatedAt DateTime @updatedAt
+  @@unique([userId, updatedAt])
+}
+
 model Address {
   id      String @id
   address String @unique

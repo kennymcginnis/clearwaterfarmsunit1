@@ -65,10 +65,27 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	if (submission.value) {
 		const { id, defaultHours } = submission.value
-		await prisma.user.update({
+		const { defaultHours: currentDefaultHours } = (await prisma.user.findFirst({
+			select: { defaultHours: true },
 			where: { id },
+		})) ?? { defaultHours: null }
+		await prisma.user.update({
 			data: { defaultHours, updatedBy: currentUser },
+			where: { id },
 		})
+
+		if (defaultHours && defaultHours !== currentDefaultHours) {
+			await prisma.userAudit.create({
+				data: {
+					userId: id,
+					field: 'defaultHours',
+					from: currentDefaultHours ? currentDefaultHours.toString() : 'new',
+					to: defaultHours.toString(),
+					updatedAt: new Date(),
+					updatedBy: currentUser,
+				},
+			})
+		}
 
 		return redirectWithToast('', {
 			type: 'success',
@@ -131,7 +148,7 @@ export default function NotesRoute() {
 							value={updateDefaultsActionIntent}
 							form={form.id}
 							disabled={isPending}
-							status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
+							status={fetcher.state !== 'idle' ? 'pending' : (fetcher.data?.status ?? 'idle')}
 						>
 							Submit
 						</StatusButton>

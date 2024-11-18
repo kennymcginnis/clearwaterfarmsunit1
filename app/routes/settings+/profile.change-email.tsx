@@ -48,6 +48,17 @@ export async function handleVerification({ request, submission }: VerifyFunction
 		data: { primaryEmail: newEmail },
 	})
 
+	await prisma.userAudit.create({
+		data: {
+			userId: user.id,
+			field: 'primaryEmail',
+			from: preUpdateUser.primaryEmail ?? 'new',
+			to: user.primaryEmail ?? '',
+			updatedAt: new Date(),
+			updatedBy: user.id,
+		},
+	})
+
 	if (preUpdateUser.primaryEmail) {
 		void sendEmail({
 			to: preUpdateUser.primaryEmail,
@@ -173,7 +184,9 @@ export default function ChangeEmailIndex() {
 					/>
 					<ErrorList id={form.errorId} errors={form.errors} />
 					<div className="mt-3">
-						<StatusButton status={isPending ? 'pending' : actionData?.status ?? 'idle'}>Send Confirmation</StatusButton>
+						<StatusButton status={isPending ? 'pending' : (actionData?.status ?? 'idle')}>
+							Send Confirmation
+						</StatusButton>
 					</div>
 				</Form>
 			</div>

@@ -12,6 +12,22 @@ import { requireUserWithRole } from '#app/utils/permissions.ts'
 import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
 
+const SearchResultsSchema = z.array(
+	z.object({
+		emailSubject: z.string().nullish(),
+		primaryEmail: z.string().email().optional().or(z.literal('')),
+		secondarySubject: z.string().nullish(),
+		secondaryEmail: z.string().email().optional().or(z.literal('')),
+		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
+		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
+		start: z.date().nullable(),
+		stop: z.date().nullable(),
+		first: z.boolean().optional().nullable(),
+		crossover: z.boolean().optional().nullable(),
+		last: z.boolean().optional().nullable(),
+	}),
+)
+
 const ActionFormSchema = z.object({
 	intent: z.string(),
 	scheduleId: z.string(),
@@ -26,9 +42,9 @@ type ScheduleActionArgs = {
 
 export async function action({ request }: ActionFunctionArgs) {
 	const userId = await requireUserWithRole(request, 'admin')
-	console.dir({ request })
+	// console.dir({ request })
 	const formData = await request.formData()
-	console.dir({ formData })
+	// console.dir({ formData })
 	await validateCSRF(formData, request.headers)
 	const intent = formData.get('intent')
 
@@ -187,51 +203,68 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 	const scheduleDate = format(date, 'eeee, MMM do')
 
 	if (submission.value) {
-		const userSchedules = await prisma.userSchedule.findMany({
-			select: {
-				user: {
-					select: {
-						id: true,
-						primaryEmail: true,
-						emailSubject: true,
-					},
-				},
-				port: {
-					select: {
-						ditch: true,
-					},
-				},
-				hours: true,
-				start: true,
-				stop: true,
-				updatedBy: true,
-			},
-			where: { scheduleId, start: { not: null }, stop: { not: null }, user: { primaryEmail: { not: null } } },
-		})
+		const rawUsers = await prisma.$queryRaw`
+			SELECT User.emailSubject, User.primaryEmail, User.secondarySubject, User.secondaryEmail, 
+						 Port.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
+						 UserSchedule.first, UserSchedule.crossover, UserSchedule.last
+	  		FROM User
+	  	 INNER JOIN Port ON User.id = Port.userId
+	  	  LEFT JOIN UserSchedule
+	  	    ON User.id = UserSchedule.userId
+	  	   AND Port.id = UserSchedule.portId
+	  	   AND UserSchedule.scheduleId = ${scheduleId}
+	  	 WHERE User.active
+	  	 ORDER BY Port.ditch, Port.position
+		`
+
+		const result = SearchResultsSchema.safeParse(rawUsers)
+		if (!result.success) {
+			console.error(result.error.message)
+			return
+		}
 
 		type EmailType = {
 			[key: string]: {
-				emailSubject: string | null
+				emailSubject: string
 				schedules: { ditch: number; hours: string; schedule: string }[]
 			}
 		}
 		const emails: EmailType = {}
-		userSchedules
-			.filter(us => us.updatedBy === us.user.id)
-			.forEach(({ port: { ditch }, hours, start, stop, user: { emailSubject, primaryEmail } }) => {
+		result.data.forEach(
+			({
+				ditch,
+				hours,
+				start,
+				stop,
+				// first,
+				// crossover,
+				// last,
+				emailSubject,
+				primaryEmail,
+				secondarySubject,
+				secondaryEmail,
+			}) => {
+				const schedule = { ditch, hours: formatHours(hours), schedule: formatDatesOneLiner({ start, stop }) }
 				if (primaryEmail) {
-					const schedule = { ditch, hours: formatHours(hours), schedule: formatDatesOneLiner({ start, stop }) }
 					if (emails[primaryEmail]) emails[primaryEmail].schedules.push(schedule)
-					else emails[primaryEmail] = { emailSubject, schedules: [schedule] }
+					else emails[primaryEmail] = { emailSubject: emailSubject ?? primaryEmail, schedules: [schedule] }
 				}
-			})
-		const batchEmails = Object.entries(emails).map(([primaryEmail, { emailSubject, schedules }]) => ({
+				if (secondaryEmail) {
+					if (emails[secondaryEmail]) emails[secondaryEmail].schedules.push(schedule)
+					else {
+						emails[secondaryEmail] = {
+							emailSubject: secondarySubject ?? emailSubject ?? secondaryEmail,
+							schedules: [schedule],
+						}
+					}
+				}
+			},
+		)
+		const batchEmails = Object.entries(emails).map(([email, { emailSubject, schedules }]) => ({
 			from: 'clearwat@clearwaterfarmsunit1.com',
-			to: primaryEmail,
+			to: email,
 			subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
-			react: (
-				<ClosedScheduleEmail date={scheduleDate} emailSubject={emailSubject ?? primaryEmail} schedules={schedules} />
-			),
+			react: <ClosedScheduleEmail date={scheduleDate} emailSubject={emailSubject} schedules={schedules} />,
 		}))
 
 		const resend = new Resend(process.env.RESEND_API_KEY)

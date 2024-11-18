@@ -61,19 +61,14 @@ export function ScheduleCrossoverEmail({
 							>
 								Hi {emailSubject},
 							</E.Heading>
-							<E.Heading
-								as="h2"
-								style={{
-									fontSize: 26,
-									fontWeight: 'bold',
-									textAlign: 'center',
-								}}
-							>
-								We recently closed the irrigation schedule that starts on {date}. ***Please note: You are the first
-								irrigator after the Orangewood crossover (or after 185th and 181st on Ditch 9). You will be responsible
-								to ensure that the crossover (under the street) is cleared of debris that would obstruct water flow.
+							<E.Text style={{ fontSize: 16 }}>
+								We recently closed the irrigation schedule that starts on {date}.
+							</E.Text>
+							<E.Heading as="h2" style={{ fontSize: 26, fontWeight: 'bold' }}>
+								***Please note: You are the first irrigator after the Orangewood crossover (or after 185th and 181st on
+								Ditch 9). You will be responsible to ensure that the crossover (under the street) is cleared of debris
+								that would obstruct water flow.
 							</E.Heading>
-							<E.Text style={{ fontSize: 16 }}>Here is your upcoming watering schedule:</E.Text>
 							{schedules.map(({ ditch, hours, schedule }) => (
 								<E.Text key={ditch} style={{ fontSize: 16, marginTop: -5 }}>
 									<b>

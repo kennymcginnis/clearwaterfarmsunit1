@@ -52,22 +52,6 @@ export const SearchResultsSchema = z.array(
 		last: z.boolean().optional().nullable(),
 	}),
 )
-
-const found: FirstDitchType = {
-	'1': { '10-01': { first: false, South: false, last: false } },
-	'2': { '10-01': { first: false, South: false, last: false } },
-	'3': { '10-01': { first: false, South: false, last: false } },
-	'4': { '10-01': { first: false, South: false, last: false } },
-	'5': { '10-03': { first: false, South: false, last: false } },
-	'6': { '10-03': { first: false, South: false, last: false } },
-	'7': { '10-03': { first: false, South: false, last: false } },
-	'8': { '10-03': { first: false, South: false, last: false } },
-	'9': {
-		'10-01': { first: false, East: false, last: false },
-		'10-03': { first: false, East: false, last: false },
-	},
-}
-
 type FirstDitchType = {
 	// ditch
 	[key: string]: {
@@ -97,6 +81,21 @@ export type UserScheduleType = {
 }
 
 export const assignChargesToSchedules = (schedules: UserScheduleType[]) => {
+	const found: FirstDitchType = {
+		'1': { '10-01': { first: false, South: false, last: false } },
+		'2': { '10-01': { first: false, South: false, last: false } },
+		'3': { '10-01': { first: false, South: false, last: false } },
+		'4': { '10-01': { first: false, South: false, last: false } },
+		'5': { '10-03': { first: false, South: false, last: false } },
+		'6': { '10-03': { first: false, South: false, last: false } },
+		'7': { '10-03': { first: false, South: false, last: false } },
+		'8': { '10-03': { first: false, South: false, last: false } },
+		'9': {
+			'10-01': { first: false, East: false, last: false },
+			'10-03': { first: false, East: false, last: false },
+		},
+	}
+
 	const updated = schedules.map(schedule => {
 		const { ditch, entry, section, hours } = schedule
 		if (hours) {

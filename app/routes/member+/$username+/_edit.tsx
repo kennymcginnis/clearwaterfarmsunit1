@@ -34,7 +34,6 @@ export type ProfileActionArgs = {
 
 export const createPhoneActionIntent = 'create-phone'
 export const updatePhoneActionIntent = 'update-phone'
-export const updatePhonePrimaryActionIntent = 'update-phone-primary'
 export const deletePhoneActionIntent = 'delete-phone'
 export const profileUpdateActionIntent = 'update-profile'
 export const signOutOfSessionsActionIntent = 'sign-out-of-sessions'
@@ -53,9 +52,6 @@ export async function action({ request }: ActionFunctionArgs) {
 		case updatePhoneActionIntent:
 			return updatePhoneAction(event)
 
-		case updatePhonePrimaryActionIntent:
-			return updatePhonePrimaryAction(event)
-
 		case deletePhoneActionIntent:
 			return deletePhoneAction(event)
 
@@ -67,6 +63,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 		case deleteDataActionIntent:
 			return deleteDataAction(event)
+
 		default: {
 			throw new Response(`Invalid intent "${intent}"`, { status: 400 })
 		}
@@ -95,19 +92,56 @@ export async function profileUpdateAction({ currentUser, formData }: ProfileActi
 			}
 		}),
 	})
-	if (submission.intent !== 'submit') {
-		return json({ status: 'idle', submission } as const)
-	}
-	if (!submission.value) {
-		return json({ status: 'error', submission } as const, { status: 400 })
-	}
-
+	if (submission.intent !== 'submit') return json({ status: 'idle', submission } as const)
+	if (!submission.value) return json({ status: 'error', submission } as const, { status: 400 })
 	const data = submission.value
-	await prisma.user.update({
-		select: { username: true },
+	const { id, username, member, secondaryEmail } = (await prisma.user.findFirst({
+		select: { id: true, username: true, member: true, secondaryEmail: true },
 		where: { id: currentUser },
-		data,
-	})
+	})) ?? { id: null, username: null, member: null, secondaryEmail: null }
+	if (id) {
+		await prisma.user.update({
+			select: { username: true },
+			data,
+			where: { id: currentUser },
+		})
+		if (data.username && username !== data.username) {
+			await prisma.userAudit.create({
+				data: {
+					userId: id,
+					field: 'username',
+					from: username ?? 'new',
+					to: data.username,
+					updatedAt: new Date(),
+					updatedBy: currentUser,
+				},
+			})
+		}
+		if (data.member && member !== data.member) {
+			await prisma.userAudit.create({
+				data: {
+					userId: id,
+					field: 'member',
+					from: member ?? 'new',
+					to: data.member,
+					updatedAt: new Date(),
+					updatedBy: currentUser,
+				},
+			})
+		}
+		if (data.secondaryEmail && secondaryEmail !== data.secondaryEmail) {
+			await prisma.userAudit.create({
+				data: {
+					userId: id,
+					field: 'secondaryEmail',
+					from: secondaryEmail ?? 'new',
+					to: data.secondaryEmail,
+					updatedAt: new Date(),
+					updatedBy: currentUser,
+				},
+			})
+		}
+	}
 
 	return json({ status: 'success', submission } as const)
 }
@@ -130,22 +164,29 @@ export const CreatePhoneSchema = z.object({
 	type: z.string(),
 	number: PhoneNumberSchema,
 })
-export async function createPhoneAction({ formData }: ProfileActionArgs) {
+export async function createPhoneAction({ formData, currentUser }: ProfileActionArgs) {
 	const submission = await parse(formData, { schema: CreatePhoneSchema, async: true })
-
-	if (submission.intent !== 'submit') {
-		return json({ status: 'idle', submission } as const)
-	}
-
+	if (submission.intent !== 'submit') return json({ status: 'idle', submission } as const)
 	if (submission.value) {
 		const { type, number, userId } = submission.value
 		await prisma.userPhone.create({
-			select: { id: true },
 			data: {
 				id: generatePublicId(),
 				userId,
 				type,
 				number,
+				updatedBy: currentUser,
+			},
+		})
+
+		await prisma.userAudit.create({
+			data: {
+				userId,
+				field: 'phone',
+				from: 'new',
+				to: `${type}: ${number}`,
+				updatedAt: new Date(),
+				updatedBy: currentUser,
 			},
 		})
 
@@ -168,19 +209,28 @@ export const UpdatePhoneSchema = z.object({
 })
 export async function updatePhoneAction({ formData, currentUser }: ProfileActionArgs) {
 	const submission = await parse(formData, { schema: UpdatePhoneSchema, async: true })
-
-	if (submission.intent !== 'submit') {
-		return json({ status: 'idle', submission } as const)
-	}
+	if (submission.intent !== 'submit') json({ status: 'idle', submission } as const)
 	if (submission.value) {
 		const { id, userId, ...data } = submission.value
-		await prisma.userPhone.update({
-			data: {
-				...data,
-				updatedBy: currentUser,
-			},
+		const { type, number } = (await prisma.userPhone.findFirst({
+			select: { type: true, number: true },
 			where: { id },
-		})
+		})) ?? { type: null, number: null }
+
+		if (data.type !== type || data.number !== number) {
+			await prisma.userPhone.update({ data: { ...data, updatedBy: currentUser }, where: { id } })
+			await prisma.userAudit.create({
+				data: {
+					userId,
+					field: 'phone',
+					from: `${type ?? 'new'}: ${number ?? 'new'}`,
+					to: `${data.type}: ${number}`,
+					updatedAt: new Date(),
+					updatedBy: currentUser,
+				},
+			})
+		}
+
 		return redirectWithToast('', {
 			type: 'success',
 			title: 'Success',
@@ -191,60 +241,32 @@ export async function updatePhoneAction({ formData, currentUser }: ProfileAction
 	}
 }
 
-export const UpdatePhonePrimarySchema = z.object({
-	userId: z.string(),
-	id: z.string(),
-	primary: z.boolean().optional().default(false),
-})
-export async function updatePhonePrimaryAction({ formData, currentUser }: ProfileActionArgs) {
-	const submission = await parse(formData, { schema: UpdatePhonePrimarySchema, async: true })
-
-	if (submission.intent !== 'submit') {
-		return json({ status: 'idle', submission } as const)
-	}
-	if (submission.value) {
-		const { id, userId, primary } = submission.value
-		await prisma.userPhone.update({
-			data: {
-				primary,
-				updatedBy: currentUser,
-			},
-			where: { id },
-		})
-
-		if (primary) {
-			await prisma.userPhone.updateMany({
-				data: {
-					primary: false,
-					updatedBy: currentUser,
-				},
-				where: { userId, NOT: { id } },
-			})
-		}
-
-		return redirectWithToast('', {
-			type: 'success',
-			title: 'Success',
-			description: `Phone updated to primary.`,
-		})
-	} else {
-		return json({ status: 'error', submission } as const, { status: 400 })
-	}
-}
-
 export const DeletePhoneSchema = z.object({
 	id: z.string().optional(),
 })
 
-export async function deletePhoneAction({ formData }: ProfileActionArgs) {
+export async function deletePhoneAction({ formData, currentUser }: ProfileActionArgs) {
 	const submission = await parse(formData, { schema: DeletePhoneSchema, async: true })
-
-	if (submission.intent !== 'submit') {
-		return json({ status: 'idle', submission } as const)
-	}
+	if (submission.intent !== 'submit') return json({ status: 'idle', submission } as const)
 	if (submission.value) {
 		const { id } = submission.value
-		await prisma.userPhone.delete({ where: { id } })
+		const deleted = (await prisma.userPhone.delete({
+			select: { userId: true, type: true, number: true },
+			where: { id },
+		})) ?? { userId: null, type: null, number: null }
+		if (deleted && deleted.userId) {
+			const { userId, type, number } = deleted
+			await prisma.userAudit.create({
+				data: {
+					userId,
+					field: 'phone',
+					from: `${type}: ${number}`,
+					to: 'deleted',
+					updatedAt: new Date(),
+					updatedBy: currentUser,
+				},
+			})
+		}
 		return json({ status: 'success' })
 	} else {
 		return json({ status: 'error', submission } as const, { status: 400 })
@@ -294,7 +316,7 @@ export function CreatePhone({ userId }: { userId: string }) {
 					name="intent"
 					variant="default"
 					value={createPhoneActionIntent}
-					status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
+					status={fetcher.state !== 'idle' ? 'pending' : (fetcher.data?.status ?? 'idle')}
 				>
 					Save Phone
 				</StatusButton>
@@ -346,7 +368,7 @@ export function UpdatePhone({
 					name="intent"
 					variant="default"
 					value={updatePhoneActionIntent}
-					status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
+					status={fetcher.state !== 'idle' ? 'pending' : (fetcher.data?.status ?? 'idle')}
 				>
 					<Icon name="pencil-2">Update</Icon>
 				</StatusButton>
