@@ -15,16 +15,16 @@ import { redirectWithToast } from '#app/utils/toast.server.ts'
 const SearchResultsSchema = z.array(
 	z.object({
 		emailSubject: z.string().nullish(),
-		primaryEmail: z.string().email().optional().or(z.literal('')),
+		primaryEmail: z.string().email().nullish(),
 		secondarySubject: z.string().nullish(),
-		secondaryEmail: z.string().email().optional().or(z.literal('')),
+		secondaryEmail: z.string().email().nullish(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
-		start: z.date().nullable(),
-		stop: z.date().nullable(),
-		first: z.boolean().optional().nullable(),
-		crossover: z.boolean().optional().nullable(),
-		last: z.boolean().optional().nullable(),
+		start: z.date().nullish(),
+		stop: z.date().nullish(),
+		first: z.boolean().nullish(),
+		crossover: z.boolean().nullish(),
+		last: z.boolean().nullish(),
 	}),
 )
 
@@ -220,7 +220,7 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 		const result = SearchResultsSchema.safeParse(rawUsers)
 		if (!result.success) {
 			console.error(result.error.message)
-			return
+			return null
 		}
 
 		type EmailType = {
