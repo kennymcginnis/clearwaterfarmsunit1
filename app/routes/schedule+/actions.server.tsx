@@ -214,6 +214,7 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 	  	   AND Port.id = UserSchedule.portId
 	  	   AND UserSchedule.scheduleId = ${scheduleId}
 	  	 WHERE User.active
+			   AND UserSchedule.hours > 0
 	  	 ORDER BY Port.ditch, Port.position
 		`
 
