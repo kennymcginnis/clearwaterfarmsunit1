@@ -81,7 +81,7 @@ export default function ContactsRoute() {
 	}
 
 	const formatDitch = (ports: { ditch: number; position: number; section: string; entry: string }[]) =>
-		`[${ports[0].entry}] - ${ports.map(({ ditch, position,section }) => `Ditch ${ditch}.${`0${position}`.slice(-2)} - ${section}`).join(' & ')}` // ${section}-${entry}`
+		`[${ports[0].entry}] - ${ports.map(({ ditch, position, section }) => `Ditch ${ditch}.${`0${position}`.slice(-2)} - ${section}`).join(' & ')}` // ${section}-${entry}`
 
 	const baseUrl = '/members/contacts'
 	return (
@@ -272,7 +272,7 @@ export default function ContactsRoute() {
 														})
 													}
 												/>
-												<DeletePhone phoneId={phoneId} />
+												<DeletePhone userId={userId} phoneId={phoneId} />
 											</div>
 										</div>
 									)
@@ -408,11 +408,12 @@ function CreatePhone({ userId, index }: { userId: string; index: number }) {
 	)
 }
 
-function DeletePhone({ phoneId }: { phoneId: string }) {
+function DeletePhone({ userId, phoneId }: { userId: string; phoneId: string }) {
 	const fetcher = useFetcher<typeof action>()
 	const dc = useDoubleCheck()
 	return (
 		<fetcher.Form method="POST" key={`delete-${phoneId}`}>
+			<input type="hidden" name="userId" value={userId} />
 			<input type="hidden" name="phoneId" value={phoneId} />
 			<StatusButton
 				{...dc.getButtonProps({

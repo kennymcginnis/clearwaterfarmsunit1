@@ -11,6 +11,7 @@ import { ToggleGroup, ToggleGroupItem } from '#app/components/ui/toggle-group'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatCurrency } from '#app/utils/misc'
 import { requireUserWithRole } from '#app/utils/permissions'
+import { saveUserAudit } from '#app/utils/user-audit.ts'
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	await requireUserWithRole(request, 'admin')
@@ -75,16 +76,16 @@ export const RestrictionsFormSchema = z.object({
 	restriction: z.string().optional(),
 })
 export async function action({ request }: ActionFunctionArgs) {
-	const userId = await requireUserWithRole(request, 'admin')
+	const updatedBy = await requireUserWithRole(request, 'admin')
 	const formData = await request.formData()
 	const submission = parse(formData, { schema: RestrictionsFormSchema })
 	invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
 
-	const { userId: id, intent, restricted, restriction } = submission.value
+	const { userId, intent, restricted, restriction } = submission.value
 
 	const current = await prisma.user.findFirst({
 		select: { restricted: true, restriction: true },
-		where: { id },
+		where: { id: userId },
 	})
 	invariantResponse(current, 'Invalid userId', { status: 404 })
 
@@ -92,28 +93,25 @@ export async function action({ request }: ActionFunctionArgs) {
 		case 'restricted': {
 			await prisma.user.update({
 				data: { restricted, restriction },
-				where: { id },
+				where: { id: userId },
 			})
 			break
 		}
 		case 'restriction': {
 			await prisma.user.update({
 				data: { restriction: restriction ?? null },
-				where: { id },
+				where: { id: userId },
 			})
 			break
 		}
 	}
 
-	await prisma.userAudit.create({
-		data: {
-			userId: id,
-			field: intent,
-			from: String(current?.[intent]) ?? '',
-			to: String(submission.value?.[intent]) ?? '',
-			updatedAt: new Date(),
-			updatedBy: userId,
-		},
+	await saveUserAudit({
+		userId,
+		field: intent,
+		from: String(current?.[intent]),
+		to: String(submission.value?.[intent]),
+		updatedBy,
 	})
 
 	return json({ status: 'error', submission } as const, { status: 400 })

@@ -11,6 +11,7 @@ import { requireSelfOrAdmin, requireUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { useIsPending, formatHours, formatDates } from '#app/utils/misc'
 import { redirectWithToast } from '#app/utils/toast.server'
+import { saveUserAudit } from '#app/utils/user-audit.ts'
 
 const IrrigationDefaultsSchema = z.object({
 	id: z.string(),
@@ -75,15 +76,12 @@ export async function action({ request }: ActionFunctionArgs) {
 		})
 
 		if (defaultHours && defaultHours !== currentDefaultHours) {
-			await prisma.userAudit.create({
-				data: {
-					userId: id,
-					field: 'defaultHours',
-					from: currentDefaultHours ? currentDefaultHours.toString() : 'new',
-					to: defaultHours.toString(),
-					updatedAt: new Date(),
-					updatedBy: currentUser,
-				},
+			await saveUserAudit({
+				userId: id,
+				field: 'default-hours',
+				from: currentDefaultHours ? currentDefaultHours.toString() : 'new',
+				to: defaultHours.toString(),
+				updatedBy: currentUser,
 			})
 		}
 

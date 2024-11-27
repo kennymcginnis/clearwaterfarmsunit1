@@ -124,10 +124,83 @@ export const assignChargesToSchedules = (schedules: UserScheduleType[]) => {
 	})
 }
 
-type DitchSectionType = {
-	[key: string]: { [key: string]: { [key: string]: { first: boolean; description: string } } }
+const last = 'Please do not pull your checks after irrigation.'
+export const crossovers: {
+	[key: string]: { [key: string]: { [key: string]: string } }
+} = {
+	'1': {
+		'10-01': {
+			first: 'Ditch 9 to Ditch 1 (Open Ditch 1, then Close Ditch 9)',
+			crossover: 'Crossover @ Ditch 1 and Orangewood',
+			last,
+		},
+	},
+	'2': {
+		'10-01': {
+			first: 'Ditch 1 to Ditch 2 (Open Ditch 2, then Close Ditch 1)',
+			crossover: 'Crossover @ Ditch 2 and Orangewood',
+			last,
+		},
+	},
+	'3': {
+		'10-01': {
+			first: 'Ditch 2 to Ditch 3 (Open Ditch 3, then Close Ditch 2)',
+			crossover: 'Crossover @ Ditch 3 and Orangewood',
+			last,
+		},
+	},
+	'4': {
+		'10-01': {
+			first: 'Ditch 3 to Ditch 4 (Open Ditch 4, then Close Ditch 3)',
+			crossover: 'Crossover @ Ditch 4 and Orangewood',
+			last,
+		},
+	},
+	'5': {
+		'10-03': {
+			first: 'Ditch 9 to Ditch 5 (Open Ditch 5, then Close Ditch 9)',
+			crossover: 'Crossover @ Ditch 5 and Orangewood',
+			last,
+		},
+	},
+	'6': {
+		'10-03': {
+			first: 'Ditch 5 to Ditch 6 (Open Ditch 6, then Close Ditch 5)',
+			crossover: 'Crossover @ Ditch 6 and Orangewood',
+			last,
+		},
+	},
+	'7': {
+		'10-03': {
+			first: 'Ditch 6 at Ditch 7 (Open Ditch 7, then Close Ditch 6)',
+			crossover: 'Crossover @ Ditch 7 and Orangewood',
+			last,
+		},
+	},
+	'8': {
+		'10-03': {
+			first: 'Ditch 7 to Ditch 8 (Open Ditch 8, then Close Ditch 7)',
+			crossover: 'Crossover @ Ditch 8 and Orangewood',
+			last,
+		},
+	},
+	'9': {
+		'10-01': {
+			first: '10-01 starts (Open Ditch 9, then Close Ditch 4)',
+			crossover: 'Crossover @ Ditch 9 and 185th',
+			last,
+		},
+		'10-03': {
+			first: '10-03 starts (Open Ditch 9, then Close Ditch 8)',
+			crossover: 'Crossover @ Ditch 9 and 181st',
+			last,
+		},
+	},
 }
-export const crossover: DitchSectionType = {
+
+export const crossover: {
+	[key: string]: { [key: string]: { [key: string]: { first: boolean; description: string } } }
+} = {
 	'1': {
 		'10-01': {
 			North: {

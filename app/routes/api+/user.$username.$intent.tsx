@@ -2,6 +2,7 @@ import { invariantResponse } from '@epic-web/invariant'
 import { json, type ActionFunctionArgs } from '@remix-run/node'
 import { z } from 'zod'
 import { prisma } from '#app/utils/db.server.ts'
+import { saveUserAudit } from '#app/utils/user-audit.ts'
 import { stripe } from '#server/stripe.server'
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -39,16 +40,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 							data: { stripeId: stripeUser.id },
 							where: { id },
 						})
-
-						await prisma.userAudit.create({
-							data: {
-								userId: id,
-								field: 'stripeId',
-								from: current?.stripeId ?? 'new',
-								to: stripeUser.id,
-								updatedAt: new Date(),
-								updatedBy: 'Admin',
-							},
+						await saveUserAudit({
+							userId: id,
+							field: 'stripeId',
+							from: current?.stripeId,
+							to: stripeUser.id,
+							updatedBy: 'Admin',
 						})
 					}
 					return stripeUser
@@ -59,15 +56,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 						data: { active: false },
 						where: { id },
 					})
-					await prisma.userAudit.create({
-						data: {
-							userId: id,
-							field: 'active',
-							from: 'true',
-							to: 'false',
-							updatedAt: new Date(),
-							updatedBy: 'Admin',
-						},
+					await saveUserAudit({
+						userId: id,
+						field: 'active',
+						from: 'true',
+						to: 'false',
+						updatedBy: 'Admin',
 					})
 					// decrement every position after moved user
 					for (let port of updated.ports) {
@@ -103,15 +97,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 						data: { roles: result.data },
 						where: { id },
 					})
-					await prisma.userAudit.create({
-						data: {
-							userId: id,
-							field: 'roles',
-							from: (current?.roles ?? []).map(role => role.name).join(','),
-							to: (updated.roles ?? []).map(role => role.name).join(','),
-							updatedAt: new Date(),
-							updatedBy: 'Admin',
-						},
+					await saveUserAudit({
+						userId: id,
+						field: 'roles',
+						from: (current?.roles ?? []).map(role => role.name).join(','),
+						to: (updated.roles ?? []).map(role => role.name).join(','),
+						updatedBy: 'Admin',
 					})
 					return updated
 				}
@@ -133,27 +124,21 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 						where: { id },
 					})
 					if (result.data.primaryEmail) {
-						await prisma.userAudit.create({
-							data: {
-								userId: id,
-								field: 'primaryEmail',
-								from: primaryEmail ?? 'new',
-								to: result.data.primaryEmail,
-								updatedAt: new Date(),
-								updatedBy: 'Admin',
-							},
+						await saveUserAudit({
+							userId: id,
+							field: 'primaryEmail',
+							from: primaryEmail,
+							to: result.data.primaryEmail,
+							updatedBy: 'Admin',
 						})
 					}
 					if (result.data.secondaryEmail) {
-						await prisma.userAudit.create({
-							data: {
-								userId: id,
-								field: 'secondaryEmail',
-								from: (current?.roles ?? []).map(role => role.name).join(','),
-								to: result.data.secondaryEmail,
-								updatedAt: new Date(),
-								updatedBy: 'Admin',
-							},
+						await saveUserAudit({
+							userId: id,
+							field: 'secondaryEmail',
+							from: (current?.roles ?? []).map(role => role.name).join(','),
+							to: result.data.secondaryEmail,
+							updatedBy: 'Admin',
 						})
 					}
 					return json({ status: 'updated', ...result } as const, { status: 200 })

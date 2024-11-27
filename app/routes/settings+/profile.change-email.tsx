@@ -18,6 +18,7 @@ import { prisma } from '#app/utils/db.server.ts'
 import { sendEmail } from '#app/utils/email.server.ts'
 import { useIsPending } from '#app/utils/misc.tsx'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
+import { saveUserAudit } from '#app/utils/user-audit.ts'
 import { EmailSchema } from '#app/utils/user-validation.ts'
 import { verifySessionStorage } from '#app/utils/verification.server.ts'
 import { type BreadcrumbHandle } from './profile.tsx'
@@ -48,15 +49,12 @@ export async function handleVerification({ request, submission }: VerifyFunction
 		data: { primaryEmail: newEmail },
 	})
 
-	await prisma.userAudit.create({
-		data: {
-			userId: user.id,
-			field: 'primaryEmail',
-			from: preUpdateUser.primaryEmail ?? 'new',
-			to: user.primaryEmail ?? '',
-			updatedAt: new Date(),
-			updatedBy: user.id,
-		},
+	await saveUserAudit({
+		userId: user.id,
+		field: 'primary-email',
+		from: preUpdateUser.primaryEmail,
+		to: user.primaryEmail,
+		updatedBy: user.id,
 	})
 
 	if (preUpdateUser.primaryEmail) {

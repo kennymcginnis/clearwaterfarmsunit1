@@ -16,6 +16,7 @@ import { useDoubleCheck } from '#app/utils/misc'
 import { generatePublicId } from '#app/utils/public-id'
 import { authSessionStorage } from '#app/utils/session.server'
 import { redirectWithToast } from '#app/utils/toast.server'
+import { saveUserAudit } from '#app/utils/user-audit.ts'
 import { EmailSchema, NameSchema, PhoneNumberSchema, UsernameSchema } from '#app/utils/user-validation.ts'
 
 export const UserContactSchema = z.object({
@@ -95,50 +96,46 @@ export async function profileUpdateAction({ currentUser, formData }: ProfileActi
 	if (submission.intent !== 'submit') return json({ status: 'idle', submission } as const)
 	if (!submission.value) return json({ status: 'error', submission } as const, { status: 400 })
 	const data = submission.value
-	const { id, username, member, secondaryEmail } = (await prisma.user.findFirst({
+	const {
+		id: userId,
+		username,
+		member,
+		secondaryEmail,
+	} = (await prisma.user.findFirst({
 		select: { id: true, username: true, member: true, secondaryEmail: true },
 		where: { id: currentUser },
-	})) ?? { id: null, username: null, member: null, secondaryEmail: null }
-	if (id) {
+	})) ?? { userId: null, username: null, member: null, secondaryEmail: null }
+	if (userId) {
 		await prisma.user.update({
 			select: { username: true },
 			data,
 			where: { id: currentUser },
 		})
 		if (data.username && username !== data.username) {
-			await prisma.userAudit.create({
-				data: {
-					userId: id,
-					field: 'username',
-					from: username ?? 'new',
-					to: data.username,
-					updatedAt: new Date(),
-					updatedBy: currentUser,
-				},
+			await saveUserAudit({
+				userId,
+				field: 'username',
+				from: username,
+				to: data.username,
+				updatedBy: currentUser,
 			})
 		}
 		if (data.member && member !== data.member) {
-			await prisma.userAudit.create({
-				data: {
-					userId: id,
-					field: 'member',
-					from: member ?? 'new',
-					to: data.member,
-					updatedAt: new Date(),
-					updatedBy: currentUser,
-				},
+			await saveUserAudit({
+				userId,
+				field: 'member',
+				from: member,
+				to: data.member,
+				updatedBy: currentUser,
 			})
 		}
 		if (data.secondaryEmail && secondaryEmail !== data.secondaryEmail) {
-			await prisma.userAudit.create({
-				data: {
-					userId: id,
-					field: 'secondaryEmail',
-					from: secondaryEmail ?? 'new',
-					to: data.secondaryEmail,
-					updatedAt: new Date(),
-					updatedBy: currentUser,
-				},
+			await saveUserAudit({
+				userId,
+				field: 'secondary-email',
+				from: secondaryEmail,
+				to: data.secondaryEmail,
+				updatedBy: currentUser,
 			})
 		}
 	}
@@ -179,15 +176,12 @@ export async function createPhoneAction({ formData, currentUser }: ProfileAction
 			},
 		})
 
-		await prisma.userAudit.create({
-			data: {
-				userId,
-				field: 'phone',
-				from: 'new',
-				to: `${type}: ${number}`,
-				updatedAt: new Date(),
-				updatedBy: currentUser,
-			},
+		await saveUserAudit({
+			userId,
+			field: 'phone',
+			from: 'new',
+			to: `${type}: ${number}`,
+			updatedBy: currentUser,
 		})
 
 		return redirectWithToast('', {
@@ -219,15 +213,12 @@ export async function updatePhoneAction({ formData, currentUser }: ProfileAction
 
 		if (data.type !== type || data.number !== number) {
 			await prisma.userPhone.update({ data: { ...data, updatedBy: currentUser }, where: { id } })
-			await prisma.userAudit.create({
-				data: {
-					userId,
-					field: 'phone',
-					from: `${type ?? 'new'}: ${number ?? 'new'}`,
-					to: `${data.type}: ${number}`,
-					updatedAt: new Date(),
-					updatedBy: currentUser,
-				},
+			await saveUserAudit({
+				userId,
+				field: 'phone',
+				from: `${type ?? 'new'}: ${number ?? 'new'}`,
+				to: `${data.type}: ${number}`,
+				updatedBy: currentUser,
 			})
 		}
 
@@ -256,15 +247,12 @@ export async function deletePhoneAction({ formData, currentUser }: ProfileAction
 		})) ?? { userId: null, type: null, number: null }
 		if (deleted && deleted.userId) {
 			const { userId, type, number } = deleted
-			await prisma.userAudit.create({
-				data: {
-					userId,
-					field: 'phone',
-					from: `${type}: ${number}`,
-					to: 'deleted',
-					updatedAt: new Date(),
-					updatedBy: currentUser,
-				},
+			await saveUserAudit({
+				userId,
+				field: 'phone',
+				from: `${type}: ${number}`,
+				to: 'deleted',
+				updatedBy: currentUser,
 			})
 		}
 		return json({ status: 'success' })

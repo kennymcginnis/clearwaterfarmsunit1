@@ -3,6 +3,7 @@ import { invariantResponse } from '@epic-web/invariant'
 import { type Prisma } from '@prisma/client'
 import { type ActionFunctionArgs, json } from '@remix-run/node'
 import { z } from 'zod'
+import { requireUserId } from '#app/utils/auth.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import {
 	contactsPaginationSchema,
@@ -12,6 +13,7 @@ import {
 } from '#app/utils/pagination/contacts'
 import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server'
+import { saveUserAudit } from '#app/utils/user-audit.ts'
 import { EmailSchema, PhoneNumberSchema } from '#app/utils/user-validation'
 
 export const getPaginatedContacts = async (request: Request) => {
@@ -34,7 +36,7 @@ export const getPaginatedContacts = async (request: Request) => {
 		stripeId: true,
 		userAddress: { select: { address: { select: { address: true } } } },
 		phones: { select: { id: true, type: true, number: true } },
-		ports: { select: { ditch: true, position: true, section: true, entry: true }},
+		ports: { select: { ditch: true, position: true, section: true, entry: true } },
 		emailSubject: true,
 		primaryEmail: true,
 		secondarySubject: true,
@@ -113,7 +115,7 @@ export const getPaginatedContacts = async (request: Request) => {
 
 const ContactsFormSchema = z.object({
 	intent: z.string(),
-	userId: z.string().optional(),
+	userId: z.string(),
 	username: z.string().optional(),
 	display: z.string().optional(),
 	member: z.string().optional(),
@@ -127,20 +129,37 @@ const ContactsFormSchema = z.object({
 	phoneNumber: PhoneNumberSchema.optional(),
 })
 export async function action({ request }: ActionFunctionArgs) {
+	const updatedBy = await requireUserId(request)
 	const formData = await request.formData()
 	const submission = parse(formData, { schema: ContactsFormSchema })
 	invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
-	const { userId: id, intent, phoneId } = submission.value
+	const { userId, intent, phoneId } = submission.value
 	try {
 		switch (intent) {
 			case 'phone-type':
 				if (submission.value.phoneType) {
+					const current = await prisma.userPhone.findFirst({ select: { type: true }, where: { id: phoneId } })
 					await prisma.userPhone.update({ data: { type: submission.value.phoneType }, where: { id: phoneId } })
+					await saveUserAudit({
+						userId,
+						field: 'phone-type',
+						from: current?.type ?? null,
+						to: submission.value.phoneType,
+						updatedBy,
+					})
 				}
 				return null
 			case 'phone-number':
 				if (submission.value.phoneNumber) {
+					const current = await prisma.userPhone.findFirst({ select: { number: true }, where: { id: phoneId } })
 					await prisma.userPhone.update({ data: { number: submission.value.phoneNumber }, where: { id: phoneId } })
+					await saveUserAudit({
+						userId,
+						field: 'phone-number',
+						from: current?.number ?? null,
+						to: submission.value.phoneNumber,
+						updatedBy,
+					})
 				}
 				return null
 			case 'create-phone':
@@ -153,6 +172,13 @@ export async function action({ request }: ActionFunctionArgs) {
 							number: submission.value.phoneNumber,
 						},
 					})
+					await saveUserAudit({
+						userId,
+						field: 'create-phone',
+						from: 'new',
+						to: JSON.stringify({ type: submission.value.phoneType, number: submission.value.phoneNumber }),
+						updatedBy,
+					})
 					return redirectWithToast('.', {
 						type: 'success',
 						title: 'Success',
@@ -162,7 +188,18 @@ export async function action({ request }: ActionFunctionArgs) {
 				return null
 			case 'delete-phone':
 				try {
+					const current = await prisma.userPhone.findFirst({
+						select: { type: true, number: true },
+						where: { id: phoneId },
+					})
 					await prisma.userPhone.delete({ where: { id: phoneId } })
+					await saveUserAudit({
+						userId,
+						field: 'delete-phone',
+						from: JSON.stringify(current),
+						to: 'deleted',
+						updatedBy,
+					})
 					return redirectWithToast('.', {
 						type: 'success',
 						title: 'Success',
@@ -172,12 +209,39 @@ export async function action({ request }: ActionFunctionArgs) {
 					return null
 				}
 			default:
-				// @ts-ignore
-				if (submission.value[intent]) {
+				try {
+					const replace = {
+						emailSubject: 'primary-subject',
+						primaryEmail: 'primary-email',
+						secondarySubject: 'secondary-subject',
+						secondaryEmail: 'secondary-email',
+					}
+
 					// @ts-ignore
-					await prisma.user.update({ data: { [intent]: submission.value[intent] }, where: { id } })
+					if (submission.value[intent]) {
+						// @ts-ignore
+						const current = await prisma.user.findFirst({ select: { [intent]: true }, where: { id: userId } })
+						// @ts-ignore
+						await prisma.user.update({ data: { [intent]: submission.value[intent] }, where: { id: userId } })
+						await saveUserAudit({
+							userId,
+							// @ts-ignore
+							field: replace?.[intent] ?? intent,
+							// @ts-ignore
+							from: current?.[intent],
+							// @ts-ignore
+							to: submission.value[intent],
+							updatedBy,
+						})
+					}
+					return redirectWithToast('.', {
+						type: 'success',
+						title: 'Success',
+						description: `${intent} updated.`,
+					})
+				} catch (error) {
+					return null
 				}
-				return null
 		}
 	} catch (error) {
 		return json({ status: 'error', error } as const, { status: 400 })
