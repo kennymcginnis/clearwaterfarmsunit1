@@ -1,6 +1,7 @@
 /* eslint-disable remix-react-routes/use-link-for-routes */
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import { Link } from '@remix-run/react'
+import { Icon } from '#app/components/ui/icon'
 import { type Theme } from '#app/utils/theme.server.ts'
 
 export function Footer({ userPreference }: { userPreference?: Theme | null }) {
@@ -45,8 +46,8 @@ Waddell, Arizona 85355`
 								</h2>
 							</Link>
 							<ul className="font-medium text-gray-500 dark:text-gray-400">
-								<li className="mb-4">Britt Callahan:</li>
-								<li>(623) 341-5895</li>
+								<li><Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="id-card" /><a href="support@clearwaterfarmsunit1.com" className="mb-4">support@clearwaterfarmsunit1.com</a></li>
+								<li><Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="mobile" /><a href="tel:6237036126">(623) 703-6126</a></li>
 							</ul>
 						</div>
 					</div>
