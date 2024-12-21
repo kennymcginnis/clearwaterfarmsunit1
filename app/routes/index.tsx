@@ -1,3 +1,4 @@
+/* eslint-disable remix-react-routes/use-link-for-routes */
 import { Link, useLoaderData } from '@remix-run/react'
 import { DisplayField } from '#app/components/forms'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
