@@ -1,0 +1,2 @@
+ALTER TABLE "Port" ADD COLUMN "address" INTEGER;
+ALTER TABLE "Timeline" ADD COLUMN "address" INTEGER;

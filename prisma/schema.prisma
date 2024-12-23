@@ -112,6 +112,7 @@ model Port {
   id       String  @id
   ditch    Int
   position Int
+  address  Int?
   entry    String?
   section  String?
 
@@ -176,6 +177,7 @@ model Timeline {
   portId   String
   ditch    Int
   position Int
+  address  Int?
   entry    String
   section  String
 

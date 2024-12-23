@@ -6,6 +6,7 @@ export async function loader() {
 	return await prisma.port.findMany()
 }
 
+/*
 const eastOrWest = (position: number) => {
 	if (position < 8) return 'West'
 	if (position < 15) return 'East'
@@ -17,19 +18,33 @@ const leftOrRight = (ditch: number, section: string | null) => {
 	if (ditch < 9) return 'right'
 	return section === 'West' ? 'left' : 'right'
 }
+*/
 
 export const action = async ({ params }: ActionFunctionArgs) => {
 	switch (params.intent) {
-		case 'entry': {
-			const ports = await prisma.port.findMany()
-			for (const { id, ditch, section, position } of ports) {
-				await prisma.port.update({
-					data: {
-						entry: leftOrRight(ditch, section) === 'left' ? '10-01' : '10-03',
-						section: ditch === 9 ? eastOrWest(position) : section,
+		case 'position': {
+			const users = await prisma.user.findMany({
+				select: {
+					display: true,
+					userAddress: {
+						select: {
+							address: true
+						}
 					},
-					where: { id },
-				})
+					ports: {
+						select: {
+							id: true,
+							position: true
+						}
+					}
+				}
+			})
+			for (const user of users) {
+				const address = user.display === 'Mills' ? 7212 : Number(user?.userAddress?.[0]?.address?.address.split(' ')[0])
+				if (!address) continue
+				for (const { id } of user.ports) {
+					await prisma.port.update({ where: { id }, data: { address } })
+				}
 			}
 			return `Complete.`
 		}

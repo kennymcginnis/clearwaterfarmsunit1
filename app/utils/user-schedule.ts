@@ -43,6 +43,7 @@ export const SearchResultsSchema = z.array(
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
 		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
 		entry: z.string(),
+		address: z.number().nullable(),
 		section: z.string(),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
 		start: z.date().nullable(),
@@ -71,6 +72,7 @@ export type UserScheduleType = {
 	position: number
 	entry: string
 	section: string
+	address: number | null
 	hours: number | bigint | null
 	start: Date | string | null
 	stop: Date | string | null

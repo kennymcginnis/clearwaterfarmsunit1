@@ -35,7 +35,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 	const rawUsers = await prisma.$queryRaw`
 		SELECT User.id AS userId, User.display, 
-					 Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+					 Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, Port.address, 
 					 UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
 					 UserSchedule.first, UserSchedule.crossover, UserSchedule.last
 			FROM User
@@ -116,7 +116,7 @@ export default function TimelineRoute() {
 
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
-			<div className="flex w-[90%] flex-row-reverse flex-wrap gap-2 p-0.5">
+			<div className="flex w-full flex-row-reverse flex-wrap gap-2 p-0.5">
 				{userIsAdmin ? (
 					<Button>
 						<Link reloadDocument to={`/resources/download/print/${scheduleDate}`}>
@@ -126,7 +126,7 @@ export default function TimelineRoute() {
 				) : null}
 			</div>
 			<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
-				<main className="m-auto w-[90%]" style={{ height: 'fill-available' }}>
+				<main className="m-auto w-full" style={{ height: 'fill-available' }}>
 					<OneColumn users={users} defaultUserEntry={defaultUserEntry} />
 					<TwoColumns users={users} />
 				</main>
@@ -139,7 +139,7 @@ function OneColumn({ users, defaultUserEntry }: { users: PositionDitchType; defa
 	const [visible, setVisible] = useState(defaultUserEntry ?? '10-01')
 	const handleToggleVisible = (value: string) => setVisible(value)
 	return (
-		<div className="m-auto block md:hidden">
+		<div className="m-auto block lg:hidden">
 			<div className="flex w-full flex-row justify-center">
 				<Button
 					variant="outline-link"
@@ -167,7 +167,7 @@ function OneColumn({ users, defaultUserEntry }: { users: PositionDitchType; defa
 				<>
 					<div id={`d${page === '0' ? 9 : Number(page)}`}></div>
 					<div id={`d${page === '0' ? 9 : Number(page) + 4}`}></div>
-					<table className="w-full table-fixed lg:w-[80%]">
+					<table className="w-full table-fixed lg:w-full">
 						<thead>
 							<tr>
 								<th className="rounded-md bg-primary text-center text-body-lg text-secondary">
@@ -202,17 +202,17 @@ function OneColumn({ users, defaultUserEntry }: { users: PositionDitchType; defa
 
 function TwoColumns({ users }: { users: PositionDitchType }) {
 	return (
-		<div className="m-auto block max-md:hidden">
+		<div className="m-auto block max-lg:hidden">
 			{Array.from({ length: 8 }, (_, i) => i + 1).map(i => (
 				<Button variant="outline-link" key={`#jump${i}`} asChild className="mx-0.5 my-1">
 					<Link to={`#ditch${i}`}>Ditch {i}</Link>
 				</Button>
 			))}
 			{Object.keys(users).map(page => (
-				<div key={`${page}`} className="m-auto block max-md:hidden">
+				<div key={`${page}`} className="m-auto block max-lg:hidden">
 					<div id={`ditch${page === '0' ? 9 : Number(page)}`}></div>
 					<div id={`ditch${page === '0' ? 9 : Number(page) + 4}`}></div>
-					<table className="w-full table-fixed lg:w-[80%]">
+					<table className="w-full table-fixed lg:w-[90%] xl:w-[80%]">
 						<thead>
 							<tr>
 								<th className="rounded-md bg-primary text-center text-body-lg text-secondary">
@@ -252,7 +252,7 @@ function TwoColumns({ users }: { users: PositionDitchType }) {
 }
 
 function UserCard({
-	user: { display, hours, position, schedule, first, crossover, last },
+	user: { display, hours, address, schedule, first, crossover, last },
 }: {
 	user: UserScheduleType
 }) {
@@ -260,9 +260,12 @@ function UserCard({
 		<div
 			className={`flex rounded-lg ${hours ? 'border-1 border-secondary-foreground bg-muted' : 'bg-muted-40'} p-2 ${borderColor({ first, crossover, last })}`}
 		>
-			<div className={`grid w-full grid-cols-10 justify-between gap-1`}>
+			<div className={`grid w-full grid-cols-11 justify-between gap-1`}>
+				<span className="col-span-1 overflow-hidden text-nowrap text-right text-body-sm" style={{ direction: 'rtl'}}>
+					:{address}
+				</span>
 				<span className="col-span-2 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
-					{position}: {display}
+					{display}
 				</span>
 				<span className="col-span-1 text-nowrap text-right text-body-sm">{formatHrs(Number(hours))}</span>
 				{schedule &&
