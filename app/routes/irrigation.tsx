@@ -1,4 +1,3 @@
-import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
 import { formatDistance, formatDistanceStrict, subDays, isBefore, isAfter, addDays, format } from 'date-fns'
@@ -20,6 +19,7 @@ export type UserScheduleType = {
 	position: number
 	entry: string
 	section: string
+	address: number | null
 	hours: number | bigint | null
 	start: Date | string | null
 	stop: Date | string | null
@@ -51,7 +51,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	const rawUsers = await prisma.$queryRaw`
     SELECT User.id AS userId, User.display, 
-           Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+           Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, Port.address, 
            UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
            UserSchedule.first, UserSchedule.crossover, UserSchedule.last
       FROM User
@@ -69,9 +69,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	if (!result.success) {
 		return json({ status: 'error', schedules: {}, entry, first: yesterday, last: tomorrow } as const, { status: 400 })
 	}
-	invariantResponse(result.data.length, 'No UserSchedules found', { status: 404 })
-	const first = format(result.data[0].start ?? yesterday, 'eee, MMM dd, h:mmaaa')
-	const last = format(result.data[result.data.length - 1].stop ?? tomorrow, 'eee, MMM dd, h:mmaaa')
 
 	const ten01 = result.data.some(row => row.entry === '10-01')
 	const ten03 = result.data.some(row => row.entry === '10-03')
@@ -79,7 +76,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	if (!ten01) {
 		const ten01Users = await prisma.$queryRaw`
       SELECT User.id AS userId, User.display, 
-             Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+             Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, Port.address, 
              UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
              UserSchedule.first, UserSchedule.crossover, UserSchedule.last
         FROM User
@@ -96,7 +93,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	if (!ten03) {
 		const ten03Users = await prisma.$queryRaw`
       SELECT User.id AS userId, User.display, 
-             Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+             Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, Port.address, 
              UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
              UserSchedule.first, UserSchedule.crossover, UserSchedule.last
         FROM User
@@ -110,6 +107,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		const ten03result = SearchResultsSchema.safeParse(ten03Users)
 		if (ten03result.success && ten03result.data.length) result.data.push(ten03result.data[0])
 	}
+
+	const first = format(result.data[0]?.start ?? yesterday, 'eee, MMM dd, h:mmaaa')
+	const last = format(result.data[result.data.length - 1]?.stop ?? tomorrow, 'eee, MMM dd, h:mmaaa')
 
 	const calcDistanceToNow = (
 		start: Date | null,
@@ -227,7 +227,7 @@ function UserCard({
 	userSchedule: {
 		display,
 		hours,
-		position,
+		address,
 		schedule,
 		first,
 		crossover,
@@ -251,13 +251,13 @@ function UserCard({
 				className="flex w-full flex-col justify-around rounded-lg border-secondary-foreground p-2 md:flex-row md:items-center"
 			>
 				<div
-					id="position-username"
+					id="address-username"
 					className="flex flex-row overflow-hidden text-ellipsis text-nowrap text-left text-body-sm"
 				>
-					<div id="position" className="ml-0 flex w-6 justify-end max-md:hidden">
-						{position}:&nbsp;
+					<div className="min-w-20 overflow-hidden text-nowrap text-right text-body-sm" style={{ direction: 'rtl'}}>
+						&nbsp;:{address}
 					</div>
-					<strong id="username" className="min-w-40">
+					<strong className="min-w-40 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
 						{display}
 					</strong>
 				</div>

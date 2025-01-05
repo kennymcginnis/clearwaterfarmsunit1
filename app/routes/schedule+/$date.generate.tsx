@@ -400,7 +400,7 @@ export default function GenerateTimelineRoute() {
 }
 
 function UserCard({
-	user: { display, hours, position, schedule, first, crossover, last },
+	user: { display, hours, address, schedule, first, crossover, last },
 }: {
 	user: UserScheduleType
 }) {
@@ -408,9 +408,12 @@ function UserCard({
 		<div
 			className={`flex rounded-lg ${hours ? 'border-1 border-secondary-foreground bg-muted' : 'bg-muted-40'} p-2 ${borderColor({ first, crossover, last })}`}
 		>
-			<div className="grid w-full grid-cols-10 justify-between gap-1">
+			<div className="grid w-full grid-cols-11 justify-between gap-1">
+				<span className="col-span-1 overflow-hidden text-nowrap text-right text-body-sm" style={{ direction: 'rtl'}}>
+					:{address}
+				</span>
 				<span className="col-span-2 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
-					{position}: {display}
+					{display}
 				</span>
 				<span className="col-span-1 overflow-hidden text-ellipsis text-nowrap text-right text-body-sm">
 					{formatHrs(Number(hours))}

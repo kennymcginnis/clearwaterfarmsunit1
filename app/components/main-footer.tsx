@@ -46,7 +46,7 @@ Waddell, Arizona 85355`
 								</h2>
 							</Link>
 							<ul className="font-medium text-gray-500 dark:text-gray-400">
-								<li><Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="id-card" /><a href="support@clearwaterfarmsunit1.com" className="mb-4">support@clearwaterfarmsunit1.com</a></li>
+								<li><Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="id-card" /><a href="mailto:support@clearwaterfarmsunit1.com" className="mb-4">support@clearwaterfarmsunit1.com</a></li>
 								<li><Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="mobile" /><a href="tel:6237036126">(623) 703-6126</a></li>
 							</ul>
 						</div>
@@ -70,9 +70,9 @@ Waddell, Arizona 85355`
 								viewBox="0 0 8 19"
 							>
 								<path
-									fill-rule="evenodd"
+									fillRule="evenodd"
 									d="M6.135 3H8V0H6.135a4.147 4.147 0 0 0-4.142 4.142V6H0v3h2v9.938h3V9h2.021l.592-3H5V3.591A.6.6 0 0 1 5.592 3h.543Z"
-									clip-rule="evenodd"
+									clipRule="evenodd"
 								/>
 							</svg>
 							<span className="sr-only">Facebook</span>

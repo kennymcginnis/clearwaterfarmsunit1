@@ -12,7 +12,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 	const rawUsers = await prisma.$queryRaw`
 		SELECT User.id AS userId, User.display, 
-           Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+           Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, Port.address, 
 					 UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
 					 UserSchedule.first, UserSchedule.crossover, UserSchedule.last
 		  FROM User
@@ -40,7 +40,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 					'display',
 					'portId',
 					'ditch',
-					'position',
+					'address',
 					'entry',
 					'section',
 					'hours',
@@ -51,13 +51,13 @@ export async function loader({ params }: LoaderFunctionArgs) {
 					'last',
 				].join(','),
 				...result.data.map(
-					({ userId, display, portId, ditch, position, entry, section, hours, start, stop, first, crossover, last }) =>
+					({ userId, display, portId, ditch, address, entry, section, hours, start, stop, first, crossover, last }) =>
 						[
 							userId,
 							`"${display}"`,
 							portId,
 							ditch,
-							position,
+							address,
 							entry,
 							section,
 							hours,

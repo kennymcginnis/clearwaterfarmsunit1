@@ -44,7 +44,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 	const rawUsers = await prisma.$queryRaw`
     SELECT User.id AS userId, User.display, User.quickbooks, 
-           Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+           Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, Port.address, 
            UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
            UserSchedule.first, UserSchedule.crossover, UserSchedule.last
       FROM User
