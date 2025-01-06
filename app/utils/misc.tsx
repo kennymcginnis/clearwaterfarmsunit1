@@ -352,13 +352,50 @@ export type UserSchedule = {
 	hours: number | null
 	start: Date | null
 	stop: Date | null
-	first: boolean
-	crossover: boolean
-	last: boolean
-	previous: number | null
+	first: boolean | null
+	crossover: boolean | null
+	last: boolean | null
+	previous?: number | null
 	schedule: string[]
 }
-export function formatUserSchedule(
+export function formatClosedUserSchedule(
+	user: {
+		id: string
+		ports: PortType[]
+	},
+	userSchedules?: {
+		userId: string
+		port: PortType
+		first: boolean | null
+		crossover: boolean | null
+		last: boolean | null
+		start: Date | null
+		stop: Date | null
+		hours: number
+	}[],
+): UserSchedule[] {
+	return user.ports.map(port => {
+		const empty: UserSchedule = {
+			port,
+			hours: null,
+			start: null,
+			stop: null,
+			first: null,
+			crossover: null,
+			last: null,
+			schedule: [],
+		}
+		if (userSchedules) {
+			const found = userSchedules.find(us => us.userId === user.id && us.port.ditch === port.ditch) ?? empty
+			const schedule = formatDates({ start: found?.start, stop: found?.stop })
+			return { ...found, schedule }
+		} else {
+			const schedule = formatDates({ start: null, stop: null })
+			return { ...empty, schedule }
+		}
+	})
+}
+export function formatOpenUserSchedule(
 	user: {
 		id: string
 		ports: PortType[]
@@ -380,6 +417,7 @@ export function formatUserSchedule(
 		const empty = { port, hours: null, start: null, stop: null }
 		const { hours: previous } = previousUserSchedules?.find(us => us.port.ditch === port.ditch) ?? empty
 		if (userSchedules) {
+			userSchedules.sort((a, b) => a.port.position - b.port.position)
 			const found = userSchedules.find(us => us.userId === user.id && us.port.ditch === port.ditch) ?? empty
 			const firstDitch = userSchedules.find(us => us.port.ditch === port.ditch)
 			const first = firstDitch ? firstDitch.userId === user.id || firstDitch.port.position > port.position : true

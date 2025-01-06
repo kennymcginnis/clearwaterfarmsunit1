@@ -14,17 +14,22 @@ import { redirectWithToast } from '#app/utils/toast.server.ts'
 
 const SearchResultsSchema = z.array(
 	z.object({
+		userId: z.string(),
 		emailSubject: z.string().nullish(),
 		primaryEmail: z.string().email().nullish(),
 		secondarySubject: z.string().nullish(),
 		secondaryEmail: z.string().email().nullish(),
+		portId: z.string(),
 		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
+		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
+		entry: z.string(),
+		section: z.string(),
 		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
 		start: z.date().nullable(),
 		stop: z.date().nullable(),
-		first: z.boolean().nullish(),
-		crossover: z.boolean().nullish(),
-		last: z.boolean().nullish(),
+		first: z.boolean().nullable(),
+		crossover: z.boolean().nullable(),
+		last: z.boolean().nullable(),
 	}),
 )
 
@@ -204,8 +209,9 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 
 	if (submission.value) {
 		const rawUsers = await prisma.$queryRaw`
-			SELECT User.emailSubject, User.primaryEmail, User.secondarySubject, User.secondaryEmail, 
-						 Port.ditch, UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
+			SELECT User.id AS userId, User.emailSubject, User.primaryEmail, User.secondarySubject, User.secondaryEmail, 
+						 Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+						 UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
 						 UserSchedule.first, UserSchedule.crossover, UserSchedule.last
 	  		FROM User
 	  	 INNER JOIN Port ON User.id = Port.userId
@@ -226,34 +232,57 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 
 		type EmailType = {
 			[key: string]: {
+				userId: string
 				emailSubject: string
-				schedules: { ditch: number; hours: string; schedule: string }[]
+				schedules: {
+					portId: string
+					ditch: number
+					entry: string
+					hours: string
+					schedule: string
+					first: boolean | null
+					crossover: boolean | null
+					last: boolean | null
+				}[]
 			}
 		}
 		const emails: EmailType = {}
 		result.data.forEach(
 			({
+				userId,
+				portId,
 				ditch,
+				entry,
 				hours,
 				start,
 				stop,
-				// first,
-				// crossover,
-				// last,
+				first,
+				crossover,
+				last,
 				emailSubject,
 				primaryEmail,
 				secondarySubject,
 				secondaryEmail,
 			}) => {
-				const schedule = { ditch, hours: formatHours(hours), schedule: formatDatesOneLiner({ start, stop }) }
+				const schedule = {
+					portId,
+					ditch,
+					entry,
+					hours: formatHours(hours),
+					schedule: formatDatesOneLiner({ start, stop }),
+					first,
+					crossover,
+					last,
+				}
 				if (primaryEmail) {
 					if (emails[primaryEmail]) emails[primaryEmail].schedules.push(schedule)
-					else emails[primaryEmail] = { emailSubject: emailSubject ?? primaryEmail, schedules: [schedule] }
+					else emails[primaryEmail] = { userId, emailSubject: emailSubject ?? primaryEmail, schedules: [schedule] }
 				}
 				if (secondaryEmail) {
 					if (emails[secondaryEmail]) emails[secondaryEmail].schedules.push(schedule)
 					else {
 						emails[secondaryEmail] = {
+							userId,
 							emailSubject: secondarySubject ?? emailSubject ?? secondaryEmail,
 							schedules: [schedule],
 						}
@@ -261,11 +290,11 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 				}
 			},
 		)
-		const batchEmails = Object.entries(emails).map(([email, { emailSubject, schedules }]) => ({
+		const batchEmails = Object.entries(emails).map(([email, { userId, emailSubject, schedules }]) => ({
 			from: 'clearwat@clearwaterfarmsunit1.com',
 			to: email,
 			subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
-			react: <ClosedScheduleEmail date={scheduleDate} emailSubject={emailSubject} schedules={schedules} />,
+			react: <ClosedScheduleEmail scheduleId={scheduleId} date={scheduleDate} userId={userId} emailSubject={emailSubject} schedules={schedules} />,
 		}))
 
 		const resend = new Resend(process.env.RESEND_API_KEY)

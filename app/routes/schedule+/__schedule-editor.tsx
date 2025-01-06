@@ -85,9 +85,9 @@ export function UserScheduleEditor({
 			id: string
 			ditch: number
 		}
-		first: boolean
-		crossover: boolean
-		last: boolean
+		first: boolean | null
+		crossover: boolean | null
+		last: boolean | null
 		hours: number | null
 	}
 	previous?: number | null

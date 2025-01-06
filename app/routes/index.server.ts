@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { parseMdx } from '#app/utils/mdx-bundler.server'
-import { formatDates, formatUserSchedule } from '#app/utils/misc'
+import { formatClosedUserSchedule, formatDates, formatOpenUserSchedule } from '#app/utils/misc'
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const type = 'announcements'
@@ -90,6 +90,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 						section: true,
 					},
 				},
+				first: true,
+				crossover: true,
+				last: true,
 				hours: true,
 				start: true,
 				stop: true,
@@ -112,7 +115,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 			...closed,
 			schedule: formatDates({ start: closed?.start ?? null, stop: closed?.stop ?? null }),
 		}
-		const closedUserSchedules = formatUserSchedule(user, closed?.userSchedules)
+		const closedUserSchedules = formatClosedUserSchedule(user, closed?.userSchedules)
 
 		const open = await prisma.schedule.findFirst({
 			select: { ...select, userSchedules },
@@ -120,7 +123,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 			orderBy: { date: 'desc' },
 		})
 		const openSchedules = open ? { ...open, schedule: [] } : null
-		const openUserSchedules = formatUserSchedule(user, open?.userSchedules, closed?.userSchedules)
+		const openUserSchedules = formatOpenUserSchedule(user, open?.userSchedules, closed?.userSchedules)
 		return json({
 			type,
 			document,

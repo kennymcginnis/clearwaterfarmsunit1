@@ -36,11 +36,22 @@ export default function HomeRoute() {
 					style={{ width: 'clamp(352px, 75%, 720px)' }}
 					className="m-auto mt-2 rounded-md border-2 border-secondary px-3 py-1 text-center align-bottom"
 				>
-					<div className='text-lg'>If you have any questions, comments, or concerns regarding our community, irrigation protocols, or any other matter we can assist with, please feel free to reach out to us:</div>
-					<br/>
+					<div className="text-lg">
+						If you have any questions, comments, or concerns regarding our community, irrigation protocols, or any other
+						matter we can assist with, please feel free to reach out to us:
+					</div>
+					<br />
 					<ul className="font-medium text-gray-500 dark:text-gray-400">
-						<li>Call or Text to: <Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="mobile" /><a href="tel:6237036126">(623) 703-6126</a></li>
-						<li>Email: <Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="id-card" /><a href="mailto:support@clearwaterfarmsunit1.com" className="mb-4">support@clearwaterfarmsunit1.com</a></li>
+						<li>
+							Call or Text to: <Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="mobile" />
+							<a href="tel:6237036126">(623) 703-6126</a>
+						</li>
+						<li>
+							Email: <Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="id-card" />
+							<a href="mailto:support@clearwaterfarmsunit1.com" className="mb-4">
+								support@clearwaterfarmsunit1.com
+							</a>
+						</li>
 					</ul>
 				</div>
 
@@ -129,7 +140,6 @@ export default function HomeRoute() {
 					<strong>Member Support&nbsp;</strong>
 					<Icon className="mb-1 mr-1 h-6 w-6 text-blue-700" name="id-card" />
 					support@clearwaterfarmsunit1.com
-
 				</div>
 				<Card className="m-6 flex flex-col items-center gap-5">
 					<CardHeader className="m-auto w-[50%] flex-col items-center border-none">
@@ -161,11 +171,11 @@ function OpenSchedule({
 				id: string
 				ditch: number
 			}
-			first: boolean
-			crossover: boolean
-			last: boolean
+			first: boolean | null
+			crossover: boolean | null
+			last: boolean | null
 			hours: number | null
-			previous: number | null
+			previous?: number | null
 		}[]
 	}
 	user: {
@@ -218,6 +228,9 @@ function ClosedSchedule({
 				id: string
 				ditch: number
 			}
+			first: boolean | null
+			crossover: boolean | null
+			last: boolean | null
 			hours: number | null
 			schedule: string[]
 		}[]

@@ -1,5 +1,7 @@
+import { Badge } from '#app/components/ui/badge.tsx'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '#app/components/ui/card'
 import { formatHours } from '#app/utils/misc'
+import { backgroundColor } from '#app/utils/user-schedule.ts'
 
 export function UserScheduleTimeline({
 	user,
@@ -14,6 +16,9 @@ export function UserScheduleTimeline({
 			id: string
 			ditch: number
 		}
+		first: boolean | null
+		crossover: boolean | null
+		last: boolean | null
 		hours: number | null
 		schedule: string[]
 	}
@@ -31,15 +36,34 @@ export function UserScheduleTimeline({
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-2">
-				<div key={ditch} className="flex flex-col">
-					{schedule.map((row, r) => (
-						<span
-							key={`row-${r}`}
-							className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground"
-						>
-							{row}
-						</span>
-					))}
+				<div key={ditch} className="flex flex-row justify-between">
+					<div id="charges-pills">
+						{userSchedule.first && (
+							<Badge className={`capitalize ${backgroundColor('first')}`} variant="outline">
+								{'First'}
+							</Badge>
+						)}
+						{userSchedule.crossover && (
+							<Badge className={`capitalize ${backgroundColor('crossover')}`} variant="outline">
+								{'Crossover'}
+							</Badge>
+						)}
+						{userSchedule.last && (
+							<Badge className={`capitalize ${backgroundColor('last')}`} variant="outline">
+								{'Last'}
+							</Badge>
+						)}
+					</div>
+					<div className="flex flex-col gap-2">
+						{schedule.map((row, r) => (
+							<span
+								key={`row-${r}`}
+								className="overflow-hidden text-ellipsis text-right text-body-sm text-muted-foreground"
+							>
+								{row}
+							</span>
+						))}
+					</div>
 				</div>
 			</CardContent>
 			<CardFooter></CardFooter>
