@@ -54,6 +54,7 @@ model UserAudit {
   to        String
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
+
   @@unique([userId, updatedAt])
 }
 
@@ -201,13 +202,18 @@ model UserSchedule {
   port       Port     @relation(fields: [portId], references: [id])
   portId     String
 
-  hours  Float
-  start  DateTime?
-  stop   DateTime?
+  hours Float
+  start DateTime?
+  stop  DateTime?
 
   first     Boolean?
   crossover Boolean?
   last      Boolean?
+
+  acknowledgeFirst     Boolean?
+  acknowledgeCrossover Boolean?
+  volunteerFirst       String?
+  volunteerCrossover   String?
 
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
