@@ -448,7 +448,7 @@ export function formatDates({
 	stop: Date | null | undefined
 }): string[] {
 	if (!start || !stop) return ['', '']
-	if (start.getDay() === stop.getDay()) {
+	if (start.getDate() === stop.getDate()) {
 		return [format(start, 'eee, MMM do'), `${format(start, 'h:mmaaa')}-${format(stop, 'h:mmaaa')}`]
 	} else {
 		return [formatDate(start), formatDate(stop)]
@@ -462,7 +462,7 @@ export function formatDate(start: Date | null): string {
 
 export function formatPrintableDates({ start, stop }: { start: Date | null; stop: Date | null }): string {
 	if (!start || !stop) return ''
-	if (start.getDay() === stop.getDay()) {
+	if (start.getDate() === stop.getDate()) {
 		return `"${format(start, 'eee, MMM do')}
 ${format(start, 'h:mmaaa')} - ${format(stop, 'h:mmaaa')}"`
 	} else {
@@ -472,7 +472,7 @@ ${format(start, 'h:mmaaa')} - ${format(stop, 'h:mmaaa')}"`
 
 export function formatDatesOneLiner({ start, stop }: { start: Date | null; stop: Date | null }): string {
 	if (!start || !stop) return ''
-	if (start.getDay() === stop.getDay()) {
+	if (start.getDate() === stop.getDate()) {
 		return `${format(start, 'eee, MMM do')}, ${format(start, 'h:mmaaa')} - ${format(stop, 'h:mmaaa')}`
 	} else {
 		return `${formatDate(start)} ─ ${formatDate(stop)}`
