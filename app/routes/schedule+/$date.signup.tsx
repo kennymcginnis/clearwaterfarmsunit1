@@ -21,6 +21,7 @@ import { Button } from '#app/components/ui/button'
 import { Icon } from '#app/components/ui/icon'
 import { csvFileToArray, csvUploadHandler } from '#app/utils/csv-helper.ts'
 import { prisma } from '#app/utils/db.server.ts'
+import { formatDay } from '#app/utils/misc.tsx'
 import { requireUserWithRole } from '#app/utils/permissions.ts'
 import useScrollSync from '#app/utils/scroll-sync'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
@@ -63,7 +64,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	if (searchTerm === '') return redirect(`/schedule/${params.date}/signup`)
 
 	const schedule = await prisma.schedule.findFirst({
-		select: { id: true, state: true },
+		select: { id: true, state: true, date: true, deadline: true, costPerHour: true, source: true },
 		where: { date: params.date },
 	})
 	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
@@ -94,7 +95,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			{
 				status: 'error',
 				error: result.error.message,
-				schedule: { id: null, date: null, state: null },
+				schedule: { id: null, date: null, state: null, deadline: null, costPerHour: null, source: null },
 				userSchedules: null,
 				totals: null,
 				canOpen: false,
@@ -116,7 +117,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	}
 	return json({
 		status: 'idle',
-		schedule: { id: schedule.id, date: params.date, state: schedule.state },
+		schedule,
 		userSchedules,
 		totals,
 		error: null,
@@ -230,6 +231,13 @@ export default function ScheduleSignupRoute() {
 	if (!scheduleId || !userSchedules || !Object.keys(userSchedules).length) return null
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
+			<div className="container my-8 flex flex-col items-center justify-center gap-6">
+				<h1 className="text-center text-h1">Irrigation Sign-up Schedule for {schedule.date}</h1>
+				<h2 className="text-h2">Sign-up Deadline {formatDay(schedule.deadline)} at 7pm</h2>
+				<h3 className="text-h3 capitalize">
+					Source: {schedule.source} | Cost Per Hour: ${schedule.costPerHour}
+				</h3>
+			</div>
 			<div className="flex w-[63.5%] flex-row flex-wrap gap-2 p-0.5">
 				<div className="my-1 flex flex-row space-x-2">
 					<Button variant="outline" onClick={toggleShowAll} className="pb-2">

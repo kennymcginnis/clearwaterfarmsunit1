@@ -1,6 +1,6 @@
 import * as E from '@react-email/components'
 
-const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.clearwaterfarmsunit1.com/'
+const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'localhost:3000'
 export function ClosedScheduleEmail({
 	scheduleId,
 	date,
@@ -23,7 +23,7 @@ export function ClosedScheduleEmail({
 	userId: string
 	emailSubject: string
 }) {
-	const enabled = false
+	const enabled = true
 	const responseUrl = (acknowledge: string, type: string, portId: string): string =>
 		`${baseUrl}/api/userSchedule/${acknowledge}/${type}?userId=${userId}&scheduleId=${scheduleId}&portId=${portId}`
 

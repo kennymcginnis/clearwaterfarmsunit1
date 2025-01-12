@@ -22,12 +22,15 @@ import {
 } from '#app/utils/user-schedule.ts'
 
 type SidesType = { begins: Date; ends: Date; hours: number; irrigators: number; [key: string]: Date | number }
-type TimelinesType = { '10-01': SidesType; '10-03': SidesType; [key: string]: SidesType }
+type TimelinesType = { total: SidesType; '10-01': SidesType; '10-03': SidesType; [key: string]: SidesType }
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const userId = await requireUserWithRole(request, 'admin')
 	invariantResponse(params.date, 'Date parameter Not found', { status: 404 })
 
-	const schedule = await prisma.schedule.findFirst({ select: { id: true, state: true }, where: { date: params.date } })
+	const schedule = await prisma.schedule.findFirstOrThrow({
+		select: { id: true, state: true, date: true, start: true, stop: true },
+		where: { date: params.date },
+	})
 	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 
 	let timeline = await prisma.timeline.findMany({ where: { date: params.date }, orderBy: { order: 'asc' } })
@@ -56,7 +59,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 				{
 					status: 'error',
 					error: result.error.message,
-					schedule: { id: null, date: null, state: null },
+					schedule: { id: null, date: null, state: null, start: null, stop: null },
 					users: null,
 					timelines: null,
 				} as const,
@@ -99,6 +102,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	}
 
 	const timelines: TimelinesType = {
+		total: {
+			begins: new Date(100000000000000),
+			ends: new Date(0),
+			hours: 0,
+			irrigators: 0,
+		},
 		'10-01': {
 			begins: new Date(100000000000000),
 			ends: new Date(0),
@@ -146,9 +155,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		if (hours) {
 			timelines[entry].hours += hours
 			timelines[entry].irrigators += 1
+			timelines.total.hours += hours
+			timelines.total.irrigators += 1
 		}
 		if (start && start < timelines[entry].begins) timelines[entry].begins = start
 		if (stop && stop > timelines[entry].ends) timelines[entry].ends = stop
+		if (start && start < timelines.total.begins) timelines.total.begins = start
+		if (stop && stop > timelines.total.ends) timelines.total.ends = stop
 	}
 
 	// if not yet calculated, set default start to today
@@ -165,7 +178,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 	return json({
 		status: 'idle',
-		schedule: { id: schedule.id, date: params.date, state: schedule.state },
+		schedule: { ...schedule, schedule: formatDates({ start: timelines.total.begins, stop: timelines.total.ends }) },
 		users: groupped,
 		timelines,
 	} as const)
@@ -273,6 +286,13 @@ export default function GenerateTimelineRoute() {
 	return (
 		<>
 			<div className="text-align-webkit-center flex w-full flex-col items-center justify-center bg-background">
+				<div className="my-4 flex flex-col items-center justify-center gap-6">
+					<h1 className="text-center text-h1">Irrigation Timeline for {schedule.date}</h1>
+					<h2 className="text-center text-h2">{schedule.schedule.join(' ─ ')}</h2>
+					<h3 className="text-h3 capitalize">
+						{timelines.total.hours} hours | {timelines.total.irrigators} irrigators
+					</h3>
+				</div>
 				{userIsAdmin ? (
 					<>
 						<div className="flex w-[70%] flex-row justify-between gap-2 p-0.5">
@@ -399,22 +419,16 @@ export default function GenerateTimelineRoute() {
 	)
 }
 
-function UserCard({
-	user: { display, hours, address, schedule, first, crossover, last },
-}: {
-	user: UserScheduleType
-}) {
+function UserCard({ user: { display, hours, address, schedule, first, crossover, last } }: { user: UserScheduleType }) {
 	return (
 		<div
 			className={`flex rounded-lg ${hours ? 'border-1 border-secondary-foreground bg-muted' : 'bg-muted-40'} p-2 ${borderColor({ first, crossover, last })}`}
 		>
 			<div className="grid w-full grid-cols-11 justify-between gap-1">
-				<span className="col-span-1 overflow-hidden text-nowrap text-right text-body-sm" style={{ direction: 'rtl'}}>
+				<span className="col-span-1 overflow-hidden text-nowrap text-right text-body-sm" style={{ direction: 'rtl' }}>
 					:{address}
 				</span>
-				<span className="col-span-2 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
-					{display}
-				</span>
+				<span className="col-span-2 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">{display}</span>
 				<span className="col-span-1 overflow-hidden text-ellipsis text-nowrap text-right text-body-sm">
 					{formatHrs(Number(hours))}
 				</span>

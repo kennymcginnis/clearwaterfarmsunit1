@@ -30,7 +30,10 @@ type PositionDitchType = {
 export async function loader({ params }: LoaderFunctionArgs) {
 	invariantResponse(params.date, 'Date parameter Not found', { status: 404 })
 
-	const schedule = await prisma.schedule.findFirst({ select: { id: true, state: true }, where: { date: params.date } })
+	const schedule = await prisma.schedule.findFirstOrThrow({
+		select: { id: true, state: true, date: true, costPerHour: true, source: true, start: true, stop: true },
+		where: { date: params.date },
+	})
 	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 
 	const rawUsers = await prisma.$queryRaw`
@@ -54,7 +57,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			{
 				status: 'error',
 				error: result.error.message,
-				schedule: { id: null, date: null, state: null },
+				schedule: { id: null, date: null, state: null, costPerHour: null, source: null, start: null, stop: null },
 				users: null,
 				totals: null,
 				rows: null,
@@ -98,7 +101,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 	return json({
 		status: 'idle',
-		schedule: { id: schedule.id, date: params.date, state: schedule.state },
+		schedule: { ...schedule, schedule: formatDates({ start: schedule?.start ?? null, stop: schedule?.stop ?? null }) },
 		users: groupped,
 		ditchTotals,
 	} as const)
@@ -116,6 +119,13 @@ export default function TimelineRoute() {
 
 	return (
 		<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
+			<div className="my-4 flex flex-col items-center justify-center gap-6">
+				<h1 className="text-center text-h1">Irrigation Timeline for {schedule.date}</h1>
+				<h2 className="text-center text-h2">{schedule.schedule.join(' ─ ')}</h2>
+				<h3 className="text-h3 capitalize">
+					Source: {schedule.source} | Cost Per Hour: ${schedule.costPerHour}
+				</h3>
+			</div>
 			<div className="flex w-full flex-row-reverse flex-wrap gap-2 p-0.5">
 				{userIsAdmin ? (
 					<Button>
@@ -251,22 +261,16 @@ function TwoColumns({ users }: { users: PositionDitchType }) {
 	)
 }
 
-function UserCard({
-	user: { display, hours, address, schedule, first, crossover, last },
-}: {
-	user: UserScheduleType
-}) {
+function UserCard({ user: { display, hours, address, schedule, first, crossover, last } }: { user: UserScheduleType }) {
 	return (
 		<div
 			className={`flex rounded-lg ${hours ? 'border-1 border-secondary-foreground bg-muted' : 'bg-muted-40'} p-2 ${borderColor({ first, crossover, last })}`}
 		>
 			<div className={`grid w-full grid-cols-11 justify-between gap-1`}>
-				<span className="col-span-1 overflow-hidden text-nowrap text-right text-body-sm" style={{ direction: 'rtl'}}>
+				<span className="col-span-1 overflow-hidden text-nowrap text-right text-body-sm" style={{ direction: 'rtl' }}>
 					:{address}
 				</span>
-				<span className="col-span-2 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
-					{display}
-				</span>
+				<span className="col-span-2 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">{display}</span>
 				<span className="col-span-1 text-nowrap text-right text-body-sm">{formatHrs(Number(hours))}</span>
 				{schedule &&
 					schedule.map((row, r) => (

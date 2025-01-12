@@ -37,9 +37,9 @@ export function UserScheduleTimeline({
 			</CardHeader>
 			<CardContent className="flex flex-col gap-2">
 				<div key={ditch} className="flex flex-row justify-between">
-					<div id="charges-pills">
+					<div id="charges-pills" className="flex flex-col items-start">
 						{userSchedule.first && (
-							<Badge className={`capitalize ${backgroundColor('first')}`} variant="outline">
+							<Badge className={`mb-1 capitalize ${backgroundColor('first')}`} variant="outline">
 								{'First'}
 							</Badge>
 						)}
@@ -49,7 +49,7 @@ export function UserScheduleTimeline({
 							</Badge>
 						)}
 						{userSchedule.last && (
-							<Badge className={`capitalize ${backgroundColor('last')}`} variant="outline">
+							<Badge className={`mb-1 capitalize ${backgroundColor('last')}`} variant="outline">
 								{'Last'}
 							</Badge>
 						)}

@@ -1,15 +1,18 @@
+import { useForm } from '@conform-to/react'
 import { invariantResponse } from '@epic-web/invariant'
-import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
+import { json, type LoaderFunctionArgs, type MetaFunction, type ActionFunctionArgs } from '@remix-run/node'
 import { Form, useLoaderData } from '@remix-run/react'
 import { formatDistance, formatDistanceStrict, isBefore, isAfter } from 'date-fns'
+import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Badge } from '#app/components/ui/badge'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
-import { getUserId } from '#app/utils/auth.server'
+import { getUserId, requireUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
-import { formatDate, getDateTimeFormat } from '#app/utils/misc'
-import { backgroundColor, crossovers, SearchResultsSchema } from '#app/utils/user-schedule.ts'
+import { formatDate, formatDates, getDateTimeFormat } from '#app/utils/misc'
+import { redirectWithToast } from '#app/utils/toast.server.ts'
+import { backgroundColor, crossovers } from '#app/utils/user-schedule.ts'
 
 export type UserScheduleType = {
 	userId: string
@@ -26,32 +29,74 @@ export type UserScheduleType = {
 	schedule?: string[]
 	first?: boolean | null
 	crossover?: boolean | null
-	last?: boolean | null
-	isCurrentUser?: boolean | null
-	isCurrentSchedule?: boolean | null
-	distanceToNow?: string | null
-	duties: { [key: string]: string }
+	distanceToNow: string
+	duty: string
+	isCurrentSchedule: boolean
+	isCurrentUser: boolean
+	isCurrentVolunteer: boolean
+	acknowledged?: boolean | null
+	trained?: boolean | null
+	volunteer?: string | null
+	volunteerTrained?: boolean | null
 }
 
-export async function loader({ request, params }: LoaderFunctionArgs) {
-	const userId = await getUserId(request)
+export const SearchResultsSchema = z.array(
+	z.object({
+		userId: z.string(),
+		display: z.string(),
+		quickbooks: z.string().optional(),
+		trained: z.boolean(),
+		portId: z.string(),
+		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
+		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
+		entry: z.string(),
+		address: z.number().nullable(),
+		section: z.string(),
+		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
+		start: z.date().nullable(),
+		stop: z.date().nullable(),
+		first: z.boolean().optional().nullable(),
+		crossover: z.boolean().optional().nullable(),
+		acknowledgeFirst: z.boolean().optional().nullable(),
+		acknowledgeCrossover: z.boolean().optional().nullable(),
+		volunteerFirst: z.string().optional().nullable(),
+		volunteerFirstId: z.string().optional().nullable(),
+		volunteerCrossover: z.string().optional().nullable(),
+		volunteerCrossoverId: z.string().optional().nullable(),
+		firstVolunteerTrained: z.boolean().optional().nullable(),
+		crossoverVolunteerTrained: z.boolean().optional().nullable(),
+	}),
+)
 
-	const schedule = await prisma.schedule.findFirst({ select: { id: true, state: true }, where: { date: params.date } })
+export async function loader({ request, params }: LoaderFunctionArgs) {
+	const currentUser = await getUserId(request)
+
+	const schedule = await prisma.schedule.findFirstOrThrow({
+		select: { id: true, date: true, start: true, stop: true },
+		where: { date: params.date },
+	})
 	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
-	const scheduleId = schedule?.id
 
 	const time = getDateTimeFormat(request).format(new Date())
 
 	const rawUsers = await prisma.$queryRaw`
-    SELECT User.id AS userId, User.display, User.quickbooks, 
+    SELECT User.id AS userId, User.display, User.quickbooks, User.trained, 
            Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, Port.address, 
            UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
-           UserSchedule.first, UserSchedule.crossover, UserSchedule.last
+           UserSchedule.first, UserSchedule.crossover,
+					 UserSchedule.acknowledgeFirst, UserSchedule.acknowledgeCrossover,
+					 v1.id AS volunteerFirstId, v2.id AS volunteerCrossoverId,
+					 v1.quickbooks AS volunteerFirst, v2.quickbooks AS volunteerCrossover,
+					 v1.trained AS firstVolunteerTrained, v2.trained AS crossoverVolunteerTrained
       FROM User
      INNER JOIN Port ON User.id = Port.userId
       LEFT JOIN UserSchedule
         ON User.id = UserSchedule.userId
        AND Port.id = UserSchedule.portId
+		  LEFT JOIN User v1
+ 			  ON UserSchedule.volunteerFirst = v1.id
+ 			LEFT JOIN User v2
+			  ON UserSchedule.volunteerCrossover = v2.id
      WHERE User.active
 		   AND UserSchedule.scheduleId = ${schedule.id}
        AND (UserSchedule.first OR UserSchedule.crossover)
@@ -59,7 +104,16 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   `
 
 	const result = SearchResultsSchema.safeParse(rawUsers)
-	if (!result.success) return json({ status: 'error', schedules: {}, scheduleId } as const, { status: 400 })
+	if (!result.success)
+		return json(
+			{
+				currentUser,
+				status: 'error',
+				schedule: { id: null, date: null, start: null, stop: null },
+				userSchedules: [],
+			} as const,
+			{ status: 400 },
+		)
 
 	invariantResponse(result.data.length, 'No UserSchedules found', { status: 404 })
 
@@ -84,30 +138,126 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		}
 	}
 
-	const schedules: UserScheduleType[] = result.data.map(userSchedule => {
+	const userSchedules: UserScheduleType[] = []
+
+	result.data.forEach(userSchedule => {
 		// user groupings
-		const { start, stop, ditch, entry } = userSchedule
-		const { isCurrentSchedule, distanceToNow } = calcDistanceToNow(start, stop)
+		const { start: startDate, stop, ditch, entry } = userSchedule
+		const { isCurrentSchedule, distanceToNow } = calcDistanceToNow(startDate, stop)
 		const duties = crossovers[ditch][entry]
-		return {
-			...userSchedule,
-			duties,
-			start: formatDate(start),
-			isCurrentUser: userSchedule.userId === userId,
-			isCurrentSchedule,
-			distanceToNow,
+		const start = formatDate(startDate)
+		const isCurrentUser = userSchedule.userId === currentUser
+
+		if (userSchedule.first) {
+			userSchedules.push({
+				...userSchedule,
+				acknowledged: userSchedule.acknowledgeFirst,
+				volunteer: userSchedule.volunteerFirst,
+				volunteerTrained: userSchedule.firstVolunteerTrained,
+				duty: duties.first,
+				crossover: false,
+				start,
+				isCurrentSchedule,
+				isCurrentUser,
+				isCurrentVolunteer: currentUser ? userSchedule.volunteerFirstId === currentUser : false,
+				distanceToNow,
+			})
+		}
+
+		if (userSchedule.crossover) {
+			userSchedules.push({
+				...userSchedule,
+				acknowledged: userSchedule.acknowledgeCrossover,
+				volunteer: userSchedule.volunteerCrossover,
+				volunteerTrained: userSchedule.crossoverVolunteerTrained,
+				duty: duties.crossover,
+				first: false,
+				start,
+				isCurrentSchedule,
+				isCurrentUser,
+				isCurrentVolunteer: currentUser ? userSchedule.volunteerCrossoverId === currentUser : false,
+				distanceToNow,
+			})
 		}
 	})
-	return json({ status: 'idle', scheduleId, schedules } as const)
+	return json({
+		status: 'idle',
+		currentUser,
+		schedule: { ...schedule, schedule: formatDates({ start: schedule?.start ?? null, stop: schedule?.stop ?? null }) },
+		userSchedules,
+	} as const)
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+	const currentUser = await requireUserId(request)
+	const formData = await request.formData()
+
+	const userId = String(formData.get('userId'))
+	const portId = String(formData.get('portId'))
+	const scheduleId = String(formData.get('scheduleId'))
+	if (!userId || !portId || !scheduleId) return new Response('Missing parameters', { status: 400 })
+
+	const type = String(formData.get('type'))
+	const intent = String(formData.get('intent'))
+
+	let data = {}
+	switch (intent) {
+		case 'acknowledge':
+		case 'assistance':
+			const acknowledged = intent === 'acknowledge'
+			switch (type) {
+				case 'first':
+					data = { acknowledgeFirst: acknowledged }
+					break
+				case 'crossover':
+					data = { acknowledgeCrossover: acknowledged }
+					break
+				default:
+					return new Response('Invalid type, expected `first` or `crossover`', { status: 400 })
+			}
+			break
+		case 'volunteer':
+		case 'unvolunteer': {
+			const volunteered = intent === 'volunteer' ? currentUser : null
+			switch (type) {
+				case 'first':
+					data = { volunteerFirst: volunteered }
+					break
+				case 'crossover':
+					data = { volunteerCrossover: volunteered }
+					break
+				default:
+					return new Response('Invalid type, expected `first` or `crossover`', { status: 400 })
+			}
+			break
+		}
+		default:
+			return new Response('Invalid intent, expected `acknowledge`, `assistance`, or `volunteer`', { status: 400 })
+	}
+	await prisma.userSchedule.update({
+		data,
+		where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
+	})
+
+	return redirectWithToast('', {
+		type: 'success',
+		title: 'Success',
+		description: 'Your response has been uploaded.',
+	})
 }
 
 export default function TimelineRoute() {
-	const { status, schedules, scheduleId } = useLoaderData<typeof loader>()
+	const { currentUser, status, schedule, userSchedules } = useLoaderData<typeof loader>()
 
-	if (!schedules || status !== 'idle') return null
+	if (!schedule || status !== 'idle') return null
 
 	return (
 		<div className="h-vh mx-auto flex min-w-[80%] flex-col gap-1 p-1">
+			<div className="container my-8 flex flex-col items-center justify-center gap-6">
+				<h1 className="text-center text-h1">Irrigation Crossovers for {schedule.date}</h1>
+				<h2 className="text-h2">Acknowledgements and Volunteer Signup</h2>
+				<h3 className="text-center text-h3">{schedule.schedule.join(' ─ ')}</h3>
+			</div>
 			<div
 				id="title-row"
 				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-2xl text-white"
@@ -116,118 +266,191 @@ export default function TimelineRoute() {
 				Crossovers:
 				<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
 			</div>
-			{schedules.map((userSchedule, index) => (
-				<UserCard key={`${userSchedule.start}`} scheduleId={scheduleId} userSchedule={userSchedule} />
+			{userSchedules.map(userSchedule => (
+				<UserCard
+					key={`${userSchedule.start}`}
+					currentUser={currentUser}
+					scheduleId={schedule.id}
+					userSchedule={userSchedule}
+				/>
 			))}
 		</div>
 	)
 }
 
 function UserCard({
+	currentUser,
 	scheduleId,
 	userSchedule: {
 		userId,
 		portId,
 		quickbooks,
-		duties,
+		trained,
+		duty,
 		start,
 		first,
-		crossover,
-		last,
-		isCurrentUser,
 		isCurrentSchedule,
+		isCurrentUser,
+		isCurrentVolunteer,
 		distanceToNow,
+		acknowledged,
+		volunteer,
+		volunteerTrained,
 	},
 }: {
+	currentUser: string | null
 	scheduleId: string
 	userSchedule: UserScheduleType
 }) {
+	// trained ||= Math.random() > 0.5
+	// acknowledged ??= Math.random() > 0.6 ? null : Math.random() > 0.3
+	const type = first ? 'first' : 'crossover'
+
+	const showTrained = false
+
+	const foregroundColor = ({ trained, acknowledged }: { trained?: boolean | null; acknowledged?: boolean | null }) => {
+		if (trained) return 'text-blue-700 border-blue-700'
+		if (trained === false) return 'text-yellow-700 border-yellow-700'
+		if (acknowledged) return 'text-green-700 border-green-700'
+		if (acknowledged === false) return 'text-red-700 border-red-700'
+		return 'text-yellow-700 border-yellow-700'
+	}
+	const borderColor = ({ acknowledged, volunteer }: { acknowledged?: boolean | null; volunteer?: string | null }) => {
+		if (acknowledged) return 'border-2 border-green-700'
+		if (volunteer) return 'border-2 border-blue-700'
+		if (acknowledged === false) return 'border-2 border-red-700'
+		return 'border-1 border-secondary-foreground'
+	}
+
+	const [form] = useForm({ id: `userId=${userId}&scheduleId=${scheduleId}&portId=${portId}` })
 	return (
-		<div
-			id="user-row"
-			className={`border-1 flex w-full flex-row items-start justify-between rounded-lg border-secondary-foreground p-2 md:flex-row md:items-center
+		<>
+			<pre>{`{userId: ${userId}, scheduleId: ${scheduleId}, portId: ${portId}, acknowledged: ${acknowledged}}`}</pre>
+			<div
+				id="user-row"
+				className={`flex w-full flex-row items-start justify-between rounded-lg p-2 md:flex-row md:items-center
+					${borderColor({ acknowledged, volunteer })}
 					${isCurrentSchedule ? 'bg-sky-800 text-white' : isCurrentUser ? 'bg-secondary' : 'bg-muted-40'}`}
-		>
-			<div id="user-details" className="flex w-full flex-col justify-between p-2 md:flex-row md:items-center">
-				<div id="quickbooks-duties" className="flex min-w-[60%] flex-col items-start justify-between">
-					<strong id="quickbooks" className="mb-1 overflow-hidden text-ellipsis text-nowrap underline">
-						{quickbooks}
-					</strong>
-					<div id="charges-pills" className="flex h-full min-w-20 flex-col items-start gap-1">
-						{first && (
-							<div className="flex flex-row">
+			>
+				<div id="column-wrapper" className="mb-2 flex w-full flex-col">
+					{volunteer && !acknowledged && (
+						<div id="volunteer-row" className="flex w-full flex-row items-center border-b-2 border-blue-700 pb-2">
+							<strong id="volunteer-name" className="mb-1 overflow-hidden text-ellipsis text-nowrap">
+								<div className={`${isCurrentSchedule ? 'text-white' : 'text-blue-700'}`}>[VOLUNTEER]: {volunteer}</div>
+							</strong>
+							{showTrained && (
 								<Badge
-									className={`ml-[40px] mr-1 capitalize ${backgroundColor('first')} ${isCurrentSchedule && 'text-white'}`}
+									id="volunteerTrained"
+									className={`mx-1 h-8 ${backgroundColor('default')} ${foregroundColor({ trained })} capitalize`}
 									variant="outline"
 								>
-									{'First'}
+									<Icon
+										name={trained ? 'diploma' : 'exclamation-triangle'}
+										className={`h-6 w-6 pr-1 pt-1 ${foregroundColor({ trained })}`}
+										aria-hidden="true"
+									/>
+									<div>{volunteerTrained ? 'Trained' : 'Not Trained'}</div>
 								</Badge>
-								<div>{duties.first}</div>
-							</div>
-						)}
-						{crossover && (
-							<div className="flex flex-row">
+							)}
+						</div>
+					)}
+					<div
+						id="user-details"
+						className="flex h-full w-full flex-col justify-between p-2 md:flex-row md:items-center"
+					>
+						<div id="quickbooks-duty" className="flex w-full flex-col items-start justify-between">
+							<div id="name-and-trained" className="flex flex-row">
+								<strong
+									id="quickbooks"
+									className={`mb-1 overflow-hidden text-ellipsis text-nowrap underline ${acknowledged ? 'text-green-700 decoration-green-700' : acknowledged === false ? 'text-red-700 decoration-red-700' : ''}`}
+								>
+									{quickbooks}
+								</strong>
 								<Badge
-									className={`ml-[10px] mr-1 capitalize ${backgroundColor('crossover')} ${isCurrentSchedule && 'text-white'}`}
+									id="acknowledged"
+									className={`ml-2 mr-1 h-8 ${backgroundColor('default')} ${foregroundColor({ acknowledged })} capitalize`}
 									variant="outline"
 								>
-									{'Crossover'}
+									<Icon
+										name={
+											acknowledged ? 'check-circled' : acknowledged === false ? 'cross-circled' : 'exclamation-triangle'
+										}
+										className={`h-6 w-6 py-0.5 ${foregroundColor({ acknowledged })}`}
+										aria-hidden="true"
+									/>
+									<div>{acknowledged ? 'Acknowledged' : acknowledged === false ? 'Requests Help' : 'No Response'}</div>
 								</Badge>
-								<div>{duties.crossover}</div>
+								{acknowledged && showTrained && (
+									<Badge
+										id="trained"
+										className={`mx-1 h-8 ${backgroundColor('default')} ${foregroundColor({ trained })} capitalize`}
+										variant="outline"
+									>
+										<Icon
+											name={trained ? 'diploma' : 'exclamation-triangle'}
+											className={`h-6 w-6 pr-1 pt-1 ${foregroundColor({ trained })}`}
+											aria-hidden="true"
+										/>
+										<div>{trained ? 'Trained' : 'Not Trained'}</div>
+									</Badge>
+								)}
 							</div>
-						)}
-						{last && (
-							<div className="flex flex-row">
+							<div id="badges-and-duty" className="flex h-full w-full flex-row items-center gap-1">
 								<Badge
-									className={`ml-[42px] mr-1 capitalize ${backgroundColor('last')} ${isCurrentSchedule && 'text-white'}`}
+									id="first-badge"
+									className={`${first ? 'ml-[40px]' : 'ml-[10px]'} mr-1 h-6 capitalize ${backgroundColor(type)} ${isCurrentSchedule && 'text-white'}`}
 									variant="outline"
 								>
-									{'Last'}
+									{type}
 								</Badge>
-								<div>{duties.last}</div>
+								<div>{duty}</div>
+							</div>
+						</div>
+						{currentUser && (
+							<div id="buttons-row" className="flex min-w-64 flex-row justify-end">
+								<Form method="POST" {...form.props}>
+									<input type="hidden" name="userId" value={userId} />
+									<input type="hidden" name="portId" value={portId} />
+									<input type="hidden" name="scheduleId" value={scheduleId} />
+									<input type="hidden" name="type" value={type} />
+									{isCurrentUser && !acknowledged && (
+										<Button type="submit" name="intent" value="acknowledge" variant="default">
+											Acknowledge
+										</Button>
+									)}
+									{isCurrentUser && (acknowledged === true || acknowledged !== false) && (
+										<Button type="submit" name="intent" value="assistance" variant="destructive" className="ml-1 w-32">
+											Request Help
+										</Button>
+									)}
+									{!isCurrentUser && volunteer === null && (
+										<Button type="submit" name="intent" value="volunteer" variant="outline-link" className="w-40">
+											Volunteer to Help
+										</Button>
+									)}
+									{isCurrentVolunteer && (
+										<Button type="submit" name="intent" value="unvolunteer" variant="destructive" className="w-40">
+											Remove Volunteer
+										</Button>
+									)}
+								</Form>
 							</div>
 						)}
+						<div
+							id="distance-start"
+							className="m-2 flex h-full min-w-60 flex-row items-start justify-center border-t-[1px] border-secondary-foreground pl-2 sm:flex-col md:mt-0 md:border-t-0"
+						>
+							<div id="distance-to-now" className="min-w-60 overflow-hidden text-ellipsis pr-2 text-body-sm">
+								{distanceToNow}
+							</div>
+							<div id="start" className="min-w-44 overflow-hidden text-ellipsis text-body-sm">
+								{String(start)}
+							</div>
+						</div>
 					</div>
 				</div>
-				<div
-					id="distance-start"
-					className="mt-2 flex min-w-40 flex-row items-start justify-between border-t-[1px] border-secondary-foreground sm:flex-col md:mt-0 md:border-none"
-				>
-					<div id="distance-to-now" className="min-w-60 overflow-hidden text-ellipsis pr-2 text-body-sm">
-						{distanceToNow}
-					</div>
-					<div id="start" className="min-w-44 overflow-hidden text-ellipsis text-body-sm">
-						{String(start)}
-					</div>
-				</div>
-				{isCurrentUser ? (
-					<div className="pr-2">
-						<Form method="post" encType="multipart/form-data">
-							<input type="hidden" name="userId" value={userId} />
-							<input type="hidden" name="portId" value={portId} />
-							<input type="hidden" name="scheduleId" value={scheduleId} />
-							<Button type="submit" name="intent" value="reset" variant="secondary" className="mr-1">
-								Acknowledge
-							</Button>
-							<Button type="submit" name="intent" value="reset" variant="destructive" className="">
-								Request Help
-							</Button>
-						</Form>
-					</div>
-				) : (
-					<div>
-						<Form method="post" encType="multipart/form-data">
-							<input type="hidden" name="userId" value={userId} />
-							<input type="hidden" name="portId" value={portId} />
-							<input type="hidden" name="scheduleId" value={scheduleId} />
-							<Button type="submit" name="intent" value="reset" variant="outline-link" className="">
-								Volunteer to Help
-							</Button>
-						</Form>
-					</div>
-				)}
 			</div>
-		</div>
+		</>
 	)
 }
 

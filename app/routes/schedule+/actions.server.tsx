@@ -78,6 +78,9 @@ export async function action({ request }: ActionFunctionArgs) {
 		case 'closed-emails':
 			return await closedEmailsAction(actionArgs)
 
+		case 'test-email':
+			return await testEmailAction(actionArgs)
+
 		default:
 			throw new Response(`Invalid intent "${intent}"`, { status: 400 })
 	}
@@ -294,7 +297,136 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 			from: 'clearwat@clearwaterfarmsunit1.com',
 			to: email,
 			subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
-			react: <ClosedScheduleEmail scheduleId={scheduleId} date={scheduleDate} userId={userId} emailSubject={emailSubject} schedules={schedules} />,
+			react: (
+				<ClosedScheduleEmail
+					scheduleId={scheduleId}
+					date={scheduleDate}
+					userId={userId}
+					emailSubject={emailSubject}
+					schedules={schedules}
+				/>
+			),
+		}))
+
+		const resend = new Resend(process.env.RESEND_API_KEY)
+		const { data, error } = await resend.batch.send(batchEmails)
+
+		if (error) {
+			return json({ status: 'error', submission } as const, { status: 500 })
+		} else {
+			return redirectWithToast(`.`, {
+				type: 'success',
+				title: 'Success',
+				description: `${data}`,
+			})
+		}
+	} else {
+		return json({ status: 'error', submission } as const, { status: 400 })
+	}
+}
+
+async function testEmailAction({ schedule, formData }: ScheduleActionArgs) {
+	const submission = parse(formData, { schema: ActionFormSchema })
+	const { id: scheduleId, date } = schedule
+	const scheduleDate = format(date, 'eeee, MMM do')
+
+	if (submission.value) {
+		const rawUsers = await prisma.$queryRaw`
+			SELECT User.id AS userId, User.emailSubject, User.primaryEmail, User.secondarySubject, User.secondaryEmail, 
+						 Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
+						 UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
+						 UserSchedule.first, UserSchedule.crossover, UserSchedule.last
+	  		FROM User
+	  	 INNER JOIN Port ON User.id = Port.userId
+	  	  LEFT JOIN UserSchedule
+	  	    ON User.id = UserSchedule.userId
+	  	   AND Port.id = UserSchedule.portId
+	  	   AND UserSchedule.scheduleId = ${scheduleId}
+	  	 WHERE UserSchedule.first = true
+			   AND UserSchedule.acknowledgeFirst != true
+	  	 ORDER BY Port.ditch, Port.position
+			 LIMIT 1
+		`
+
+		const result = SearchResultsSchema.safeParse(rawUsers)
+		if (!result.success) {
+			console.error(result.error.message)
+			return null
+		}
+
+		type EmailType = {
+			[key: string]: {
+				userId: string
+				emailSubject: string
+				schedules: {
+					portId: string
+					ditch: number
+					entry: string
+					hours: string
+					schedule: string
+					first: boolean | null
+					crossover: boolean | null
+					last: boolean | null
+				}[]
+			}
+		}
+		const emails: EmailType = {}
+		result.data.forEach(
+			({
+				userId,
+				portId,
+				ditch,
+				entry,
+				hours,
+				start,
+				stop,
+				first,
+				crossover,
+				last,
+				emailSubject,
+				primaryEmail,
+				secondarySubject,
+				secondaryEmail,
+			}) => {
+				const schedule = {
+					portId,
+					ditch,
+					entry,
+					hours: formatHours(hours),
+					schedule: formatDatesOneLiner({ start, stop }),
+					first,
+					crossover,
+					last,
+				}
+				if (primaryEmail) {
+					if (emails[primaryEmail]) emails[primaryEmail].schedules.push(schedule)
+					else emails[primaryEmail] = { userId, emailSubject: emailSubject ?? primaryEmail, schedules: [schedule] }
+				}
+				if (secondaryEmail) {
+					if (emails[secondaryEmail]) emails[secondaryEmail].schedules.push(schedule)
+					else {
+						emails[secondaryEmail] = {
+							userId,
+							emailSubject: secondarySubject ?? emailSubject ?? secondaryEmail,
+							schedules: [schedule],
+						}
+					}
+				}
+			},
+		)
+		const batchEmails = Object.entries(emails).map(([email, { userId, emailSubject, schedules }]) => ({
+			from: 'clearwat@clearwaterfarmsunit1.com',
+			to: 'kenneth.j.mcginnis@gmail.com',
+			subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
+			react: (
+				<ClosedScheduleEmail
+					scheduleId={scheduleId}
+					date={scheduleDate}
+					userId={userId}
+					emailSubject={emailSubject}
+					schedules={schedules}
+				/>
+			),
 		}))
 
 		const resend = new Resend(process.env.RESEND_API_KEY)

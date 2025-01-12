@@ -18,7 +18,8 @@ model User {
   quickbooks String?
   stripeId   String?
 
-  active Boolean @default(true)
+  active  Boolean @default(true)
+  trained Boolean @default(false)
 
   userAddress UserAddress[]
 

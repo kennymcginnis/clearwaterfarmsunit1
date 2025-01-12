@@ -166,13 +166,14 @@ export default function TimelineRoute() {
 	}
 	return (
 		<div className="h-vh mx-auto flex min-w-[80%] flex-col gap-1 p-1">
-			<div
-				id="title-row"
-				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-xl text-white"
-			>
-				<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
-				Where is the water currently?
-				<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+			<div className="container my-8 flex flex-col items-center justify-center gap-6">
+				<h1 className="text-center text-h1">Irrigation Tracking</h1>
+				<h2 className="text-h3">
+					<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+					Where is the water currently?
+					<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+				</h2>
+				<h3 className="text-h4">Ditches 1-4 [10-01] | [10-03] Ditches 5-8</h3>
 			</div>
 			<div id="header-row" className="flex w-full flex-row items-end justify-between">
 				<div id="from-label" className={`border-1 rounded-lg p-2 ${borderColor({ first: true })}`}>
@@ -214,7 +215,6 @@ export default function TimelineRoute() {
 	)
 }
 
-
 function DitchHeader({ visible, entry, ditch }: { visible: boolean; entry: string; ditch: number }) {
 	return visible ? (
 		<div className="mt-2 w-full rounded-md bg-primary p-2 text-center text-body-lg text-secondary">
@@ -254,7 +254,7 @@ function UserCard({
 					id="address-username"
 					className="flex flex-row overflow-hidden text-ellipsis text-nowrap text-left text-body-sm"
 				>
-					<div className="min-w-20 overflow-hidden text-nowrap text-right text-body-sm" style={{ direction: 'rtl'}}>
+					<div className="min-w-20 overflow-hidden text-nowrap text-right text-body-sm" style={{ direction: 'rtl' }}>
 						&nbsp;:{address}
 					</div>
 					<strong className="min-w-40 overflow-hidden text-ellipsis text-nowrap text-left text-body-sm">
