@@ -96,6 +96,17 @@ export default function HomeRoute() {
 					<Icon name="droplet" className="mx-1 ml-0 h-8 w-8 p-1" aria-hidden="true" />
 					<Icon name="arrow-right" className="mx-1 ml-0 h-8 w-8 p-1 hover:scale-125" aria-hidden="true" />
 				</Link>
+				<Link
+					to={`schedule/${closed.date}/crossovers`}
+					style={{ width: 'clamp(352px, 75%, 720px)' }}
+					className="border-1 my-1 flex justify-center rounded-lg border-secondary-foreground bg-yellow-700 p-2 text-xl text-white"
+				>
+					<Icon name="link-2" className="mx-1 h-8 w-8 p-1 hover:scale-125" aria-hidden="true" />
+					<Icon name="exclamation-triangle" className="mx-1 mr-0 h-8 w-8 p-1" aria-hidden="true" />
+					Volunteer Sheet for the Schedule: {closed.date}
+					<Icon name="exclamation-triangle" className="mx-1 ml-0 h-8 w-8 p-1" aria-hidden="true" />
+					<Icon name="arrow-right" className="mx-1 ml-0 h-8 w-8 p-1 hover:scale-125" aria-hidden="true" />
+				</Link>
 				<div id="columns" className="m-auto flex h-full flex-wrap justify-center gap-4 p-4">
 					<div id="closed" className="w-[352px] flex-col">
 						<CardDescription className="text-center">Most Recently Closed Schedule:</CardDescription>

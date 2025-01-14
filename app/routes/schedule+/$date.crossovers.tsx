@@ -324,23 +324,60 @@ function UserCard({
 
 	const [form] = useForm({ id: `userId=${userId}&scheduleId=${scheduleId}&portId=${portId}` })
 	return (
-		<>
-			<pre>{`{userId: ${userId}, scheduleId: ${scheduleId}, portId: ${portId}, acknowledged: ${acknowledged}}`}</pre>
-			<div
-				id="user-row"
-				className={`flex w-full flex-row items-start justify-between rounded-lg p-2 md:flex-row md:items-center
+		<div
+			id="user-row"
+			className={`flex w-full flex-row items-start justify-between rounded-lg p-2 md:flex-row md:items-center
 					${borderColor({ acknowledged, volunteer })}
 					${isCurrentSchedule ? 'bg-sky-800 text-white' : isCurrentUser ? 'bg-secondary' : 'bg-muted-40'}`}
-			>
-				<div id="column-wrapper" className="mb-2 flex w-full flex-col">
-					{volunteer && !acknowledged && (
-						<div id="volunteer-row" className="flex w-full flex-row items-center border-b-2 border-blue-700 pb-2">
-							<strong id="volunteer-name" className="mb-1 overflow-hidden text-ellipsis text-nowrap">
-								<div className={`${isCurrentSchedule ? 'text-white' : 'text-blue-700'}`}>[VOLUNTEER]: {volunteer}</div>
+		>
+			<div id="column-wrapper" className="mb-2 flex w-full flex-col">
+				{volunteer && !acknowledged && (
+					<div id="volunteer-row" className="flex w-full flex-row items-center border-b-2 border-blue-700 pb-2">
+						<strong id="volunteer-name" className="mb-1 overflow-hidden text-ellipsis text-nowrap">
+							<div className={`${isCurrentSchedule ? 'text-white' : 'text-blue-700'}`}>[VOLUNTEER]: {volunteer}</div>
+						</strong>
+						{showTrained && (
+							<Badge
+								id="volunteerTrained"
+								className={`mx-1 h-8 ${backgroundColor('default')} ${foregroundColor({ trained })} capitalize`}
+								variant="outline"
+							>
+								<Icon
+									name={trained ? 'diploma' : 'exclamation-triangle'}
+									className={`h-6 w-6 pr-1 pt-1 ${foregroundColor({ trained })}`}
+									aria-hidden="true"
+								/>
+								<div>{volunteerTrained ? 'Trained' : 'Not Trained'}</div>
+							</Badge>
+						)}
+					</div>
+				)}
+				<div id="user-details" className="flex h-full w-full flex-col justify-between p-2 md:flex-row md:items-center">
+					<div id="quickbooks-duty" className="flex w-full flex-col items-start justify-between">
+						<div id="name-and-trained" className="flex flex-row">
+							<strong
+								id="quickbooks"
+								className={`mb-1 overflow-hidden text-ellipsis text-nowrap underline ${acknowledged ? 'text-green-700 decoration-green-700' : acknowledged === false ? 'text-red-700 decoration-red-700' : ''}`}
+							>
+								{quickbooks}
 							</strong>
-							{showTrained && (
+							<Badge
+								id="acknowledged"
+								className={`ml-2 mr-1 h-8 ${backgroundColor('default')} ${foregroundColor({ acknowledged })} capitalize`}
+								variant="outline"
+							>
+								<Icon
+									name={
+										acknowledged ? 'check-circled' : acknowledged === false ? 'cross-circled' : 'exclamation-triangle'
+									}
+									className={`h-6 w-6 py-0.5 ${foregroundColor({ acknowledged })}`}
+									aria-hidden="true"
+								/>
+								<div>{acknowledged ? 'Acknowledged' : acknowledged === false ? 'Requests Help' : 'No Response'}</div>
+							</Badge>
+							{acknowledged && showTrained && (
 								<Badge
-									id="volunteerTrained"
+									id="trained"
 									className={`mx-1 h-8 ${backgroundColor('default')} ${foregroundColor({ trained })} capitalize`}
 									variant="outline"
 								>
@@ -349,108 +386,65 @@ function UserCard({
 										className={`h-6 w-6 pr-1 pt-1 ${foregroundColor({ trained })}`}
 										aria-hidden="true"
 									/>
-									<div>{volunteerTrained ? 'Trained' : 'Not Trained'}</div>
+									<div>{trained ? 'Trained' : 'Not Trained'}</div>
 								</Badge>
 							)}
 						</div>
+						<div id="badges-and-duty" className="flex h-full w-full flex-row items-center gap-1">
+							<Badge
+								id="first-badge"
+								className={`${first ? 'ml-[40px]' : 'ml-[10px]'} mr-1 h-6 capitalize ${backgroundColor(type)} ${isCurrentSchedule && 'text-white'}`}
+								variant="outline"
+							>
+								{type}
+							</Badge>
+							<div>{duty}</div>
+						</div>
+					</div>
+					{currentUser && (
+						<div id="buttons-row" className="flex min-w-64 flex-row justify-end">
+							<Form method="POST" {...form.props}>
+								<input type="hidden" name="userId" value={userId} />
+								<input type="hidden" name="portId" value={portId} />
+								<input type="hidden" name="scheduleId" value={scheduleId} />
+								<input type="hidden" name="type" value={type} />
+								{isCurrentUser && !acknowledged && (
+									<Button type="submit" name="intent" value="acknowledge" variant="default">
+										Acknowledge
+									</Button>
+								)}
+								{isCurrentUser && (acknowledged === true || acknowledged !== false) && (
+									<Button type="submit" name="intent" value="assistance" variant="destructive" className="ml-1 w-32">
+										Request Help
+									</Button>
+								)}
+								{!isCurrentUser && volunteer === null && (
+									<Button type="submit" name="intent" value="volunteer" variant="outline-link" className="w-40">
+										Volunteer to Help
+									</Button>
+								)}
+								{isCurrentVolunteer && (
+									<Button type="submit" name="intent" value="unvolunteer" variant="destructive" className="w-40">
+										Remove Volunteer
+									</Button>
+								)}
+							</Form>
+						</div>
 					)}
 					<div
-						id="user-details"
-						className="flex h-full w-full flex-col justify-between p-2 md:flex-row md:items-center"
+						id="distance-start"
+						className="m-2 flex h-full min-w-60 flex-row items-start justify-center border-t-[1px] border-secondary-foreground pl-2 sm:flex-col md:mt-0 md:border-t-0"
 					>
-						<div id="quickbooks-duty" className="flex w-full flex-col items-start justify-between">
-							<div id="name-and-trained" className="flex flex-row">
-								<strong
-									id="quickbooks"
-									className={`mb-1 overflow-hidden text-ellipsis text-nowrap underline ${acknowledged ? 'text-green-700 decoration-green-700' : acknowledged === false ? 'text-red-700 decoration-red-700' : ''}`}
-								>
-									{quickbooks}
-								</strong>
-								<Badge
-									id="acknowledged"
-									className={`ml-2 mr-1 h-8 ${backgroundColor('default')} ${foregroundColor({ acknowledged })} capitalize`}
-									variant="outline"
-								>
-									<Icon
-										name={
-											acknowledged ? 'check-circled' : acknowledged === false ? 'cross-circled' : 'exclamation-triangle'
-										}
-										className={`h-6 w-6 py-0.5 ${foregroundColor({ acknowledged })}`}
-										aria-hidden="true"
-									/>
-									<div>{acknowledged ? 'Acknowledged' : acknowledged === false ? 'Requests Help' : 'No Response'}</div>
-								</Badge>
-								{acknowledged && showTrained && (
-									<Badge
-										id="trained"
-										className={`mx-1 h-8 ${backgroundColor('default')} ${foregroundColor({ trained })} capitalize`}
-										variant="outline"
-									>
-										<Icon
-											name={trained ? 'diploma' : 'exclamation-triangle'}
-											className={`h-6 w-6 pr-1 pt-1 ${foregroundColor({ trained })}`}
-											aria-hidden="true"
-										/>
-										<div>{trained ? 'Trained' : 'Not Trained'}</div>
-									</Badge>
-								)}
-							</div>
-							<div id="badges-and-duty" className="flex h-full w-full flex-row items-center gap-1">
-								<Badge
-									id="first-badge"
-									className={`${first ? 'ml-[40px]' : 'ml-[10px]'} mr-1 h-6 capitalize ${backgroundColor(type)} ${isCurrentSchedule && 'text-white'}`}
-									variant="outline"
-								>
-									{type}
-								</Badge>
-								<div>{duty}</div>
-							</div>
+						<div id="distance-to-now" className="min-w-60 overflow-hidden text-ellipsis pr-2 text-body-sm">
+							{distanceToNow}
 						</div>
-						{currentUser && (
-							<div id="buttons-row" className="flex min-w-64 flex-row justify-end">
-								<Form method="POST" {...form.props}>
-									<input type="hidden" name="userId" value={userId} />
-									<input type="hidden" name="portId" value={portId} />
-									<input type="hidden" name="scheduleId" value={scheduleId} />
-									<input type="hidden" name="type" value={type} />
-									{isCurrentUser && !acknowledged && (
-										<Button type="submit" name="intent" value="acknowledge" variant="default">
-											Acknowledge
-										</Button>
-									)}
-									{isCurrentUser && (acknowledged === true || acknowledged !== false) && (
-										<Button type="submit" name="intent" value="assistance" variant="destructive" className="ml-1 w-32">
-											Request Help
-										</Button>
-									)}
-									{!isCurrentUser && volunteer === null && (
-										<Button type="submit" name="intent" value="volunteer" variant="outline-link" className="w-40">
-											Volunteer to Help
-										</Button>
-									)}
-									{isCurrentVolunteer && (
-										<Button type="submit" name="intent" value="unvolunteer" variant="destructive" className="w-40">
-											Remove Volunteer
-										</Button>
-									)}
-								</Form>
-							</div>
-						)}
-						<div
-							id="distance-start"
-							className="m-2 flex h-full min-w-60 flex-row items-start justify-center border-t-[1px] border-secondary-foreground pl-2 sm:flex-col md:mt-0 md:border-t-0"
-						>
-							<div id="distance-to-now" className="min-w-60 overflow-hidden text-ellipsis pr-2 text-body-sm">
-								{distanceToNow}
-							</div>
-							<div id="start" className="min-w-44 overflow-hidden text-ellipsis text-body-sm">
-								{String(start)}
-							</div>
+						<div id="start" className="min-w-44 overflow-hidden text-ellipsis text-body-sm">
+							{String(start)}
 						</div>
 					</div>
 				</div>
 			</div>
-		</>
+		</div>
 	)
 }
 
