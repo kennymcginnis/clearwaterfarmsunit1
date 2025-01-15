@@ -375,7 +375,7 @@ function UserCard({
 							</strong>
 							<Badge
 								id="acknowledged"
-								className={`ml-2 mr-1 h-8 ${backgroundColor('default')} ${foregroundColor({ acknowledged })} capitalize`}
+								className={`ml-2 mr-1 h-8 ${first || isCurrentSchedule || isCurrentUser ? 'bg-background' : 'bg-muted/40'}  ${foregroundColor({ acknowledged })} capitalize`}
 								variant="outline"
 							>
 								<Icon

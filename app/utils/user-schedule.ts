@@ -30,7 +30,7 @@ export const backgroundColor = (charge: string) => {
 			return 'bg-muted border-1 border-secondary-foreground/40'
 		case 'none':
 		default:
-			return 'bg-muted-40'
+			return 'bg-muted/40'
 	}
 }
 
