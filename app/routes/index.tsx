@@ -103,7 +103,7 @@ export default function HomeRoute() {
 				>
 					<Icon name="link-2" className="mx-1 h-8 w-8 p-1 hover:scale-125" aria-hidden="true" />
 					<Icon name="exclamation-triangle" className="mx-1 mr-0 h-8 w-8 p-1" aria-hidden="true" />
-					Volunteer Sheet for the Schedule: {closed.date}
+					&nbsp;<strong>Acknowledgements &</strong>&nbsp;Volunteer Signup<strong>&nbsp;| {closed.date}</strong>
 					<Icon name="exclamation-triangle" className="mx-1 ml-0 h-8 w-8 p-1" aria-hidden="true" />
 					<Icon name="arrow-right" className="mx-1 ml-0 h-8 w-8 p-1 hover:scale-125" aria-hidden="true" />
 				</Link>

@@ -128,6 +128,10 @@ export function ClosedScheduleEmail({
 												you.
 											</E.Text>
 											<E.Text style={{ fontSize: 16 }}>
+												First-time irrigators are encouraged to reach out for help to ensure proper setup and operation.
+												support@clearwaterfarmsunit1.com | (623) 703-6126
+											</E.Text>
+											<E.Text style={{ fontSize: 16 }}>
 												<E.Link href={responseUrl('acknowledge', 'first', portId)}>
 													Click here to confirm that you will complete the gate change.
 												</E.Link>

@@ -254,7 +254,7 @@ export default function TimelineRoute() {
 	return (
 		<div className="h-vh mx-auto flex min-w-[80%] flex-col gap-1 p-1">
 			<div className="container my-8 flex flex-col items-center justify-center gap-6">
-				<h1 className="text-center text-h1">Irrigation Crossovers for {schedule.date}</h1>
+				<h1 className="text-center text-h1">Gate Changes & Crossovers | {schedule.date}</h1>
 				<h2 className="text-h2">Acknowledgements and Volunteer Signup</h2>
 				<h3 className="text-center text-h3">{schedule.schedule.join(' ─ ')}</h3>
 			</div>
@@ -321,14 +321,26 @@ function UserCard({
 		if (acknowledged === false) return 'border-2 border-red-700'
 		return 'border-1 border-secondary-foreground'
 	}
+	const background = ({
+		isCurrentSchedule,
+		isCurrentUser,
+		first,
+	}: {
+		isCurrentSchedule: boolean
+		isCurrentUser: boolean
+		first?: boolean | null
+	}) => {
+		if (isCurrentSchedule) return 'bg-sky-800 text-white'
+		if (isCurrentUser) return 'bg-secondary'
+		if (first) return 'bg-secondary/20'
+		return ''
+	}
 
 	const [form] = useForm({ id: `userId=${userId}&scheduleId=${scheduleId}&portId=${portId}` })
 	return (
 		<div
 			id="user-row"
-			className={`flex w-full flex-row items-start justify-between rounded-lg p-2 md:flex-row md:items-center
-					${borderColor({ acknowledged, volunteer })}
-					${isCurrentSchedule ? 'bg-sky-800 text-white' : isCurrentUser ? 'bg-secondary' : 'bg-muted-40'}`}
+			className={`flex w-full flex-row items-start justify-between rounded-lg p-2 md:flex-row md:items-center ${borderColor({ acknowledged, volunteer })} ${background({ isCurrentSchedule, isCurrentUser, first })}`}
 		>
 			<div id="column-wrapper" className="mb-2 flex w-full flex-col">
 				{volunteer && !acknowledged && (
@@ -409,22 +421,46 @@ function UserCard({
 								<input type="hidden" name="scheduleId" value={scheduleId} />
 								<input type="hidden" name="type" value={type} />
 								{isCurrentUser && !acknowledged && (
-									<Button type="submit" name="intent" value="acknowledge" variant="default">
+									<Button
+										type="submit"
+										name="intent"
+										value="acknowledge"
+										variant="outline"
+										className="border-2 border-green-700 text-primary shadow-sm shadow-gray-700"
+									>
 										Acknowledge
 									</Button>
 								)}
 								{isCurrentUser && (acknowledged === true || acknowledged !== false) && (
-									<Button type="submit" name="intent" value="assistance" variant="destructive" className="ml-1 w-32">
+									<Button
+										type="submit"
+										name="intent"
+										value="assistance"
+										variant="outline"
+										className="ml-1 w-32 border-2 border-red-700 text-primary shadow-sm shadow-gray-700"
+									>
 										Request Help
 									</Button>
 								)}
 								{!isCurrentUser && volunteer === null && (
-									<Button type="submit" name="intent" value="volunteer" variant="outline-link" className="w-40">
+									<Button
+										type="submit"
+										name="intent"
+										value="volunteer"
+										variant="outline"
+										className="w-40 border-2 border-blue-700 text-primary shadow-sm shadow-gray-700"
+									>
 										Volunteer to Help
 									</Button>
 								)}
 								{isCurrentVolunteer && (
-									<Button type="submit" name="intent" value="unvolunteer" variant="destructive" className="w-40">
+									<Button
+										type="submit"
+										name="intent"
+										value="unvolunteer"
+										variant="outline"
+										className="w-40 border-2 border-red-700 text-primary shadow-sm shadow-gray-700"
+									>
 										Remove Volunteer
 									</Button>
 								)}
