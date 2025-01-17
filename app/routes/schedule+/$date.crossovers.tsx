@@ -8,11 +8,13 @@ import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Badge } from '#app/components/ui/badge'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
+import CrossoversAdminPanel from '#app/routes/schedule+/CrossoversAdminPanel.tsx'
 import { getUserId, requireUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatDate, formatDates, getDateTimeFormat } from '#app/utils/misc'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { backgroundColor, crossovers } from '#app/utils/user-schedule.ts'
+import { useOptionalAdminUser } from '#app/utils/user.ts'
 
 export type UserScheduleType = {
 	userId: string
@@ -71,6 +73,16 @@ export const SearchResultsSchema = z.array(
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const currentUser = await getUserId(request)
 
+	// @ts-ignore
+	const users: {
+		id: string
+		quickbooks: string
+	}[] = await prisma.user.findMany({
+		select: { id: true, quickbooks: true },
+		where: { active: true, quickbooks: { not: null } },
+		orderBy: { quickbooks: 'asc' },
+	})
+
 	const schedule = await prisma.schedule.findFirstOrThrow({
 		select: { id: true, date: true, start: true, stop: true },
 		where: { date: params.date },
@@ -107,6 +119,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	if (!result.success)
 		return json(
 			{
+				users,
 				currentUser,
 				status: 'error',
 				schedule: { id: null, date: null, start: null, stop: null },
@@ -181,6 +194,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		}
 	})
 	return json({
+		users,
 		status: 'idle',
 		currentUser,
 		schedule: { ...schedule, schedule: formatDates({ start: schedule?.start ?? null, stop: schedule?.stop ?? null }) },
@@ -189,7 +203,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-	const currentUser = await requireUserId(request)
+	const currentUserId = await requireUserId(request)
 	const formData = await request.formData()
 
 	const userId = String(formData.get('userId'))
@@ -218,7 +232,8 @@ export async function action({ request }: ActionFunctionArgs) {
 			break
 		case 'volunteer':
 		case 'unvolunteer': {
-			const volunteered = intent === 'volunteer' ? currentUser : null
+			const volunteerId = String(formData.get('volunteerId'))
+			const volunteered = intent === 'volunteer' ? (volunteerId ?? currentUserId) : null
 			switch (type) {
 				case 'first':
 					data = { volunteerFirst: volunteered }
@@ -247,7 +262,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function TimelineRoute() {
-	const { currentUser, status, schedule, userSchedules } = useLoaderData<typeof loader>()
+	const { users, currentUser, status, schedule, userSchedules } = useLoaderData<typeof loader>()
 
 	if (!schedule || status !== 'idle') return null
 
@@ -263,14 +278,15 @@ export default function TimelineRoute() {
 				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-2xl text-white"
 			>
 				<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
-				Crossovers:
+				Gate Changes & Crossovers:
 				<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
 			</div>
 			{userSchedules.map(userSchedule => (
 				<UserCard
 					key={`${userSchedule.start}`}
+					users={users}
 					currentUser={currentUser}
-					scheduleId={schedule.id}
+					schedule={schedule}
 					userSchedule={userSchedule}
 				/>
 			))}
@@ -279,8 +295,9 @@ export default function TimelineRoute() {
 }
 
 function UserCard({
+	users,
 	currentUser,
-	scheduleId,
+	schedule,
 	userSchedule: {
 		userId,
 		portId,
@@ -298,14 +315,13 @@ function UserCard({
 		volunteerTrained,
 	},
 }: {
+	users: { id: string; quickbooks: string }[]
+	schedule: { id: string; date: string }
 	currentUser: string | null
-	scheduleId: string
 	userSchedule: UserScheduleType
 }) {
-	// trained ||= Math.random() > 0.5
-	// acknowledged ??= Math.random() > 0.6 ? null : Math.random() > 0.3
 	const type = first ? 'first' : 'crossover'
-
+	const userIsAdmin = useOptionalAdminUser()
 	const showTrained = false
 
 	const foregroundColor = ({ trained, acknowledged }: { trained?: boolean | null; acknowledged?: boolean | null }) => {
@@ -336,18 +352,25 @@ function UserCard({
 		return ''
 	}
 
-	const [form] = useForm({ id: `userId=${userId}&scheduleId=${scheduleId}&portId=${portId}` })
+	const [form] = useForm({ id: `userId=${userId}&scheduleId=${schedule.id}&portId=${portId}` })
 	return (
 		<div
 			id="user-row"
 			className={`flex w-full flex-row items-start justify-between rounded-lg p-2 md:flex-row md:items-center ${borderColor({ acknowledged, volunteer })} ${background({ isCurrentSchedule, isCurrentUser, first })}`}
 		>
 			<div id="column-wrapper" className="mb-2 flex w-full flex-col">
-				{volunteer && !acknowledged && (
-					<div id="volunteer-row" className="flex w-full flex-row items-center border-b-2 border-blue-700 pb-2">
-						<strong id="volunteer-name" className="mb-1 overflow-hidden text-ellipsis text-nowrap">
-							<div className={`${isCurrentSchedule ? 'text-white' : 'text-blue-700'}`}>[VOLUNTEER]: {volunteer}</div>
-						</strong>
+				{(userIsAdmin || (volunteer && !acknowledged)) && (
+					<div
+						id="volunteer-row"
+						className="flex w-full flex-row items-center justify-between border-b-2 border-secondary-foreground pb-2"
+					>
+						{volunteer && !acknowledged ? (
+							<strong id="volunteer-name" className="mb-1 overflow-hidden text-ellipsis text-nowrap">
+								<div className={`${isCurrentSchedule ? 'text-white' : 'text-blue-700'}`}>[VOLUNTEER]: {volunteer}</div>
+							</strong>
+						) : (
+							<div></div>
+						)}
 						{showTrained && (
 							<Badge
 								id="volunteerTrained"
@@ -361,6 +384,15 @@ function UserCard({
 								/>
 								<div>{volunteerTrained ? 'Trained' : 'Not Trained'}</div>
 							</Badge>
+						)}
+						{userIsAdmin && (
+							<CrossoversAdminPanel
+								users={users}
+								userId={userId}
+								scheduleId={schedule.id}
+								portId={portId}
+								type={type}
+							/>
 						)}
 					</div>
 				)}
@@ -385,7 +417,9 @@ function UserCard({
 									className={`h-6 w-6 py-0.5 ${foregroundColor({ acknowledged })}`}
 									aria-hidden="true"
 								/>
-								<div>{acknowledged ? 'Acknowledged' : acknowledged === false ? 'Requests Help' : 'No Response'}</div>
+								<div className="text-ellipsis text-nowrap">
+									{acknowledged ? 'Acknowledged' : acknowledged === false ? 'Requests Help' : 'No Response'}
+								</div>
 							</Badge>
 							{acknowledged && showTrained && (
 								<Badge
@@ -418,7 +452,7 @@ function UserCard({
 							<Form method="POST" {...form.props}>
 								<input type="hidden" name="userId" value={userId} />
 								<input type="hidden" name="portId" value={portId} />
-								<input type="hidden" name="scheduleId" value={scheduleId} />
+								<input type="hidden" name="scheduleId" value={schedule.id} />
 								<input type="hidden" name="type" value={type} />
 								{isCurrentUser && !acknowledged && (
 									<Button
@@ -467,6 +501,7 @@ function UserCard({
 							</Form>
 						</div>
 					)}
+
 					<div
 						id="distance-start"
 						className="m-2 flex h-full min-w-60 flex-row items-start justify-center border-t-[1px] border-secondary-foreground pl-2 sm:flex-col md:mt-0 md:border-t-0"
@@ -484,9 +519,9 @@ function UserCard({
 	)
 }
 
-export const meta: MetaFunction<null, { 'routes/irrigation': typeof loader }> = () => {
+export const meta: MetaFunction<null, { 'routes/crossovers': typeof loader }> = () => {
 	return [
-		{ title: 'Irrigation | Water Location' },
+		{ title: 'Irrigation | Gate Changes & Crossovers' },
 		{
 			name: 'description',
 			content: `Clearwater Farms 1 Irrigation Timeline`,
