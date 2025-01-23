@@ -9,7 +9,7 @@ import { Badge } from '#app/components/ui/badge'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
 import CrossoversAdminPanel from '#app/routes/schedule+/CrossoversAdminPanel.tsx'
-import { getUserId, requireUserId } from '#app/utils/auth.server'
+import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { formatDate, formatDates, getDateTimeFormat } from '#app/utils/misc'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
@@ -203,7 +203,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-	const currentUserId = await requireUserId(request)
+	const updatedBy = await getUserId(request) ?? 'admin'
+
 	const formData = await request.formData()
 
 	const userId = String(formData.get('userId'))
@@ -221,10 +222,10 @@ export async function action({ request }: ActionFunctionArgs) {
 			const acknowledged = intent === 'acknowledge'
 			switch (type) {
 				case 'first':
-					data = { acknowledgeFirst: acknowledged }
+					data = { acknowledgeFirst: acknowledged, updatedBy }
 					break
 				case 'crossover':
-					data = { acknowledgeCrossover: acknowledged }
+					data = { acknowledgeCrossover: acknowledged, updatedBy }
 					break
 				default:
 					return new Response('Invalid type, expected `first` or `crossover`', { status: 400 })
@@ -233,13 +234,13 @@ export async function action({ request }: ActionFunctionArgs) {
 		case 'volunteer':
 		case 'unvolunteer': {
 			const volunteerId = String(formData.get('volunteerId'))
-			const volunteered = intent === 'volunteer' ? (volunteerId ?? currentUserId) : null
+			if (!volunteerId) return new Response('Missing parameters', { status: 400 })
 			switch (type) {
 				case 'first':
-					data = { volunteerFirst: volunteered }
+					data = { volunteerFirst: volunteerId, updatedBy }
 					break
 				case 'crossover':
-					data = { volunteerCrossover: volunteered }
+					data = { volunteerCrossover: volunteerId, updatedBy }
 					break
 				default:
 					return new Response('Invalid type, expected `first` or `crossover`', { status: 400 })
@@ -454,6 +455,7 @@ function UserCard({
 								<input type="hidden" name="portId" value={portId} />
 								<input type="hidden" name="scheduleId" value={schedule.id} />
 								<input type="hidden" name="type" value={type} />
+								<input type="hidden" name="volunteerId" value={currentUser} />
 								{isCurrentUser && !acknowledged && (
 									<Button
 										type="submit"
