@@ -134,9 +134,9 @@ export function IrrigationNavigationMenu({
 								</NavigationSubMenuItem>
 							</Link>
 							<Link to={`/schedule/${open?.date}/signup`} className={open ? '' : 'pointer-events-none'}>
-								<NavigationSubMenuItem key="signup" title="Sign Up">
+								<NavigationSubMenuItem key="signup" title="View Sign Up Sheet">
 									<div className="mb-2 mt-4 text-sm font-medium">
-										{open ? 'Sign Up or modify schedule for:' : '- No Schedules Currently Open'}
+										{open ? 'View Sign Up schedule for:' : '- No Schedules Currently Open'}
 									</div>
 									<div className="mb-2 ml-2 text-sm font-bold">{open ? `- ${open.date}` : ''}</div>
 								</NavigationSubMenuItem>

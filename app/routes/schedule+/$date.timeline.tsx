@@ -1,3 +1,4 @@
+/* eslint-disable remix-react-routes/use-link-for-routes */
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { Link, useLoaderData } from '@remix-run/react'
@@ -109,7 +110,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 export default function TimelineRoute() {
 	const user = useOptionalUser()
-	const userIsAdmin = user?.roles.some(r => r.name === 'admin')
 	const defaultUserEntry = user?.ports[0].entry
 	const data = useLoaderData<typeof loader>()
 	const { status, schedule, users } = data
@@ -126,14 +126,17 @@ export default function TimelineRoute() {
 					Source: {schedule.source} | Cost Per Hour: ${schedule.costPerHour}
 				</h3>
 			</div>
-			<div className="flex w-full flex-row-reverse flex-wrap gap-2 p-0.5">
-				{userIsAdmin ? (
-					<Button>
-						<Link reloadDocument to={`/resources/download/print/${scheduleDate}`}>
-							<Icon name="download">Download</Icon>
-						</Link>
-					</Button>
-				) : null}
+			<div className="flex w-full flex-row-reverse flex-wrap gap-2 p-0.5 pr-6">
+				<Button>
+					<Link reloadDocument to={`/resources/download/print/${scheduleDate}`}>
+						<Icon name="download">Download CSV</Icon>
+					</Link>
+				</Button>
+				<Button>
+					<a href={`/pdf/water-schedule-${scheduleDate}.pdf`}>
+						<Icon name="printer">Printable PDF</Icon>
+					</a>
+				</Button>
 			</div>
 			<div className="text-align-webkit-center flex w-full flex-col items-center justify-center gap-1 bg-background">
 				<main className="m-auto w-full" style={{ height: 'fill-available' }}>

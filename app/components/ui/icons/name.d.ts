@@ -39,6 +39,7 @@ export type IconName =
 	| 'pencil-2'
 	| 'person'
 	| 'plus'
+	| 'printer'
 	| 'question-mark-circled'
 	| 'reader'
 	| 'reset'

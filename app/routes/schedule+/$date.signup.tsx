@@ -25,7 +25,7 @@ import { formatDay } from '#app/utils/misc.tsx'
 import { requireUserWithRole } from '#app/utils/permissions.ts'
 import useScrollSync from '#app/utils/scroll-sync'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
+import { useOptionalAdminUser } from '#app/utils/user.ts'
 
 type TotalType = { [key: number]: number }
 type PositionDitchType = {
@@ -193,7 +193,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
 }
 
 export default function ScheduleSignupRoute() {
-	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
 	const { status, schedule, userSchedules, totals, error } = useLoaderData<typeof loader>()
 	const { id: scheduleId, date: scheduleDate } = schedule
@@ -243,11 +242,6 @@ export default function ScheduleSignupRoute() {
 					<Button variant="outline" onClick={toggleShowAll} className="pb-2">
 						Display {showAll ? 'Scheduled' : 'All'}
 					</Button>
-					{currentUser && scheduleDate ? (
-						<Button asChild variant="secondary" className="ml-2 pb-2">
-							<Link to={`/schedule/${scheduleDate}/${currentUser.username}`}>Jump to Self</Link>
-						</Button>
-					) : null}
 				</div>
 				<div className="my-1 flex-grow">
 					<SearchBar action={`/schedule/${scheduleDate}/signup`} status={status} autoFocus autoSubmit />
