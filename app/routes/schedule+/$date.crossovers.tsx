@@ -3,6 +3,7 @@ import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs, type MetaFunction, type ActionFunctionArgs } from '@remix-run/node'
 import { Form, useLoaderData } from '@remix-run/react'
 import { formatDistance, formatDistanceStrict, isBefore, isAfter } from 'date-fns'
+import { useState } from 'react'
 import { z } from 'zod'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Badge } from '#app/components/ui/badge'
@@ -203,7 +204,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-	const updatedBy = await getUserId(request) ?? 'admin'
+	const updatedBy = (await getUserId(request)) ?? 'admin'
 
 	const formData = await request.formData()
 
@@ -265,6 +266,9 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function TimelineRoute() {
 	const { users, currentUser, status, schedule, userSchedules } = useLoaderData<typeof loader>()
 
+	const userIsAdmin = useOptionalAdminUser()
+	const [showAdminButtons, setShowAdminButtons] = useState(false)
+	const toggleAdminButtons = () => setShowAdminButtons(!showAdminButtons)
 	if (!schedule || status !== 'idle') return null
 
 	return (
@@ -278,9 +282,16 @@ export default function TimelineRoute() {
 				id="title-row"
 				className="border-1 my-1 flex w-full justify-center rounded-lg border-secondary-foreground bg-sky-800 p-2 text-2xl text-white"
 			>
+				<div className="flex-grow" />
 				<Icon name="droplets" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
 				Gate Changes & Crossovers:
 				<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
+				<div className="flex-1" />
+				{userIsAdmin ? (
+					<Button variant="outline" className="w-48 text-secondary-foreground" onClick={toggleAdminButtons}>
+						{`${showAdminButtons ? '▲ Hide' : '▼ Show'} Admin Buttons`}
+					</Button>
+				) : null}
 			</div>
 			{userSchedules.map(userSchedule => (
 				<UserCard
@@ -289,6 +300,7 @@ export default function TimelineRoute() {
 					currentUser={currentUser}
 					schedule={schedule}
 					userSchedule={userSchedule}
+					showAdminButtons={showAdminButtons}
 				/>
 			))}
 		</div>
@@ -315,14 +327,15 @@ function UserCard({
 		volunteer,
 		volunteerTrained,
 	},
+	showAdminButtons,
 }: {
 	users: { id: string; quickbooks: string }[]
 	schedule: { id: string; date: string }
 	currentUser: string | null
 	userSchedule: UserScheduleType
+	showAdminButtons: boolean
 }) {
 	const type = first ? 'first' : 'crossover'
-	const userIsAdmin = useOptionalAdminUser()
 	const showTrained = false
 
 	const foregroundColor = ({ trained, acknowledged }: { trained?: boolean | null; acknowledged?: boolean | null }) => {
@@ -360,7 +373,7 @@ function UserCard({
 			className={`flex w-full flex-row items-start justify-between rounded-lg p-2 md:flex-row md:items-center ${borderColor({ acknowledged, volunteer })} ${background({ isCurrentSchedule, isCurrentUser, first })}`}
 		>
 			<div id="column-wrapper" className="mb-2 flex w-full flex-col">
-				{(userIsAdmin || (volunteer && !acknowledged)) && (
+				{(showAdminButtons || (volunteer && !acknowledged)) && (
 					<div
 						id="volunteer-row"
 						className="flex w-full flex-row items-center justify-between border-b-2 border-secondary-foreground pb-2"
@@ -386,7 +399,7 @@ function UserCard({
 								<div>{volunteerTrained ? 'Trained' : 'Not Trained'}</div>
 							</Badge>
 						)}
-						{userIsAdmin && (
+						{showAdminButtons && (
 							<CrossoversAdminPanel
 								users={users}
 								userId={userId}
@@ -467,7 +480,7 @@ function UserCard({
 										Acknowledge
 									</Button>
 								)}
-								{isCurrentUser && (acknowledged === true || acknowledged !== false) && (
+								{isCurrentUser && acknowledged !== false && (
 									<Button
 										type="submit"
 										name="intent"
@@ -478,7 +491,7 @@ function UserCard({
 										Request Help
 									</Button>
 								)}
-								{!isCurrentUser && volunteer === null && (
+								{!isCurrentUser && volunteer === null && acknowledged !== true && (
 									<Button
 										type="submit"
 										name="intent"
