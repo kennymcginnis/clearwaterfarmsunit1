@@ -19,14 +19,21 @@ import { Input } from '#app/components/ui/input.tsx'
 import { Label } from '#app/components/ui/label.tsx'
 import { Separator } from '#app/components/ui/separator'
 import { StatusButton } from '#app/components/ui/status-button'
-import { type createPhoneAction, CreatePhoneSchema } from '#app/routes/member+/$username+/_edit'
-import { action, getPaginatedContacts } from '#app/routes/members+/contacts+/contacts.server'
+import { getPaginatedContacts } from '#app/routes/members+/contacts+/contacts.server'
 import { cn, useDoubleCheck } from '#app/utils/misc'
 import { getNewTableUrl } from '#app/utils/pagination/contacts'
 import { requireUserWithRole } from '#app/utils/permissions'
-import { PhoneNumberSchema } from '#app/utils/user-validation'
+import { CreatePhoneSchema, PhoneNumberSchema } from '#app/utils/user-validation'
 
-export { action }
+export { action } from '#app/routes/members+/contacts+/contacts.server'
+
+export const UpdatePhoneSchema = z.object({
+	userId: z.string(),
+	id: z.string(),
+	type: z.string(),
+	number: PhoneNumberSchema,
+	primary: z.boolean().optional().default(false),
+})
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	await requireUserWithRole(request, 'admin')
@@ -362,7 +369,7 @@ export default function ContactsRoute() {
 }
 
 function CreatePhone({ userId, index }: { userId: string; index: number }) {
-	const fetcher = useFetcher<typeof createPhoneAction>()
+	const fetcher = useFetcher()
 	const [form, fields] = useForm({
 		id: `create-phone-${userId}`,
 		constraint: getFieldsetConstraint(
@@ -372,14 +379,12 @@ function CreatePhone({ userId, index }: { userId: string; index: number }) {
 				phoneNumber: PhoneNumberSchema,
 			}),
 		),
-		lastSubmission: fetcher.data?.submission,
 		onValidate({ formData }) {
 			return parse(formData, { schema: CreatePhoneSchema })
 		},
 	})
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-		if (fetcher.data?.submission.error) return
 		fetcher.submit(event.currentTarget)
 	}
 
@@ -409,7 +414,7 @@ function CreatePhone({ userId, index }: { userId: string; index: number }) {
 }
 
 function DeletePhone({ userId, phoneId }: { userId: string; phoneId: string }) {
-	const fetcher = useFetcher<typeof action>()
+	const fetcher = useFetcher()
 	const dc = useDoubleCheck()
 	return (
 		<fetcher.Form method="POST" key={`delete-${phoneId}`}>

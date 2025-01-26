@@ -6,12 +6,12 @@ import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { floatingToolbarClassName } from '#app/components/floating-toolbar.tsx'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
-import { action } from '#app/routes/schedule+/actions.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { useOptionalAdminUser } from '#app/utils/user.ts'
 import { DialogCloseSchedule } from './__close-schedule-dialog'
 import { ScheduleActionButton } from './__schedule-action-button'
-export { action }
+
+export { action } from '#app/routes/schedule+/actions.server'
 
 export async function loader({ params }: ActionFunctionArgs) {
 	const schedule = await prisma.schedule.findFirst({
