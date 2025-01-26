@@ -13,7 +13,6 @@ import {
 	Form,
 	Link,
 	Links,
-	LiveReload,
 	Meta,
 	Outlet,
 	Scripts,
@@ -42,9 +41,8 @@ import {
 	DropdownMenuPortal,
 	DropdownMenuTrigger,
 } from './components/ui/dropdown-menu.tsx'
-
 import { EpicToaster } from './components/ui/sonner.tsx'
-import tailwindStyleSheetUrl from './styles/tailwind.css'
+import tailwindStyleSheetUrl from './styles/tailwind.css?url'
 import { getUserId, logout } from './utils/auth.server.ts'
 import { ClientHintCheck, getHints, useHints } from './utils/client-hints.tsx'
 import { csrf } from './utils/csrf.server.ts'
@@ -250,7 +248,6 @@ function Document({
 				/>
 				<ScrollRestoration nonce={nonce} />
 				<Scripts nonce={nonce} />
-				<LiveReload nonce={nonce} />
 			</body>
 		</html>
 	)

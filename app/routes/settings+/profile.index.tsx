@@ -8,21 +8,16 @@ import { Field, ErrorList } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon'
 import { StatusButton } from '#app/components/ui/status-button'
-import {
-	action,
-	CreatePhone,
-	ProfileFormSchema,
-	profileUpdateActionIntent,
-	signOutOfSessionsActionIntent,
-	UpdatePhone,
-	type profileUpdateAction,
-	type signOutOfSessionsAction,
-} from '#app/routes/member+/$username+/_edit'
+import { CreatePhone, UpdatePhone } from '#app/routes/member+/$username+/_edit'
 import { requireUserId } from '#app/utils/auth.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { useDoubleCheck, getUserImgSrc } from '#app/utils/misc'
+import { ProfileFormSchema } from '#app/utils/user-validation.ts'
 
-export { action }
+export { action } from '#app/routes/member+/$username+/_edit.server'
+
+const profileUpdateActionIntent = 'update-profile'
+const signOutOfSessionsActionIntent = 'sign-out-of-sessions'
 
 export const handle: SEOHandle = {
 	getSitemapEntries: () => null,
@@ -104,12 +99,11 @@ export default function EditUserProfile() {
 
 function UpdateProfile() {
 	const data = useLoaderData<typeof loader>()
-	const fetcher = useFetcher<typeof profileUpdateAction>()
+	const fetcher = useFetcher()
 
 	const [form, fields] = useForm({
 		id: 'edit-profile',
 		constraint: getFieldsetConstraint(ProfileFormSchema),
-		lastSubmission: fetcher.data?.submission,
 		onValidate({ formData }) {
 			return parse(formData, { schema: ProfileFormSchema })
 		},
@@ -174,7 +168,7 @@ function UpdateProfile() {
 					size="wide"
 					name="intent"
 					value={profileUpdateActionIntent}
-					status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
+					status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
 				>
 					Save Changes
 				</StatusButton>
@@ -193,7 +187,7 @@ function SignOutOfSessions() {
 	const data = useLoaderData<typeof loader>()
 	const dc = useDoubleCheck()
 
-	const fetcher = useFetcher<typeof signOutOfSessionsAction>()
+	const fetcher = useFetcher()
 	const otherSessionsCount = data.user._count.sessions - 1
 	return otherSessionsCount ? (
 		<fetcher.Form method="POST">
@@ -205,7 +199,7 @@ function SignOutOfSessions() {
 					value: signOutOfSessionsActionIntent,
 				})}
 				variant={dc.doubleCheck ? 'destructive' : 'default'}
-				status={fetcher.state !== 'idle' ? 'pending' : fetcher.data?.status ?? 'idle'}
+				status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
 			>
 				<Icon name="avatar">
 					{dc.doubleCheck ? `Are you sure?` : `Sign out of ${otherSessionsCount} other sessions`}

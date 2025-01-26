@@ -8,11 +8,12 @@ import { Field } from '#app/components/forms.tsx'
 import { Button } from '#app/components/ui/button.tsx'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button'
-import { action, UserContactSchema, UpdatePhone, CreatePhone } from '#app/routes/member+/$username+/_edit'
+import { UpdatePhone, CreatePhone } from '#app/routes/member+/$username+/_edit'
 import { prisma } from '#app/utils/db.server.ts'
 import { useIsPending } from '#app/utils/misc'
+import { UserContactSchema } from '#app/utils/user-validation.ts'
 
-export { action }
+export { action } from '#app/routes/member+/$username+/_edit.server'
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	const user = await prisma.user.findFirst({

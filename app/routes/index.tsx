@@ -9,10 +9,11 @@ import { loader } from './index.server'
 import { PaymentCancelled } from './payment+/__cancelled-dialog'
 import { PaymentsDialog } from './payment+/__continue-dialog'
 import { PaymentSuccess } from './payment+/__success-dialog'
-import { UserScheduleEditor, action } from './schedule+/__schedule-editor'
+import { UserScheduleEditor } from './schedule+/__schedule-editor'
 import { UserScheduleTimeline } from './schedule+/__schedule-timeline'
 
-export { action, loader }
+export { loader }
+export { action } from './schedule+/__schedule-editor.server'
 
 export default function HomeRoute() {
 	const USDollar = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
