@@ -1,5 +1,6 @@
 import { useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
+import { json, type ActionFunctionArgs } from '@remix-run/node'
 import { useFetcher } from '@remix-run/react'
 import { type SetStateAction, useState } from 'react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
@@ -9,7 +10,11 @@ import { Badge } from '#app/components/ui/badge.tsx'
 import { Button } from '#app/components/ui/button'
 import { Card, CardHeader, CardFooter, CardContent, CardTitle, CardDescription } from '#app/components/ui/card'
 import { StatusButton } from '#app/components/ui/status-button.tsx'
+import { requireUserId } from '#app/utils/auth.server.ts'
+import { validateCSRF } from '#app/utils/csrf.server.ts'
+import { prisma } from '#app/utils/db.server.ts'
 import { formatHours, useIsPending } from '#app/utils/misc.tsx'
+import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { backgroundColor } from '#app/utils/user-schedule.ts'
 import { useOptionalAdminUser, useOptionalUser } from '#app/utils/user.ts'
 
@@ -20,6 +25,43 @@ const UserScheduleEditorSchema = z.object({
 	ditch: z.number(),
 	hours: z.number().min(0).max(12).optional().default(0),
 })
+
+export async function action({ request }: ActionFunctionArgs) {
+	const currentUser = await requireUserId(request)
+	const formData = await request.formData()
+	await validateCSRF(formData, request.headers)
+
+	const submission = await parse(formData, { schema: UserScheduleEditorSchema, async: true })
+	if (submission.intent !== 'submit') return json({ status: 'idle', submission })
+
+	if (submission.value) {
+		const { userId, scheduleId, portId, ditch, hours } = submission.value
+
+		await prisma.userSchedule.upsert({
+			select: { userId: true, scheduleId: true, portId: true },
+			where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
+			create: {
+				userId,
+				scheduleId,
+				portId,
+				hours,
+				updatedBy: currentUser,
+			},
+			update: {
+				hours,
+				updatedBy: currentUser,
+			},
+		})
+
+		return redirectWithToast('', {
+			type: 'success',
+			title: 'Success',
+			description: hours ? `${hours} hours saved for ditch ${ditch}.` : `Hours removed from ditch ${ditch}.`,
+		})
+	} else {
+		return json({ status: 'error', submission } as const, { status: 400 })
+	}
+}
 
 export function UserScheduleEditor({
 	user,
@@ -50,7 +92,7 @@ export function UserScheduleEditor({
 	}
 	previous?: number | null
 }) {
-	const scheduleEditor = useFetcher()
+	const scheduleEditor = useFetcher<typeof action>()
 	const isPending = useIsPending()
 	const currentUser = useOptionalUser()
 	const userIsAdmin = useOptionalAdminUser()
@@ -72,6 +114,7 @@ export function UserScheduleEditor({
 	const [form, fields] = useForm({
 		id: 'signup-form',
 		constraint: getFieldsetConstraint(UserScheduleEditorSchema),
+		lastSubmission: scheduleEditor.data?.submission,
 		onValidate({ formData }) {
 			return parse(formData, { schema: UserScheduleEditorSchema })
 		},

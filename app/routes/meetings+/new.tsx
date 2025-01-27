@@ -1,6 +1,6 @@
 import { json, type MetaFunction, type LoaderFunctionArgs } from '@remix-run/node'
 import { requireUserId } from '#app/utils/auth.server.ts'
-import { ScheduleEditor, action } from './__schedules-editor.tsx'
+import { MeetingEditor, action } from './__meeting-editor.tsx'
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	await requireUserId(request)
@@ -8,14 +8,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export { action }
-export default ScheduleEditor
+export default MeetingEditor
 
-export const meta: MetaFunction<null, { 'routes/schedules+/new': typeof loader }> = () => {
+export const meta: MetaFunction<null, { 'routes/meetings+/$date_+/meeting': typeof loader }> = () => {
 	return [
-		{ title: `New Irrigation Schedule | Clearwater Farms 1` },
+		{ title: `New Meeting | Clearwater Farms 1` },
 		{
 			name: 'description',
-			content: `New Irrigation Schedule for Clearwater Farms 1`,
+			content: `New Clearwater Farms 1 Board Meeting`,
 		},
 	]
 }

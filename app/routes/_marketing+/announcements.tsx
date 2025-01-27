@@ -1,4 +1,4 @@
-import DocumentComponent from '#app/routes/_marketing+/_mdx'
+import DocumentComponent, { loader } from '#app/routes/_marketing+/__mdx'
 
-export { loader } from '#app/routes/_marketing+/_mdx'
+export { loader }
 export default DocumentComponent

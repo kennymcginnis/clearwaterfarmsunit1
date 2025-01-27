@@ -25,9 +25,8 @@ import {
 	DitchesArray,
 } from '#app/utils/pagination/transactions'
 import { requireUserWithRole } from '#app/utils/permissions'
-import { getPaginatedTransactions } from './transactions.server'
-
-export { action } from './transactions.server'
+import { action, getPaginatedTransactions } from './transactions.server'
+export { action }
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	await requireUserWithRole(request, 'admin')
@@ -285,7 +284,7 @@ export default function ViewTransactions() {
 }
 
 function DeleteButton({ id }: { id: string }) {
-	const fetcher = useFetcher()
+	const fetcher = useFetcher<typeof action>()
 	const dc = useDoubleCheck()
 	return (
 		<fetcher.Form method="POST" key={`delete-${id}`}>
