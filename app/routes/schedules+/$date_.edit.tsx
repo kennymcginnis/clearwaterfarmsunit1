@@ -3,9 +3,9 @@ import { json, redirect, type LoaderFunctionArgs, type MetaFunction } from '@rem
 import { useLoaderData } from '@remix-run/react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { prisma } from '#app/utils/db.server.ts'
-import { ScheduleEditor } from './__schedules-editor.tsx'
+import { ScheduleEditor, action } from './__schedules-editor.tsx'
 
-export { action } from './__schedules-editor.server.tsx'
+export { action }
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	if (!params?.date) {

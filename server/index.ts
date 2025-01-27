@@ -1,6 +1,8 @@
 import crypto from 'crypto'
-import { createRequestHandler as _createRequestHandler } from '@remix-run/express'
-import { type ServerBuild, installGlobals } from '@remix-run/node'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { createRequestHandler as _createRequestHandler, type RequestHandler } from '@remix-run/express'
+import { broadcastDevReady, installGlobals, type ServerBuild } from '@remix-run/node'
 import * as Sentry from '@sentry/remix'
 import { ip as ipAddress } from 'address'
 import chalk from 'chalk'
@@ -16,19 +18,17 @@ installGlobals()
 
 const MODE = process.env.NODE_ENV
 
-const createRequestHandler =
-	MODE === 'production'
-		? Sentry.wrapExpressCreateRequestHandler(_createRequestHandler)
-		: _createRequestHandler
+const createRequestHandler = Sentry.wrapExpressCreateRequestHandler(_createRequestHandler)
 
-const viteDevServer =
-	MODE === 'production'
-		? undefined
-		: await import('vite').then(vite =>
-				vite.createServer({
-					server: { middlewareMode: true },
-				}),
-			)
+const BUILD_PATH = '../build/index.js'
+const WATCH_PATH = '../build/version.txt'
+
+/**
+ * Initial build
+ * @type {ServerBuild}
+ */
+const build = await import(BUILD_PATH)
+let devBuild = build
 
 const app = express()
 
@@ -70,24 +70,20 @@ app.disable('x-powered-by')
 app.use(Sentry.Handlers.requestHandler())
 app.use(Sentry.Handlers.tracingHandler())
 
-if (viteDevServer) {
-	app.use(viteDevServer.middlewares)
-} else {
-	// Remix fingerprints its assets so we can cache forever.
-	app.use('/build', express.static('public/build', { immutable: true, maxAge: '1y' }))
+// Remix fingerprints its assets so we can cache forever.
+app.use('/build', express.static('public/build', { immutable: true, maxAge: '1y' }))
 
-	// Everything else (like favicon.ico) is cached for an hour. You may want to be
-	// more aggressive with this caching.
-	app.use(express.static('public', { maxAge: '1h' }))
-}
+// Everything else (like favicon.ico) is cached for an hour. You may want to be
+// more aggressive with this caching.
+app.use(express.static('public', { maxAge: '1h' }))
 
-app.get(['/img/*', '/favicons/*'], (req, res) => {
+app.get(['/build/*', '/img/*', '/fonts/*', '/favicons/*'], (req, res) => {
 	// if we made it past the express.static for these, then we're missing something.
 	// So we'll just send a 404 and won't bother calling other middleware.
 	return res.status(404).send('Not found')
 })
 
-morgan.token('url', req => decodeURIComponent(req.url ?? ''))
+morgan.token('url', (req, res) => decodeURIComponent(req.url ?? ''))
 app.use(
 	morgan('tiny', {
 		skip: (req, res) =>
@@ -190,28 +186,14 @@ app.use((req, res, next) => {
 	return generalRateLimit(req, res, next)
 })
 
-async function getBuild() {
-	const build = viteDevServer
-		? viteDevServer.ssrLoadModule('virtual:remix/server-build')
-		: // @ts-ignore this should exist before running the server
-			// but it may not exist just yet.
-			await import('#build/server/index.js')
-	// not sure how to make this happy 🤷‍♂️
-	return build as unknown as ServerBuild
+function getRequestHandler(build: ServerBuild): RequestHandler {
+	function getLoadContext(_: any, res: any) {
+		return { cspNonce: res.locals.cspNonce }
+	}
+	return createRequestHandler({ build, mode: MODE, getLoadContext })
 }
 
-app.all(
-	'*',
-	createRequestHandler({
-		getLoadContext: (_: any, res: any) => ({
-			cspNonce: res.locals.cspNonce,
-			serverBuild: getBuild(),
-		}),
-		mode: MODE,
-		// @sentry/remix needs to be updated to handle the function signature
-		build: MODE === 'production' ? await getBuild() : getBuild,
-	}),
-)
+app.all('*', MODE === 'development' ? (...args) => getRequestHandler(devBuild)(...args) : getRequestHandler(build))
 
 const desiredPort = Number(process.env.PORT || 3000)
 const portToUse = await getPort({
@@ -243,6 +225,10 @@ ${lanUrl ? `${chalk.bold('On Your Network:')}  ${chalk.cyan(lanUrl)}` : ''}
 ${chalk.bold('Press Ctrl+C to stop')}
 		`.trim(),
 	)
+
+	if (MODE === 'development') {
+		broadcastDevReady(build)
+	}
 })
 
 closeWithGrace(async () => {
@@ -250,3 +236,24 @@ closeWithGrace(async () => {
 		server.close(e => (e ? reject(e) : resolve('ok')))
 	})
 })
+
+// during dev, we'll keep the build module up to date with the changes
+if (MODE === 'development') {
+	async function reloadBuild() {
+		devBuild = await import(`${BUILD_PATH}?update=${Date.now()}`)
+		broadcastDevReady(devBuild)
+	}
+
+	// We'll import chokidar here so doesn't get bundled in production.
+	const chokidar = await import('chokidar')
+
+	const dirname = path.dirname(fileURLToPath(import.meta.url))
+	const watchPath = path.join(dirname, WATCH_PATH).replace(/\\/g, '/')
+
+	const buildWatcher = chokidar
+		.watch(watchPath, { ignoreInitial: true })
+		.on('add', reloadBuild)
+		.on('change', reloadBuild)
+
+	closeWithGrace(() => buildWatcher.close())
+}

@@ -73,33 +73,3 @@ export const DepositsSchema = z.object({
 	note: z.string(),
 	date: DateSchema,
 })
-
-export const UserContactSchema = z.object({
-	id: z.string(),
-	member: NameSchema.optional(),
-	username: UsernameSchema,
-	primaryEmail: EmailSchema,
-	secondaryEmail: EmailSchema.optional(),
-})
-
-export const ProfileFormSchema = z.object({
-	member: NameSchema.optional(),
-	username: UsernameSchema,
-	secondaryEmail: EmailSchema.optional(),
-})
-
-export const CreatePhoneSchema = z.object({
-	userId: z.string(),
-	type: z.string(),
-	number: PhoneNumberSchema,
-})
-export const UpdatePhoneSchema = z.object({
-	userId: z.string(),
-	id: z.string(),
-	type: z.string(),
-	number: PhoneNumberSchema,
-	primary: z.boolean().optional().default(false),
-})
-export const DeletePhoneSchema = z.object({
-	id: z.string().optional(),
-})

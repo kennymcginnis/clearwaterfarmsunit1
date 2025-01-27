@@ -1,11 +1,8 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type LoaderFunctionArgs } from '@remix-run/node'
+import { getAllInstances, getInstanceInfo } from 'litefs-js'
+import { ensureInstance } from 'litefs-js/remix.js'
 import { lruCache } from '#app/utils/cache.server.ts'
-import {
-	getAllInstances,
-	getInstanceInfo,
-	ensureInstance,
-} from '#app/utils/litefs.server.ts'
 import { requireUserWithRole } from '#app/utils/permissions.ts'
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
