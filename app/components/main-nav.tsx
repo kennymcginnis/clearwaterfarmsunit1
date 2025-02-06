@@ -113,16 +113,16 @@ export function IrrigationNavigationMenu({
 						<p className="max-md:hidden">Irrigation</p>
 					</NavigationMenuTrigger>
 					<NavigationMenuContent className="hover:z-10">
-						<ul className="grid w-[300px] grid-cols-1 gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-							<li className="row-span-4">
+						<ul className="grid w-[300px] grid-cols-1 gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
+							<li className="row-span-2">
 								<NavigationMenuLink asChild>
 									<Link to="/schedules">
-										<div className="z-1 flex h-full w-full select-none flex-col items-center justify-center rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md">
+										<div className="z-1 flex h-full w-full flex-grow select-none flex-col items-center justify-center rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md">
 											<div className="flex flex-row">
 												<Icon name="droplet" className="h-8 w-8" aria-hidden="true" />
 												<Icon name="droplets" className="h-8 w-8" aria-hidden="true" />
 											</div>
-											<div className="mb-2 mt-4 text-lg font-medium">Irrigation</div>
+											<div className="mb-2 mt-2 text-lg font-medium">Irrigation</div>
 											<p className="text-sm leading-tight text-muted-foreground">Schedules</p>
 										</div>
 									</Link>
@@ -130,31 +130,45 @@ export function IrrigationNavigationMenu({
 							</li>
 							<Link to="/irrigation-information">
 								<NavigationSubMenuItem key="irrigation-information" title="Irrigation Info">
-									<div className="mb-2 mt-4 text-sm font-medium">Basic Irrigation Information</div>
+									<div className="mb-2 mt-2 text-sm font-medium">Basic Irrigation Information</div>
 								</NavigationSubMenuItem>
 							</Link>
 							<Link to={`/schedule/${open?.date}/signup`} className={open ? '' : 'pointer-events-none'}>
 								<NavigationSubMenuItem key="signup" title="View Sign Up Sheet">
-									<div className="mb-2 mt-4 text-sm font-medium">
+									<div className="mb-2 mt-2 text-sm font-medium">
 										{open ? 'View Sign Up schedule for:' : '- No Schedules Currently Open'}
 									</div>
 									<div className="mb-2 ml-2 text-sm font-bold">{open ? `- ${open.date}` : ''}</div>
 								</NavigationSubMenuItem>
 							</Link>
-							{closed.map(({ date }, index) => (
-								<Link
-									key={`closed-${date}`}
-									to={`/schedule/${date}/timeline`}
-									className={closed ? '' : 'pointer-events-none'}
-								>
-									<NavigationSubMenuItem key="schedule" title={`${index ? 'Previous' : 'Current'} Timeline`}>
-										<div className="mb-2 mt-4 text-sm font-medium">
-											View the {index ? 'previous' : 'current'} schedule for:
-										</div>
-										<div className="mb-2 ml-2 text-sm font-bold">- {date}</div>
+							<li>
+								<Link to="/irrigation" className="text-sky-800">
+									<NavigationSubMenuItem key="water-location" title="Water Location">
+										<div className="mb-2 mt-2 text-sm font-medium">Where is the water currently?</div>
 									</NavigationSubMenuItem>
 								</Link>
-							))}
+								<Link to={`schedule/${closed[0].date}/crossovers`} className="text-yellow-700">
+									<NavigationSubMenuItem key="acknowledgements-volunteers" title="Acknowledge or Volunteer">
+										<div className="mb-2 mt-2 text-sm font-medium">Gate Changes & Crossovers</div>
+									</NavigationSubMenuItem>
+								</Link>
+							</li>
+							<li>
+								{closed.map(({ date }, index) => (
+									<Link
+										key={`closed-${date}`}
+										to={`/schedule/${date}/timeline`}
+										className={closed ? '' : 'pointer-events-none'}
+									>
+										<NavigationSubMenuItem key="schedule" title={`${index ? 'Previous' : 'Current'} Timeline`}>
+											<div className="mb-1 mt-2 text-sm font-medium">
+												View the {index ? 'previous' : 'current'} schedule for:
+											</div>
+											<div className="mb-1 ml-2 text-sm font-bold">- {date}</div>
+										</NavigationSubMenuItem>
+									</Link>
+								))}
+							</li>
 						</ul>
 					</NavigationMenuContent>
 				</NavigationMenuItem>
@@ -181,7 +195,7 @@ function MembersNavigationMenu() {
 											<div className="flex flex-row">
 												<Icon name="user-search" className="h-8 w-8" aria-hidden="true" />
 											</div>
-											<div className="mb-2 mt-4 text-lg font-medium">Members</div>
+											<div className="mb-1 mt-2 text-lg font-medium">Members</div>
 											<p className="text-sm leading-tight text-muted-foreground">Balances</p>
 										</div>
 									</Link>
@@ -189,17 +203,17 @@ function MembersNavigationMenu() {
 							</li>
 							<Link to="/members/transactions">
 								<NavigationSubMenuItem key="members-transactions" title="Transactions">
-									<div className="mb-2 mt-4 text-sm font-medium">Members' Transactions</div>
+									<div className="mb-1 mt-2 text-sm font-medium">Members' Transactions</div>
 								</NavigationSubMenuItem>
 							</Link>
 							<Link to="/members/contacts">
 								<NavigationSubMenuItem key="members-contacts" title="Contact List">
-									<div className="mb-2 mt-4 text-sm font-medium">Members' Contact Information</div>
+									<div className="mb-1 mt-2 text-sm font-medium">Members' Contact Information</div>
 								</NavigationSubMenuItem>
 							</Link>
 							<Link to="/members/restrictions">
 								<NavigationSubMenuItem key="members-restrictions" title="Restrictions">
-									<div className="mb-2 mt-4 text-sm font-medium">Restriction Information</div>
+									<div className="mb-1 mt-2 text-sm font-medium">Restriction Information</div>
 								</NavigationSubMenuItem>
 							</Link>
 						</ul>

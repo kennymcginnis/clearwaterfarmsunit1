@@ -141,6 +141,7 @@ model Transactions {
   scheduleId String?
   ditch      Int?
   waterStart DateTime?
+  emailed    Boolean? @default(false)
 
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
