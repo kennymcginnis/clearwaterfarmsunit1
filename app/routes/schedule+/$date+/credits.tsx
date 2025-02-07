@@ -28,6 +28,7 @@ type UserType = {
 	display: string
 	quickbooks: string
 	primaryEmail: string
+	emailed: boolean
 }
 type QuickbooksMapType = {
 	[quickbooks: string]: UserType
@@ -44,7 +45,7 @@ type Transaction = {
 	date: string
 	debit: number
 	note: string | null
-	user: { id: string; display: string; primaryEmail: string; quickbooks: string }
+	user: UserType
 }
 type ChangesType = {
 	id: string
@@ -67,6 +68,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			id: true,
 			debit: true,
 			note: true,
+			emailed: true,
 			user: { select: { id: true, display: true, primaryEmail: true, quickbooks: true } },
 		},
 		where: {
@@ -286,6 +288,9 @@ export default function ViewTransactions() {
 					<div className="col-span-2 px-3 text-lg">Primary Email</div>
 					<div className="col-span-1 px-3 text-right text-lg">Amount</div>
 					<div className="col-span-5 px-3 text-lg">Note</div>
+					<div className="col-span-1 pl-[52px]">
+						<EmailButton id="email-unread" all={true} />
+					</div>
 				</div>
 				{transactions && transactions.length ? (
 					transactions.map(({ id, user, debit, note }: Transaction) => (
@@ -317,7 +322,7 @@ export default function ViewTransactions() {
 							/>
 							<div className="col-span-1 flex flex-row gap-1">
 								<DeleteButton id={id} />
-								<EmailButton id={id} />
+								<EmailButton id={id} emailed={user.emailed} />
 							</div>
 						</div>
 					))
@@ -353,7 +358,7 @@ function DeleteButton({ id }: { id: string }) {
 	)
 }
 
-function EmailButton({ id }: { id: string }) {
+function EmailButton({ id, emailed, all }: { id: string; emailed?: boolean; all?: boolean }) {
 	const fetcher = useFetcher<typeof action>()
 	const dc = useDoubleCheck()
 	return (
@@ -363,13 +368,13 @@ function EmailButton({ id }: { id: string }) {
 				{...dc.getButtonProps({
 					type: 'submit',
 					name: 'intent',
-					value: 'delete-transaction',
+					value: all ? 'email-unread' : 'email-transaction',
 				})}
 				className={`${dc.doubleCheck ? 'text-secondary' : 'text-primary'}`}
 				variant={`${dc.doubleCheck ? 'outline' : 'outline-link'}`}
 				status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
 			>
-				<Icon name="envelope-closed" className="h-4 w-4" />
+				<Icon name={`envelope-${emailed ? 'open' : 'closed'}`} className="h-4 w-4" />
 			</StatusButton>
 		</fetcher.Form>
 	)

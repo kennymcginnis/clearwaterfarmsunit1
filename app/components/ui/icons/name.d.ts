@@ -21,6 +21,7 @@ export type IconName =
 	| 'droplet'
 	| 'droplets'
 	| 'envelope-closed'
+	| 'envelope-open'
 	| 'exclamation-triangle'
 	| 'exit'
 	| 'file-text'

@@ -8,3 +8,9 @@ It's important that you only add icons to this directory that the application ac
 the `build-icons.ts` script to do that.
 
 Run `npm run build:icons` to update the sprite.
+
+To add the trash, pencil-1, and avatar icons, run:
+
+```
+npx sly add @radix-ui/icons trash pencil-1 avatar
+```

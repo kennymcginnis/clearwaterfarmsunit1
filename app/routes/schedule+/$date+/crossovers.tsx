@@ -233,7 +233,6 @@ export async function action({ request }: ActionFunctionArgs) {
 			}
 			break
 		case 'volunteer':
-		case 'unvolunteer': {
 			const volunteerId = String(formData.get('volunteerId'))
 			if (!volunteerId) return new Response('Missing parameters', { status: 400 })
 			switch (type) {
@@ -247,7 +246,18 @@ export async function action({ request }: ActionFunctionArgs) {
 					return new Response('Invalid type, expected `first` or `crossover`', { status: 400 })
 			}
 			break
-		}
+		case 'unvolunteer':
+			switch (type) {
+				case 'first':
+					data = { volunteerFirst: null, updatedBy }
+					break
+				case 'crossover':
+					data = { volunteerCrossover: null, updatedBy }
+					break
+				default:
+					return new Response('Invalid type, expected `first` or `crossover`', { status: 400 })
+			}
+			break
 		default:
 			return new Response('Invalid intent, expected `acknowledge`, `assistance`, or `volunteer`', { status: 400 })
 	}

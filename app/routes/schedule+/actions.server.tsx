@@ -173,6 +173,7 @@ async function closeScheduleAction({ userId, schedule, formData }: ScheduleActio
 						date,
 						waterStart: start,
 						quantity: hours,
+						emailed: true,
 						rate: costPerHour,
 						note: `${hours} hours at $${costPerHour} per hour`,
 						updatedBy: userId,
