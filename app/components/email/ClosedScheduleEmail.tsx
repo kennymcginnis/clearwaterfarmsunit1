@@ -131,17 +131,34 @@ export function ClosedScheduleEmail({
 												First-time irrigators are encouraged to reach out for help to ensure proper setup and operation.
 												support@clearwaterfarmsunit1.com | (623) 703-6126
 											</E.Text>
-											<E.Text style={{ fontSize: 16 }}>
-												<E.Link href={responseUrl('acknowledge', 'first', portId)}>
-													Click here to confirm that you will complete the gate change.
-												</E.Link>
-											</E.Text>
-											<E.Text style={{ fontSize: 16 }}>
-												<E.Link href={responseUrl('assistance', 'first', portId)}>
-													Click here to request assistance.
-												</E.Link>
-											</E.Text>
-
+											<E.Row>
+												<td className="w-1/2 pr-[16px]" colSpan={1}>
+													<E.Button
+														className="inline-flex h-10 items-center justify-center rounded-md border-2 border-green-700 bg-background px-4 py-2 text-sm font-medium text-primary shadow-sm shadow-gray-700 outline-none ring-ring ring-offset-2 ring-offset-background transition-colors focus-within:ring-2 hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50"
+														href={responseUrl('acknowledge', 'first', portId)}
+													>
+														Acknowledge
+													</E.Button>
+												</td>
+												<td className="w-1/2 pl-[16px]" colSpan={1}>
+													<E.Text style={{ fontSize: 16 }}>
+														Click here to confirm that you will complete the gate change.
+													</E.Text>
+												</td>
+											</E.Row>
+											<E.Row>
+												<td className="w-1/2 pr-[16px]" colSpan={1}>
+													<E.Button
+														className="ml-1 inline-flex h-10 w-32 items-center justify-center rounded-md border-2 border-red-700 bg-background px-4 py-2 text-sm font-medium text-primary shadow-sm shadow-gray-700 outline-none ring-ring ring-offset-2 ring-offset-background transition-colors focus-within:ring-2 hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50"
+														href={responseUrl('assistance', 'first', portId)}
+													>
+														Request Help
+													</E.Button>
+												</td>
+												<td className="w-1/2 pl-[16px]" colSpan={1}>
+													<E.Text style={{ fontSize: 16 }}>Click here to request assistance.</E.Text>
+												</td>
+											</E.Row>
 											<E.Heading as="h3" style={{ fontSize: 18, fontWeight: 'bold' }}>
 												Reference Video:
 											</E.Heading>
@@ -186,16 +203,38 @@ export function ClosedScheduleEmail({
 												If you are unable or unwilling to complete this gate change, volunteers are available to assist
 												you.
 											</E.Text>
-											<E.Text style={{ fontSize: 16 }}>
-												<E.Link href={responseUrl('acknowledge', 'crossover', portId)}>
-													Click here to confirm that you will clear the crossover of debris.
-												</E.Link>
-											</E.Text>
-											<E.Text style={{ fontSize: 16 }}>
-												<E.Link href={responseUrl('assistance', 'crossover', portId)}>
-													Click here to request assistance.
-												</E.Link>
-											</E.Text>
+											<E.Row>
+												<td className="w-1/2 pr-[16px]" colSpan={1}>
+													<E.Button
+														className="box-border w-full rounded-[8px] bg-green-700 px-[12px] py-[12px] text-center font-semibold text-white"
+														href={responseUrl('acknowledge', 'crossover', portId)}
+													>
+														Acknowledge
+													</E.Button>
+												</td>
+												<td className="w-1/2 pl-[16px]" colSpan={1}>
+													<E.Text style={{ fontSize: 16 }}>
+														Click here to confirm that you will clear the crossover of debris.
+													</E.Text>
+												</td>
+											</E.Row>
+											<E.Row>
+												<td className="w-1/2 pr-[16px]" colSpan={1}>
+													<E.Button
+														className="box-border w-full rounded-[8px] bg-red-700 px-[12px] py-[12px] text-center font-semibold text-white"
+														href={responseUrl('assistance', 'crossover', portId)}
+													>
+														Request Help
+													</E.Button>
+												</td>
+												<td className="w-1/2 pl-[16px]" colSpan={1}>
+													<E.Text style={{ fontSize: 16 }}>
+														<E.Link href={responseUrl('assistance', 'crossover', portId)}>
+															Click here to request assistance.
+														</E.Link>
+													</E.Text>
+												</td>
+											</E.Row>
 										</E.Section>
 									)}
 

@@ -121,13 +121,13 @@ export default function ScheduleRoute() {
 									text="Send Emails"
 									variant="default"
 								/>
-								{/* <ScheduleActionButton
+								<ScheduleActionButton
 									id={schedule.id}
 									icon="envelope-closed"
 									value="test-email"
 									text="Test Email"
 									variant="destructive"
-								/> */}
+								/>
 							</>
 						) : null}
 						{canClose ? <DialogCloseSchedule id={schedule.id} /> : null}

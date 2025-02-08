@@ -1,1 +1,320 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html dir="ltr" lang="en"><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="max-width:37.5em"><tbody><tr style="width:100%"><td><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="border:1px solid rgb(0,0,0, 0.1);border-radius:3px;overflow:hidden"><tbody><tr><td><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="background-color:#020817;border-bottom:1px solid rgb(0, 0, 0, 0.1)"><tbody style="width:100%"><tr style="width:100%"><td data-id="__react-email-column" style="padding:20px 30px 15px"><h1 style="color:#f8fafc;font-size:2.5rem;line-height:2.5rem;font-weight:700">Clearwater Farms </h1><p style="font-size:1.5rem;line-height:24px;margin:16px 0;color:#f8fafc;font-weight:300">Unit 1</p></td><td data-id="__react-email-column"><img class="h-12" alt="CWF" src="localhost:3000/favicons/android-chrome-192x192.png" style="display:block;outline:none;border:none;text-decoration:none"/></td></tr></tbody></table><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="padding:20px;padding-bottom:0"><tbody style="width:100%"><tr style="width:100%"><td data-id="__react-email-column"><h1 style="font-size:32px;font-weight:bold">Hi <!-- -->Victoria<!-- -->,</h1><h2 style="font-size:18px;font-weight:bold">We recently closed the irrigation schedule that starts on <!-- -->Thursday, Jan 9th<!-- -->.</h2><p style="font-size:18px;line-height:24px;margin:16px 0">Here is your upcoming watering schedule:</p><p style="font-size:20px;line-height:24px;margin:16px 0;margin-top:-5px"><b>Ditch <!-- -->4<!-- -->: (<!-- -->1-hour<!-- -->): </b>Mon, Jan 13th, 11:30am - 12:30pm</p><table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="border-top:#f8fafc solid"><tbody><tr><td><h2 style="font-size:26px;font-weight:bold">***Please note:</h2><h3 style="font-size:18px;font-weight:bold">Responsibilities as the First Irrigator on Ditch <!-- -->4<!-- -->:</h3><p style="font-size:16px;line-height:24px;margin:16px 0">As the first irrigator on your ditch, you are responsible for making the gate change for your ditch.</p><h3 style="font-size:18px;font-weight:bold">Timing:</h3><p style="font-size:16px;line-height:24px;margin:16px 0">This gate change should be done 15–20 minutes before your scheduled start time.</p><h3 style="font-size:18px;font-weight:bold">Water Credit:</h3><p style="font-size:16px;line-height:24px;margin:16px 0">As a first irrigator, you will receive a 30-minute water credit to your irrigation account.</p><h3 style="font-size:18px;font-weight:bold">Assistance:</h3><p style="font-size:16px;line-height:24px;margin:16px 0">If you are unable or unwilling to complete this gate change, volunteers are available to assist you.</p><p style="font-size:16px;line-height:24px;margin:16px 0"><a href="localhost:3000/api/userSchedule/acknowledge/first?userId=fefh-wbh7-75ny&amp;scheduleId=yu8v-cxbp-rdbs&amp;portId=6geb-8wam-8vbr" style="color:#067df7;text-decoration:none" target="_blank">Click here to confirm that you will complete the gate change.</a></p><p style="font-size:16px;line-height:24px;margin:16px 0"><a href="localhost:3000/api/userSchedule/assistance/first?userId=fefh-wbh7-75ny&amp;scheduleId=yu8v-cxbp-rdbs&amp;portId=6geb-8wam-8vbr" style="color:#067df7;text-decoration:none" target="_blank">Click here to request assistance.</a></p><h3 style="font-size:18px;font-weight:bold">Reference Video:</h3><p style="font-size:16px;line-height:24px;margin:16px 0">For detailed instructions, please refer to the video uploaded on our Facebook group:<!-- --> <a href="https://www.facebook.com/1803766961/videos/497550569428361/" style="color:#067df7;text-decoration:none" target="_blank">Gate Change Instruction Video.</a></p></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table></html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="en">
+	<table
+		align="center"
+		width="100%"
+		border="0"
+		cellpadding="0"
+		cellspacing="0"
+		role="presentation"
+		style="max-width: 37.5em"
+	>
+		<tbody>
+			<tr style="width: 100%">
+				<td>
+					<table
+						align="center"
+						width="100%"
+						border="0"
+						cellpadding="0"
+						cellspacing="0"
+						role="presentation"
+						style="border: 1px solid rgb(0, 0, 0, 0.1); border-radius: 3px; overflow: hidden"
+					>
+						<tbody>
+							<tr>
+								<td>
+									<table
+										align="center"
+										width="100%"
+										border="0"
+										cellpadding="0"
+										cellspacing="0"
+										role="presentation"
+										style="background-color: #020817; border-bottom: 1px solid rgb(0, 0, 0, 0.1)"
+									>
+										<tbody style="width: 100%">
+											<tr style="width: 100%">
+												<td data-id="__react-email-column" style="padding: 20px 30px 15px">
+													<h1 style="color: #f8fafc; font-size: 2.5rem; line-height: 2.5rem; font-weight: 700">
+														Clearwater Farms
+													</h1>
+													<p
+														style="
+															font-size: 1.5rem;
+															line-height: 24px;
+															margin: 16px 0;
+															color: #f8fafc;
+															font-weight: 300;
+														"
+													>
+														Unit 1
+													</p>
+												</td>
+												<td data-id="__react-email-column">
+													<img
+														class="h-12"
+														alt="CWF"
+														src="https://www.clearwaterfarmsunit1.com/favicons/android-chrome-192x192.png"
+														style="display: block; outline: none; border: none; text-decoration: none"
+													/>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+									<table
+										align="center"
+										width="100%"
+										border="0"
+										cellpadding="0"
+										cellspacing="0"
+										role="presentation"
+										style="padding: 20px; padding-bottom: 0"
+									>
+										<tbody style="width: 100%">
+											<tr style="width: 100%">
+												<td data-id="__react-email-column">
+													<h1 style="font-size: 32px; font-weight: bold">
+														Hi
+														<!-- -->Ken &amp; Emily<!-- -->,
+													</h1>
+													<h2 style="font-size: 18px; font-weight: bold">
+														We recently closed the irrigation schedule that starts on
+														<!-- -->Thursday, Feb 6th<!-- -->.
+													</h2>
+													<p style="font-size: 18px; line-height: 24px; margin: 16px 0">
+														Here is your upcoming watering schedule:
+													</p>
+													<p style="font-size: 20px; line-height: 24px; margin: 16px 0; margin-top: -5px">
+														<b
+															>Ditch
+															<!-- -->7<!-- -->: (<!-- -->1.5-hrs<!-- -->): </b
+														>Fri, Feb 07, 3:30am ─ Fri, Feb 14, 2:00am
+													</p>
+													<table
+														align="center"
+														width="100%"
+														border="0"
+														cellpadding="0"
+														cellspacing="0"
+														role="presentation"
+														style="border-top: #f8fafc solid"
+													>
+														<tbody>
+															<tr>
+																<td>
+																	<h2 style="font-size: 26px; font-weight: bold">***Please note:</h2>
+																	<h3 style="font-size: 18px; font-weight: bold">
+																		Responsibilities as the First Irrigator on Ditch
+																		<!-- -->7<!-- -->:
+																	</h3>
+																	<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																		As the first irrigator on your ditch, you are responsible for making the gate change
+																		for your ditch.
+																	</p>
+																	<h3 style="font-size: 18px; font-weight: bold">Timing:</h3>
+																	<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																		This gate change should be done 15–20 minutes before your scheduled start time.
+																	</p>
+																	<h3 style="font-size: 18px; font-weight: bold">Water Credit:</h3>
+																	<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																		As a first irrigator, you will receive a 30-minute water credit to your irrigation
+																		account.
+																	</p>
+																	<h3 style="font-size: 18px; font-weight: bold">Assistance:</h3>
+																	<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																		If you are unable or unwilling to complete this gate change, volunteers are
+																		available to assist you.
+																	</p>
+																	<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																		First-time irrigators are encouraged to reach out for help to ensure proper setup
+																		and operation. support@clearwaterfarmsunit1.com | (623) 703-6126
+																	</p>
+																	<table
+																		align="center"
+																		width="100%"
+																		border="0"
+																		cellpadding="0"
+																		cellspacing="0"
+																		role="presentation"
+																	>
+																		<tbody style="width: 100%">
+																			<tr style="width: 100%">
+																				<td class="w-1/2 pr-[16px]" colspan="1">
+																					<a
+																						class="inline-flex h-10 items-center justify-center rounded-md border-2 border-green-700 bg-background px-4 py-2 text-sm font-medium text-primary shadow-sm shadow-gray-700 outline-none ring-ring ring-offset-2 ring-offset-background transition-colors focus-within:ring-2 hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50"
+																						href="https://www.clearwaterfarmsunit1.com/api/userSchedule/acknowledge/first?userId=ws9g-ngss-pqaz&amp;scheduleId=m6uq-eznd-ybr2&amp;portId=fpfq-hedp-yndt"
+																						style="
+																							line-height: 100%;
+																							text-decoration: none;
+																							display: inline-block;
+																							max-width: 100%;
+																							mso-padding-alt: 0px;
+																							padding: 0px 0px 0px 0px;
+																						"
+																						target="_blank"
+																						><span
+																							><!--[if mso
+																								]><i
+																									style="mso-font-width: 0%; mso-text-raise: 0"
+																									hidden
+																								></i><![endif]--></span
+																						><span
+																							style="
+																								max-width: 100%;
+																								display: inline-block;
+																								line-height: 120%;
+																								mso-padding-alt: 0px;
+																								mso-text-raise: 0;
+																							"
+																							>Acknowledge</span
+																						><span
+																							><!--[if mso
+																								]><i style="mso-font-width: 0%" hidden>&#8203;</i><!
+																							[endif]--></span
+																						></a
+																					>
+																				</td>
+																				<td class="w-1/2 pl-[16px]" colspan="1">
+																					<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																						Click here to confirm that you will complete the gate change.
+																					</p>
+																				</td>
+																			</tr>
+																		</tbody>
+																	</table>
+																	<table
+																		align="center"
+																		width="100%"
+																		border="0"
+																		cellpadding="0"
+																		cellspacing="0"
+																		role="presentation"
+																	>
+																		<tbody style="width: 100%">
+																			<tr style="width: 100%">
+																				<td class="w-1/2 pr-[16px]" colspan="1">
+																					<a
+																						class="ml-1 inline-flex h-10 w-32 items-center justify-center rounded-md border-2 border-red-700 bg-background px-4 py-2 text-sm font-medium text-primary shadow-sm shadow-gray-700 outline-none ring-ring ring-offset-2 ring-offset-background transition-colors focus-within:ring-2 hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50"
+																						href="https://www.clearwaterfarmsunit1.com/api/userSchedule/assistance/first?userId=ws9g-ngss-pqaz&amp;scheduleId=m6uq-eznd-ybr2&amp;portId=fpfq-hedp-yndt"
+																						style="
+																							line-height: 100%;
+																							text-decoration: none;
+																							display: inline-block;
+																							max-width: 100%;
+																							mso-padding-alt: 0px;
+																							padding: 0px 0px 0px 0px;
+																						"
+																						target="_blank"
+																						><span
+																							><!--[if mso
+																								]><i
+																									style="mso-font-width: 0%; mso-text-raise: 0"
+																									hidden
+																								></i><![endif]--></span
+																						><span
+																							style="
+																								max-width: 100%;
+																								display: inline-block;
+																								line-height: 120%;
+																								mso-padding-alt: 0px;
+																								mso-text-raise: 0;
+																							"
+																							>Request Help</span
+																						><span
+																							><!--[if mso
+																								]><i style="mso-font-width: 0%" hidden>&#8203;</i><!
+																							[endif]--></span
+																						></a
+																					>
+																				</td>
+																				<td class="w-1/2 pl-[16px]" colspan="1">
+																					<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																						Click here to request assistance.
+																					</p>
+																				</td>
+																			</tr>
+																		</tbody>
+																	</table>
+																	<h3 style="font-size: 18px; font-weight: bold">Reference Video:</h3>
+																	<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																		For detailed instructions, please refer to the video uploaded on our Facebook group:<!-- -->
+																		<a
+																			href="https://www.facebook.com/1803766961/videos/497550569428361/"
+																			style="color: #067df7; text-decoration-line: none"
+																			target="_blank"
+																			>Gate Change Instruction Video.</a
+																		>
+																	</p>
+																</td>
+															</tr>
+														</tbody>
+													</table>
+													<table
+														align="center"
+														width="100%"
+														border="0"
+														cellpadding="0"
+														cellspacing="0"
+														role="presentation"
+														style="border-top: #f8fafc solid"
+													>
+														<tbody>
+															<tr>
+																<td>
+																	<h3 style="font-size: 18px; font-weight: bold">Crossover:</h3>
+																	<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																		You are the first irrigator<!-- -->
+																		south of the Orangewood crossover
+																		<!-- -->on Ditch
+																		<!-- -->7<!-- -->. You will be responsible to ensure that the crossover (under the
+																		street) is cleared of debris that would obstruct water flow.
+																	</p>
+																	<h3 style="font-size: 18px; font-weight: bold">Water Credit:</h3>
+																	<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																		For clearing the crossover, you will receive a 15-minute water credit to your
+																		irrigation account.
+																	</p>
+																	<h3 style="font-size: 18px; font-weight: bold">Assistance:</h3>
+																	<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																		If you are unable or unwilling to complete this gate change, volunteers are
+																		available to assist you.
+																	</p>
+																</td>
+															</tr>
+														</tbody>
+													</table>
+													<table
+														align="center"
+														width="100%"
+														border="0"
+														cellpadding="0"
+														cellspacing="0"
+														role="presentation"
+														style="border-top: #f8fafc solid"
+													>
+														<tbody>
+															<tr>
+																<td>
+																	<h3 style="font-size: 18px; font-weight: bold">Last Irrigator:</h3>
+																	<p style="font-size: 16px; line-height: 24px; margin: 16px 0">
+																		You are the last irrigator on Ditch
+																		<!-- -->7<!-- -->. Please do not pull your checks at the end of your scheduled run.
+																	</p>
+																</td>
+															</tr>
+														</tbody>
+													</table>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</html>
