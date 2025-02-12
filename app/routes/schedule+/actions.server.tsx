@@ -14,8 +14,7 @@ import { redirectWithToast } from '#app/utils/toast.server.ts'
 
 type EmailType = {
 	[key: string]: {
-		userId: string
-		emailSubject: string
+		user: { id: string; emailSubject: string; trained: boolean }
 		schedules: {
 			portId: string
 			ditch: number
@@ -269,6 +268,7 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 				primaryEmail,
 				secondarySubject,
 				secondaryEmail,
+				trained,
 			}) => {
 				const schedule = {
 					portId,
@@ -282,32 +282,29 @@ async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 				}
 				if (primaryEmail) {
 					if (emails[primaryEmail]) emails[primaryEmail].schedules.push(schedule)
-					else emails[primaryEmail] = { userId, emailSubject: emailSubject ?? primaryEmail, schedules: [schedule] }
+					else
+						emails[primaryEmail] = {
+							user: { id: userId, emailSubject: emailSubject ?? primaryEmail, trained },
+							schedules: [schedule],
+						}
 				}
 				if (secondaryEmail) {
 					if (emails[secondaryEmail]) emails[secondaryEmail].schedules.push(schedule)
 					else {
 						emails[secondaryEmail] = {
-							userId,
-							emailSubject: secondarySubject ?? emailSubject ?? secondaryEmail,
+							user: { id: userId, emailSubject: secondarySubject ?? emailSubject ?? secondaryEmail, trained },
 							schedules: [schedule],
 						}
 					}
 				}
 			},
 		)
-		const batchEmails = Object.entries(emails).map(([email, { userId, emailSubject, schedules }]) => ({
+		const batchEmails = Object.entries(emails).map(([email, { user, schedules }]) => ({
 			from: 'clearwat@clearwaterfarmsunit1.com',
 			to: email,
 			subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
 			react: (
-				<ClosedScheduleEmail
-					scheduleId={scheduleId}
-					date={scheduleDate}
-					userId={userId}
-					emailSubject={emailSubject}
-					schedules={schedules}
-				/>
+				<ClosedScheduleEmail schedule={{ id: scheduleId, date: scheduleDate }} user={user} schedules={schedules} />
 			),
 		}))
 
@@ -355,10 +352,8 @@ async function testEmailAction({ schedule, formData }: ScheduleActionArgs) {
 			subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
 			react: (
 				<ClosedScheduleEmail
-					scheduleId={scheduleId}
-					date={scheduleDate}
-					userId={userId}
-					emailSubject={emailSubject}
+					schedule={{ id: scheduleId, date: scheduleDate }}
+					user={{ id: userId, emailSubject, trained: false }}
 					schedules={schedules}
 				/>
 			),

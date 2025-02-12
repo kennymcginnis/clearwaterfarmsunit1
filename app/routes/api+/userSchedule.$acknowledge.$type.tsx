@@ -7,6 +7,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const userId = queryParams.get('userId')
 	const scheduleId = queryParams.get('scheduleId')
 	const portId = queryParams.get('portId')
+	const requestsTraining = Boolean(queryParams.get('requestsTraining')) ?? false
 
 	if (!userId || !scheduleId || !portId) return new Response('Missing parameters', { status: 400 })
 
@@ -21,13 +22,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	switch (type) {
 		case 'first':
 			await prisma.userSchedule.update({
-				data: { acknowledgeFirst: acknowledged },
+				data: { acknowledgeFirst: acknowledged, requestsTraining },
 				where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
 			})
 			break
 		case 'crossover':
 			await prisma.userSchedule.update({
-				data: { acknowledgeCrossover: acknowledged },
+				data: { acknowledgeCrossover: acknowledged, requestsTraining },
 				where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
 			})
 			break

@@ -1,15 +1,17 @@
 import * as E from '@react-email/components'
 
+import { type CSSProperties } from 'react'
+
 const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.clearwaterfarmsunit1.com'
 export function ClosedScheduleEmail({
-	scheduleId,
-	date,
+	schedule: { id: scheduleId, date },
 	schedules,
-	userId,
-	emailSubject,
+	user: { id: userId, emailSubject, trained },
 }: {
-	scheduleId: string
-	date: string
+	schedule: {
+		id: string
+		date: string
+	}
 	schedules: {
 		portId: string
 		ditch: number
@@ -20,12 +22,9 @@ export function ClosedScheduleEmail({
 		crossover: boolean | null
 		last: boolean | null
 	}[]
-	userId: string
-	emailSubject: string
+	user: { id: string; emailSubject: string; trained: boolean }
 }) {
 	const enabled = true
-	const responseUrl = (acknowledge: string, type: string, portId: string): string =>
-		`${baseUrl}/api/userSchedule/${acknowledge}/${type}?userId=${userId}&scheduleId=${scheduleId}&portId=${portId}`
 
 	return (
 		<E.Html lang="en" dir="ltr">
@@ -131,34 +130,13 @@ export function ClosedScheduleEmail({
 												First-time irrigators are encouraged to reach out for help to ensure proper setup and operation.
 												support@clearwaterfarmsunit1.com | (623) 703-6126
 											</E.Text>
-											<E.Row>
-												<td className="w-1/2 pr-[16px]" colSpan={1}>
-													<E.Button
-														className="inline-flex h-10 items-center justify-center rounded-md border-2 border-green-700 bg-background px-4 py-2 text-sm font-medium text-primary shadow-sm shadow-gray-700 outline-none ring-ring ring-offset-2 ring-offset-background transition-colors focus-within:ring-2 hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50"
-														href={responseUrl('acknowledge', 'first', portId)}
-													>
-														Acknowledge
-													</E.Button>
-												</td>
-												<td className="w-1/2 pl-[16px]" colSpan={1}>
-													<E.Text style={{ fontSize: 16 }}>
-														Click here to confirm that you will complete the gate change.
-													</E.Text>
-												</td>
-											</E.Row>
-											<E.Row>
-												<td className="w-1/2 pr-[16px]" colSpan={1}>
-													<E.Button
-														className="ml-1 inline-flex h-10 w-32 items-center justify-center rounded-md border-2 border-red-700 bg-background px-4 py-2 text-sm font-medium text-primary shadow-sm shadow-gray-700 outline-none ring-ring ring-offset-2 ring-offset-background transition-colors focus-within:ring-2 hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50"
-														href={responseUrl('assistance', 'first', portId)}
-													>
-														Request Help
-													</E.Button>
-												</td>
-												<td className="w-1/2 pl-[16px]" colSpan={1}>
-													<E.Text style={{ fontSize: 16 }}>Click here to request assistance.</E.Text>
-												</td>
-											</E.Row>
+
+											<ResponseButton type="first" portId={portId} acknowledged={true} requestsTraining={false} />
+											{!trained && (
+												<ResponseButton type="first" portId={portId} acknowledged={true} requestsTraining={true} />
+											)}
+											<ResponseButton type="first" portId={portId} acknowledged={false} requestsTraining={false} />
+
 											<E.Heading as="h3" style={{ fontSize: 18, fontWeight: 'bold' }}>
 												Reference Video:
 											</E.Heading>
@@ -203,38 +181,12 @@ export function ClosedScheduleEmail({
 												If you are unable or unwilling to complete this gate change, volunteers are available to assist
 												you.
 											</E.Text>
-											<E.Row>
-												<td className="w-1/2 pr-[16px]" colSpan={1}>
-													<E.Button
-														className="box-border w-full rounded-[8px] bg-green-700 px-[12px] py-[12px] text-center font-semibold text-white"
-														href={responseUrl('acknowledge', 'crossover', portId)}
-													>
-														Acknowledge
-													</E.Button>
-												</td>
-												<td className="w-1/2 pl-[16px]" colSpan={1}>
-													<E.Text style={{ fontSize: 16 }}>
-														Click here to confirm that you will clear the crossover of debris.
-													</E.Text>
-												</td>
-											</E.Row>
-											<E.Row>
-												<td className="w-1/2 pr-[16px]" colSpan={1}>
-													<E.Button
-														className="box-border w-full rounded-[8px] bg-red-700 px-[12px] py-[12px] text-center font-semibold text-white"
-														href={responseUrl('assistance', 'crossover', portId)}
-													>
-														Request Help
-													</E.Button>
-												</td>
-												<td className="w-1/2 pl-[16px]" colSpan={1}>
-													<E.Text style={{ fontSize: 16 }}>
-														<E.Link href={responseUrl('assistance', 'crossover', portId)}>
-															Click here to request assistance.
-														</E.Link>
-													</E.Text>
-												</td>
-											</E.Row>
+
+											<ResponseButton type="crossover" portId={portId} acknowledged={true} requestsTraining={false} />
+											{!trained && (
+												<ResponseButton type="crossover" portId={portId} acknowledged={true} requestsTraining={true} />
+											)}
+											<ResponseButton type="crossover" portId={portId} acknowledged={false} requestsTraining={false} />
 										</E.Section>
 									)}
 
@@ -244,7 +196,7 @@ export function ClosedScheduleEmail({
 											<E.Heading as="h3" style={{ fontSize: 18, fontWeight: 'bold' }}>
 												Last Irrigator:
 											</E.Heading>
-											<E.Text style={{ fontSize: 16 }}>
+											<E.Text style={{ fontSize: 16 }} className="text-center">
 												You are the last irrigator on Ditch {ditch}. Please do not pull your checks at the end of your
 												scheduled run.
 											</E.Text>
@@ -258,4 +210,72 @@ export function ClosedScheduleEmail({
 			</E.Container>
 		</E.Html>
 	)
+
+	function ResponseButton({
+		type,
+		portId,
+		acknowledged,
+		requestsTraining,
+	}: {
+		type: string
+		portId: string
+		acknowledged: boolean
+		requestsTraining?: boolean
+	}) {
+		const responseUrl = `${baseUrl}/api/userSchedule/${acknowledged ? 'acknowledge' : 'assistance'}/${type}?userId=${userId}&scheduleId=${scheduleId}&portId=${portId}${requestsTraining ? '&requestsTraining=true' : ''}`
+
+		const duty = type === 'first' ? 'gate change' : 'crossover'
+
+		const { backgroundColor, buttonText, labelText } = acknowledged
+			? requestsTraining
+				? {
+						backgroundColor: '#f3ab23', // yellow
+						buttonText: 'Request Training',
+						labelText: `Click here if you would like to attempt the ${duty} but need guidance or support.`,
+					}
+				: {
+						backgroundColor: '#167c3c', // green
+						buttonText: 'Acknowledge',
+						labelText: `Click here to confirm that you will complete the ${duty}.`,
+					}
+			: {
+					backgroundColor: '#af1a1a', // red
+					buttonText: 'Request Help',
+					labelText: `Click here if you do not wish to make the ${duty} yourself and would like a volunteer to handle it.`,
+				}
+
+		return (
+			<E.Row>
+				<E.Column style={buttonContainer} colSpan={1}>
+					<E.Button style={{ ...button, backgroundColor }} href={responseUrl}>
+						{buttonText}
+					</E.Button>
+				</E.Column>
+				<E.Column style={textContainer} colSpan={1}>
+					<E.Text style={{ fontSize: 16, margin: 0 }}>{labelText}</E.Text>
+				</E.Column>
+			</E.Row>
+		)
+	}
+}
+
+const buttonContainer = {
+	width: '100px',
+	padding: '8px',
+}
+
+const textContainer = {
+	width: '100%',
+	padding: '8px',
+}
+
+const button: CSSProperties = {
+	borderRadius: 3,
+	width: '120px',
+	textAlign: 'center',
+	color: '#FFF',
+	fontWeight: 'bold',
+	border: '1px solid rgb(0,0,0, 0.1)',
+	cursor: 'pointer',
+	padding: '12px 30px',
 }

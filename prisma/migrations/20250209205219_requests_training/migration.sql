@@ -1,0 +1,1 @@
+ALTER TABLE "UserSchedule" ADD COLUMN "requestsTraining" BOOLEAN;
