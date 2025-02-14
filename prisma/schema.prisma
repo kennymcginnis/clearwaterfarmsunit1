@@ -163,6 +163,7 @@ model Schedule {
   stop  DateTime?
 
   userSchedules UserSchedule[]
+  crossover     Crossover[]
 
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
@@ -203,20 +204,22 @@ model Crossover {
   order Int
 
   scheduleId String
-  ditch      Int
-  entry      String
-  duty       String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
 
-  user   User?   @relation(name: "user", fields: [userId], references: [id])
-  userId String?
+  ditch Int
+  entry String
+  duty  String
+
+  userId      String?
+  user        User?   @relation(name: "user", fields: [userId], references: [id])
+  volunteerId String?
+  volunteer   User?   @relation(name: "volunteer", fields: [volunteerId], references: [id])
 
   dutyStart DateTime?
   dutyNotes String?
 
-  acknowledge Boolean?
-  volunteerId String?
-  volunteer   User?    @relation(name: "volunteer", fields: [volunteerId], references: [id])
-  training    Boolean?
+  acknowledged     Boolean?
+  requestsTraining Boolean?
 
   hours Float     @default(0)
   start DateTime?
@@ -241,6 +244,9 @@ model UserSchedule {
   first     Boolean?
   crossover Boolean?
   last      Boolean?
+
+  firstId     String?
+  crossoverId String?
 
   acknowledgeFirst     Boolean?
   acknowledgeCrossover Boolean?

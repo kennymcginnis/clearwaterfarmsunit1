@@ -14,7 +14,7 @@ import { generatePublicId } from '#app/utils/public-id'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { useOptionalAdminUser } from '#app/utils/user'
 import {
-	assignChargesToSchedules,
+	assignDutiesToSchedules,
 	backgroundColor,
 	borderColor,
 	SearchResultsSchema,
@@ -88,7 +88,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			return ditch * 100 + position
 		}
 
-		const updated: UserScheduleType[] = assignChargesToSchedules(result.data)
+		const updated: UserScheduleType[] = assignDutiesToSchedules(result.data)
 
 		for (let { schedule: ignored, ditch, position, hours, ...updates } of updated) {
 			const ordered = sortOrder(ditch, position)
@@ -228,14 +228,9 @@ export async function action({ request }: ActionFunctionArgs) {
 		}
 		case 'submit': {
 			const timeline = await prisma.timeline.findMany({ where: { scheduleId, hours: { gt: 0 } } })
-			timeline.forEach(async ({ userId, scheduleId, portId, start, stop, first, crossover, last }) => {
-				await prisma.userSchedule.update({
-					data: { start, stop, first, crossover, last },
-					where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
-				})
-			})
 
 			type CrossoverCreateManyInput = {
+				id?: string
 				ditch: number
 				entry: string
 				duty: string
@@ -268,11 +263,13 @@ export async function action({ request }: ActionFunctionArgs) {
 				'8.10-03.crossover': { ditch: 8, entry: '10-03', duty: 'crossover' },
 			}
 
-			timeline.forEach(({ ditch, entry, first, crossover, userId, hours, start, stop }) => {
+			timeline.forEach(async ({ portId, ditch, entry, first, last, crossover, userId, hours, start, stop }) => {
+				let firstId, crossoverId
 				if (first && start) {
-					const original = crossoversFound[`${ditch}.${entry}.first`]
+					firstId = generatePublicId()
 					crossoversFound[`${ditch}.${entry}.first`] = {
-						...original,
+						id: firstId,
+						...crossoversFound[`${ditch}.${entry}.first`],
 						userId,
 						duty: 'first',
 						dutyStart: subMinutes(start, 15),
@@ -282,9 +279,10 @@ export async function action({ request }: ActionFunctionArgs) {
 					}
 				}
 				if (crossover && start) {
-					const original = crossoversFound[`${ditch}.${entry}.crossover`]
+					crossoverId = generatePublicId()
 					crossoversFound[`${ditch}.${entry}.crossover`] = {
-						...original,
+						id: crossoverId,
+						...crossoversFound[`${ditch}.${entry}.crossover`],
 						userId,
 						duty: 'crossover',
 						dutyStart: subMinutes(start, 5),
@@ -293,11 +291,22 @@ export async function action({ request }: ActionFunctionArgs) {
 						stop,
 					}
 				}
+
+				await prisma.userSchedule.update({
+					data: { start, stop, first, crossover, last, firstId, crossoverId },
+					where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
+				})
 			})
 
+			// add order to Crossover
 			const data = Object.values(crossoversFound)
 				.sort((a, b) => (a.start && b.start ? new Date(a.start).getTime() - new Date(b.start).getTime() : 0))
-				.map((crossover, index) => ({ id: generatePublicId(), order: index + 1, scheduleId, ...crossover }))
+				.map((crossover, index) => ({
+					id: crossover.id ?? generatePublicId(),
+					order: index + 1,
+					scheduleId,
+					...crossover,
+				}))
 
 			await prisma.crossover.deleteMany({ where: { scheduleId } })
 			await prisma.crossover.createMany({ data })

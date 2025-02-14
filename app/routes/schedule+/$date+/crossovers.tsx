@@ -18,13 +18,13 @@ import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Badge } from '#app/components/ui/badge'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
+import { Input } from '#app/components/ui/input.tsx'
 import { CrossoversAdminPanel, CrossoverSortingButtons } from '#app/routes/schedule+/$date+/CrossoversAdminPanel.tsx'
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { cn, formatDate, formatDates, getDateTimeFormat } from '#app/utils/misc'
 import { backgroundColor, crossoverDuties } from '#app/utils/user-schedule.ts'
 import { useOptionalAdminUser } from '#app/utils/user.ts'
-import { Input } from '#app/components/ui/input.tsx'
 
 export type UserScheduleType = {
 	crossoverId: string
@@ -45,7 +45,7 @@ export type UserScheduleType = {
 	acknowledged?: boolean | null
 	volunteer?: string | null
 	trained?: boolean | null
-	training?: boolean | null
+	requestsTraining?: boolean | null
 	isCurrentSchedule: boolean
 	isCurrentUser: boolean
 	isCurrentVolunteer: boolean
@@ -82,10 +82,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			ditch: true,
 			entry: true,
 			duty: true,
-			acknowledge: true,
+			acknowledged: true,
 			volunteerId: true,
 			volunteer: { select: { quickbooks: true } },
-			training: true,
+			requestsTraining: true,
 			hours: true,
 			start: true,
 			stop: true,
@@ -153,7 +153,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			startString: formatDate(startDate),
 			isCurrentUser: userId === currentUser,
 			isCurrentVolunteer: currentUser ? volunteerId === currentUser : false,
-			isLocked: startsInLessThan48Hours(startDate),
+			isLocked: startsInLessThan48Hours(dutyStart),
 			...calcDistanceToNow(dutyStart, stop),
 		}),
 	)
@@ -181,9 +181,9 @@ export async function action({ request }: ActionFunctionArgs) {
 		case 'acknowledge':
 		case 'training':
 		case 'assistance':
-			const acknowledge = intent !== 'assistance'
-			const training = intent === 'training'
-			data = { acknowledge, training, updatedBy }
+			const acknowledged = intent !== 'assistance'
+			const requestsTraining = intent === 'training'
+			data = { acknowledged, requestsTraining, updatedBy }
 			break
 		case 'volunteer':
 			const volunteerId = String(formData.get('volunteerId'))
@@ -339,7 +339,7 @@ function UserCard({
 		distanceToNow,
 		acknowledged,
 		volunteer,
-		training,
+		requestsTraining,
 	},
 	showAdminButtons,
 }: {
@@ -389,10 +389,10 @@ function UserCard({
 						) : (
 							<div></div>
 						)}
-						{training && (
+						{requestsTraining && (
 							<Badge
 								id="requestsTraining"
-								className={`mx-1 h-8 ${backgroundColor('default')} ${foregroundColor({ requestsTraining: training })} capitalize`}
+								className={`mx-1 h-8 ${backgroundColor('default')} ${foregroundColor({ requestsTraining })} capitalize`}
 								variant="outline"
 							>
 								<Icon
@@ -436,15 +436,15 @@ function UserCard({
 									</div>
 								</Badge>
 							)}
-							{training && (
+							{requestsTraining && (
 								<Badge
 									id="trained"
-									className={`mx-1 h-8 ${backgroundColor('default')} ${foregroundColor({ requestsTraining: training })} capitalize`}
+									className={`mx-1 h-8 ${backgroundColor('default')} ${foregroundColor({ requestsTraining })} capitalize`}
 									variant="outline"
 								>
 									<Icon
 										name="diploma"
-										className={`h-6 w-6 pr-1 pt-1 ${foregroundColor({ requestsTraining: training })}`}
+										className={`h-6 w-6 pr-1 pt-1 ${foregroundColor({ requestsTraining })}`}
 										aria-hidden="true"
 									/>
 									<div>Requests Training</div>
@@ -491,11 +491,11 @@ function UserCard({
 										Acknowledge
 									</Button>
 								)}
-								{isCurrentUser && !training && (
+								{isCurrentUser && !requestsTraining && (
 									<Button
 										type="submit"
 										name="intent"
-										value="requestsTraining"
+										value="training"
 										variant="outline"
 										disabled={isLocked}
 										className="w-36 border-2 border-[#f3ab23] text-primary shadow-sm shadow-gray-700"

@@ -1,7 +1,6 @@
 import { parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { json, type ActionFunctionArgs } from '@remix-run/node'
-import { format } from 'date-fns'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { ClosedScheduleEmail } from '#app/components/email/ClosedScheduleEmail'
@@ -16,39 +15,18 @@ type EmailType = {
 	[key: string]: {
 		user: { id: string; emailSubject: string; trained: boolean }
 		schedules: {
-			portId: string
 			ditch: number
-			entry: string
+			entry: string | null
 			hours: string
 			schedule: string
 			first: boolean | null
 			crossover: boolean | null
 			last: boolean | null
+			firstId?: string | null
+			crossoverId?: string | null
 		}[]
 	}
 }
-
-const SearchResultsSchema = z.array(
-	z.object({
-		userId: z.string(),
-		emailSubject: z.string().nullish(),
-		primaryEmail: z.string().email().nullish(),
-		secondarySubject: z.string().nullish(),
-		secondaryEmail: z.string().email().nullish(),
-		trained: z.boolean(),
-		portId: z.string(),
-		ditch: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(9)),
-		position: z.preprocess(x => (x ? x : undefined), z.coerce.number().int().min(1).max(99)),
-		entry: z.string(),
-		section: z.string(),
-		hours: z.preprocess(x => (x ? x : 0), z.coerce.number().multipleOf(0.5).min(0).max(36)),
-		start: z.date().nullable(),
-		stop: z.date().nullable(),
-		first: z.boolean().nullable(),
-		crossover: z.boolean().nullable(),
-		last: z.boolean().nullable(),
-	}),
-)
 
 const ActionFormSchema = z.object({
 	intent: z.string(),
@@ -226,112 +204,94 @@ async function closeScheduleAction({ userId, schedule, formData }: ScheduleActio
 async function closedEmailsAction({ schedule, formData }: ScheduleActionArgs) {
 	const submission = parse(formData, { schema: ActionFormSchema })
 	const { id: scheduleId, date } = schedule
-	const scheduleDate = format(date, 'eeee, MMM do')
 
-	if (submission.value) {
-		const rawUsers = await prisma.$queryRaw`
-			SELECT User.id AS userId, User.emailSubject, User.primaryEmail, User.secondarySubject, User.secondaryEmail, User.trained,
-						 Port.id AS portId, Port.ditch, Port.position, Port.entry, Port.section, 
-						 UserSchedule.hours, UserSchedule.start, UserSchedule.stop,
-						 UserSchedule.first, UserSchedule.crossover, UserSchedule.last
-	  		FROM User
-	  	 INNER JOIN Port ON User.id = Port.userId
-	  	  LEFT JOIN UserSchedule
-	  	    ON User.id = UserSchedule.userId
-	  	   AND Port.id = UserSchedule.portId
-	  	   AND UserSchedule.scheduleId = ${scheduleId}
-	  	 WHERE User.active
-			   AND UserSchedule.hours > 0
-	  	 ORDER BY Port.ditch, Port.position
-		`
+	const userSchedules = await prisma.userSchedule.findMany({
+		select: {
+			user: {
+				select: {
+					id: true,
+					emailSubject: true,
+					primaryEmail: true,
+					secondarySubject: true,
+					secondaryEmail: true,
+					trained: true,
+				},
+			},
+			port: { select: { ditch: true, entry: true } },
+			hours: true,
+			start: true,
+			stop: true,
+			first: true,
+			crossover: true,
+			last: true,
+			firstId: true,
+			crossoverId: true,
+		},
+		where: { scheduleId, hours: { gt: 0 } },
+	})
 
-		const result = SearchResultsSchema.safeParse(rawUsers)
-		if (!result.success) {
-			console.error(result.error.message)
-			return null
-		}
-
-		const emails: EmailType = {}
-		result.data.forEach(
-			({
-				userId,
-				portId,
-				ditch,
-				entry,
-				hours,
-				start,
-				stop,
-				first,
-				crossover,
-				last,
-				emailSubject,
-				primaryEmail,
-				secondarySubject,
-				secondaryEmail,
+	const emails: EmailType = {}
+	userSchedules.forEach(
+		({
+			user: { id: userId, emailSubject, primaryEmail, secondarySubject, secondaryEmail, trained },
+			port,
+			hours,
+			start,
+			stop,
+			...userSchedule
+		}) => {
+			const schedule = {
+				...userSchedule,
+				...port,
+				hours: formatHours(hours),
+				schedule: formatDatesOneLiner({ start, stop }),
 				trained,
-			}) => {
-				const schedule = {
-					portId,
-					ditch,
-					entry,
-					hours: formatHours(hours),
-					schedule: formatDatesOneLiner({ start, stop }),
-					first,
-					crossover,
-					last,
-				}
-				if (primaryEmail) {
-					if (emails[primaryEmail]) emails[primaryEmail].schedules.push(schedule)
-					else
-						emails[primaryEmail] = {
-							user: { id: userId, emailSubject: emailSubject ?? primaryEmail, trained },
-							schedules: [schedule],
-						}
-				}
-				if (secondaryEmail) {
-					if (emails[secondaryEmail]) emails[secondaryEmail].schedules.push(schedule)
-					else {
-						emails[secondaryEmail] = {
-							user: { id: userId, emailSubject: secondarySubject ?? emailSubject ?? secondaryEmail, trained },
-							schedules: [schedule],
-						}
+			}
+			if (primaryEmail) {
+				if (emails[primaryEmail]) emails[primaryEmail].schedules.push(schedule)
+				else
+					emails[primaryEmail] = {
+						user: { id: userId, emailSubject: emailSubject ?? primaryEmail, trained },
+						schedules: [schedule],
+					}
+			}
+			if (secondaryEmail) {
+				if (emails[secondaryEmail]) emails[secondaryEmail].schedules.push(schedule)
+				else {
+					emails[secondaryEmail] = {
+						user: { id: userId, emailSubject: secondarySubject ?? emailSubject ?? secondaryEmail, trained },
+						schedules: [schedule],
 					}
 				}
-			},
-		)
-		const batchEmails = Object.entries(emails).map(([email, { user, schedules }]) => ({
-			from: 'clearwat@clearwaterfarmsunit1.com',
-			to: email,
-			subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
-			react: (
-				<ClosedScheduleEmail schedule={{ id: scheduleId, date: scheduleDate }} user={user} schedules={schedules} />
-			),
-		}))
+			}
+		},
+	)
+	const batchEmails = Object.entries(emails).map(([email, { user, schedules }]) => ({
+		from: 'clearwat@clearwaterfarmsunit1.com',
+		to: email,
+		subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
+		react: <ClosedScheduleEmail date={date} user={user} schedules={schedules} />,
+	}))
 
-		const resend = new Resend(process.env.RESEND_API_KEY)
-		const { data, error } = await resend.batch.send(batchEmails)
+	const resend = new Resend(process.env.RESEND_API_KEY)
+	const { data, error } = await resend.batch.send(batchEmails)
 
-		if (error) {
-			return json({ status: 'error', submission } as const, { status: 500 })
-		} else {
-			return redirectWithToast(`.`, {
-				type: 'success',
-				title: 'Success',
-				description: `${data}`,
-			})
-		}
+	if (error) {
+		return json({ status: 'error', submission } as const, { status: 500 })
 	} else {
-		return json({ status: 'error', submission } as const, { status: 400 })
+		return redirectWithToast(`.`, {
+			type: 'success',
+			title: 'Success',
+			description: `${data}`,
+		})
 	}
 }
 
 async function testEmailAction({ schedule, formData }: ScheduleActionArgs) {
 	const submission = parse(formData, { schema: ActionFormSchema })
-	const { id: scheduleId, date, start, stop } = schedule
-	const scheduleDate = format(date, 'eeee, MMM do')
+	const { date, start, stop } = schedule
 
 	const email = 'kenneth.j.mcginnis@gmail.com'
-	const userId = 'ws9g-ngss-pqaz'
 	const emailSubject = 'Ken & Emily'
 	const schedules = [
 		{
@@ -343,6 +303,8 @@ async function testEmailAction({ schedule, formData }: ScheduleActionArgs) {
 			first: true,
 			crossover: true,
 			last: true,
+			firstId: 'f34x-h9f4-56r2',
+			crossoverId: 't5b4-y62n-kwqm',
 		},
 	]
 	const batchEmails = [
@@ -350,13 +312,7 @@ async function testEmailAction({ schedule, formData }: ScheduleActionArgs) {
 			from: 'clearwat@clearwaterfarmsunit1.com',
 			to: email,
 			subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
-			react: (
-				<ClosedScheduleEmail
-					schedule={{ id: scheduleId, date: scheduleDate }}
-					user={{ id: userId, emailSubject, trained: false }}
-					schedules={schedules}
-				/>
-			),
+			react: <ClosedScheduleEmail date={date} user={{ emailSubject, trained: false }} schedules={schedules} />,
 		},
 	]
 

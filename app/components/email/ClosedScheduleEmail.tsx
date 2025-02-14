@@ -1,30 +1,30 @@
 import * as E from '@react-email/components'
 
+import { format } from 'date-fns'
 import { type CSSProperties } from 'react'
 
 const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.clearwaterfarmsunit1.com'
 export function ClosedScheduleEmail({
-	schedule: { id: scheduleId, date },
+	date,
 	schedules,
-	user: { id: userId, emailSubject, trained },
+	user: { emailSubject, trained },
 }: {
-	schedule: {
-		id: string
-		date: string
-	}
+	date: string
 	schedules: {
-		portId: string
 		ditch: number
-		entry: string
+		entry: string | null
 		hours: string
 		schedule: string
 		first: boolean | null
 		crossover: boolean | null
 		last: boolean | null
+		firstId?: string | null
+		crossoverId?: string | null
 	}[]
-	user: { id: string; emailSubject: string; trained: boolean }
+	user: { emailSubject: string; trained: boolean }
 }) {
 	const enabled = true
+	const scheduleDate = format(date, 'eeee, MMM do')
 
 	return (
 		<E.Html lang="en" dir="ltr">
@@ -79,10 +79,10 @@ export function ClosedScheduleEmail({
 									fontWeight: 'bold',
 								}}
 							>
-								We recently closed the irrigation schedule that starts on {date}.
+								We recently closed the irrigation schedule that starts on {scheduleDate}.
 							</E.Heading>
 							<E.Text style={{ fontSize: 18 }}>Here is your upcoming watering schedule:</E.Text>
-							{schedules.map(({ portId, ditch, entry, hours, schedule, first, crossover, last }) => (
+							{schedules.map(({ ditch, entry, hours, schedule, first, crossover, last, firstId, crossoverId }) => (
 								<>
 									<E.Text key={ditch} style={{ fontSize: 20, marginTop: -5 }}>
 										<b>
@@ -131,11 +131,20 @@ export function ClosedScheduleEmail({
 												support@clearwaterfarmsunit1.com | (623) 703-6126
 											</E.Text>
 
-											<ResponseButton type="first" portId={portId} acknowledged={true} requestsTraining={false} />
-											{!trained && (
-												<ResponseButton type="first" portId={portId} acknowledged={true} requestsTraining={true} />
+											{firstId && (
+												<>
+													<ResponseButton type="first" crossoverId={firstId} acknowledged={true} />
+													{!trained && (
+														<ResponseButton
+															type="first"
+															crossoverId={firstId}
+															acknowledged={true}
+															requestsTraining={true}
+														/>
+													)}
+													<ResponseButton type="first" crossoverId={firstId} acknowledged={false} />
+												</>
 											)}
-											<ResponseButton type="first" portId={portId} acknowledged={false} requestsTraining={false} />
 
 											<E.Heading as="h3" style={{ fontSize: 18, fontWeight: 'bold' }}>
 												Reference Video:
@@ -182,11 +191,20 @@ export function ClosedScheduleEmail({
 												you.
 											</E.Text>
 
-											<ResponseButton type="crossover" portId={portId} acknowledged={true} requestsTraining={false} />
-											{!trained && (
-												<ResponseButton type="crossover" portId={portId} acknowledged={true} requestsTraining={true} />
+											{crossoverId && (
+												<>
+													<ResponseButton type="crossover" crossoverId={crossoverId} acknowledged={true} />
+													{!trained && (
+														<ResponseButton
+															type="crossover"
+															crossoverId={crossoverId}
+															acknowledged={true}
+															requestsTraining={true}
+														/>
+													)}
+													<ResponseButton type="crossover" crossoverId={crossoverId} acknowledged={false} />
+												</>
 											)}
-											<ResponseButton type="crossover" portId={portId} acknowledged={false} requestsTraining={false} />
 										</E.Section>
 									)}
 
@@ -213,17 +231,16 @@ export function ClosedScheduleEmail({
 
 	function ResponseButton({
 		type,
-		portId,
+		crossoverId,
 		acknowledged,
 		requestsTraining,
 	}: {
 		type: string
-		portId: string
+		crossoverId: string
 		acknowledged: boolean
 		requestsTraining?: boolean
 	}) {
-		const responseUrl = `${baseUrl}/api/userSchedule/${acknowledged ? 'acknowledge' : 'assistance'}/${type}?userId=${userId}&scheduleId=${scheduleId}&portId=${portId}${requestsTraining ? '&requestsTraining=true' : ''}`
-
+		const responseUrl = `${baseUrl}/api/userSchedule/${acknowledged ? 'acknowledge' : 'assistance'}?crossoverId=${crossoverId}${requestsTraining ? '&requestsTraining=true' : ''}`
 		const duty = type === 'first' ? 'gate change' : 'crossover'
 
 		const { backgroundColor, buttonText, labelText } = acknowledged

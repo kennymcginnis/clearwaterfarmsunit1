@@ -1,9 +1,9 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { type ActionFunctionArgs } from '@remix-run/node'
+import { subMinutes } from 'date-fns'
 import { prisma } from '#app/utils/db.server.ts'
 import { generatePublicId } from '#app/utils/public-id.ts'
-import { assignChargesToSchedules, SearchResultsSchema, type UserScheduleType } from '#app/utils/user-schedule.ts'
-import { subMinutes } from '#node_modules/date-fns/subMinutes.js'
+import { assignDutiesToSchedules, SearchResultsSchema, type UserScheduleType } from '#app/utils/user-schedule.ts'
 
 export const action = async ({ params }: ActionFunctionArgs) => {
 	const schedule = await prisma.schedule.findFirst({
@@ -39,8 +39,8 @@ export const action = async ({ params }: ActionFunctionArgs) => {
 				duty: string
 				dutyStart?: Date | null
 
-				acknowledge?: boolean | null
-				training?: boolean | null
+				acknowledged?: boolean | null
+				requestsTraining?: boolean | null
 
 				userId?: string | null
 				volunteerId?: string | null
@@ -97,9 +97,9 @@ export const action = async ({ params }: ActionFunctionArgs) => {
 							stop,
 							duty: 'first',
 							dutyStart: subMinutes(start, 15),
-							acknowledge: acknowledgeFirst,
+							acknowledged: acknowledgeFirst,
 							volunteerId: volunteerFirst,
-							training: requestsTraining,
+							requestsTraining,
 						}
 					}
 					if (crossover && start) {
@@ -112,9 +112,9 @@ export const action = async ({ params }: ActionFunctionArgs) => {
 							stop,
 							duty: 'crossover',
 							dutyStart: subMinutes(start, 5),
-							acknowledge: acknowledgeCrossover,
+							acknowledged: acknowledgeCrossover,
 							volunteerId: volunteerCrossover,
-							training: requestsTraining,
+							requestsTraining,
 						}
 					}
 				},
@@ -151,7 +151,7 @@ export const action = async ({ params }: ActionFunctionArgs) => {
 			if (!result.success) return null
 
 			let count = 0
-			const updated: UserScheduleType[] = assignChargesToSchedules(result.data)
+			const updated: UserScheduleType[] = assignDutiesToSchedules(result.data)
 			for (let { userId, portId, first, crossover, last } of updated) {
 				if (first || crossover || last) {
 					await prisma.userSchedule.update({

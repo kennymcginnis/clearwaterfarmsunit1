@@ -81,8 +81,7 @@ export type UserScheduleType = {
 	crossover?: boolean | null
 	last?: boolean | null
 }
-
-export const assignChargesToSchedules = (schedules: UserScheduleType[]) => {
+export const assignDutiesToSchedules = (schedules: UserScheduleType[]) => {
 	const found: FirstDitchType = {
 		'1': { '10-01': { first: false, South: false, last: false } },
 		'2': { '10-01': { first: false, South: false, last: false } },
