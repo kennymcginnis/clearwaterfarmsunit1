@@ -1,11 +1,12 @@
 import { parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
 import { type ActionFunctionArgs, json, type LoaderFunctionArgs } from '@remix-run/node'
-import { useFetcher, useLoaderData } from '@remix-run/react'
+import { useFetcher, useLoaderData, useSubmit } from '@remix-run/react'
 import { useState } from 'react'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { ScheduleCreditEmail } from '#app/components/email/ScheduleCreditEmail.tsx'
+import { HoldToConfirmButton } from '#app/components/HoldToConfirmButton.tsx'
 import { QuickbooksCombobox } from '#app/components/quickbooks-combobox.tsx'
 import { Button } from '#app/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card'
@@ -28,7 +29,6 @@ type UserType = {
 	display: string
 	quickbooks: string
 	primaryEmail: string
-	emailed: boolean
 }
 type QuickbooksMapType = {
 	[quickbooks: string]: UserType
@@ -46,6 +46,7 @@ type Transaction = {
 	debit: number
 	note: string | null
 	user: UserType
+	emailed: boolean
 }
 type ChangesType = {
 	id: string
@@ -98,78 +99,125 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	return { schedule, transactions, creditsTotal, quickbooksMap, newUserOptions }
 }
 
-export async function action({ request }: ActionFunctionArgs) {
-	const updatedBy = await requireUserWithRole(request, 'admin')
+export async function action({ request, params }: ActionFunctionArgs) {
 	const formData = await request.formData()
-	const intent = formData.get('intent')
-	try {
-		switch (intent) {
-			case 'create-transaction': {
-				const submission = parse(formData, {
-					schema: z.object({
-						userId: z.string(),
-						scheduleId: z.string(),
-						date: DateSchema,
-						debit: z.preprocess(x => (x ? x : 0), z.coerce.number()),
-						note: z.string(),
-					}),
-				})
-				invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
-				await prisma.transactions.create({ data: { id: generatePublicId(), ...submission.value, updatedBy } })
-				return null
-			}
-			case 'delete-transaction': {
-				const submission = parse(formData, { schema: z.object({ id: z.string() }) })
-				invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
-				const { id } = submission.value
-				await prisma.transactions.delete({ where: { id } })
-				return null
-			}
-			case 'debit':
-			case 'note':
-				const submission = parse(formData, {
-					schema: z.object({
-						id: z.string(),
-						debit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
-						note: z.string().optional(),
-					}),
-				})
-				invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
-				const { id } = submission.value
-				if (submission.value[intent]) {
-					await prisma.transactions.update({ data: { [intent]: submission.value[intent] }, where: { id } })
-				}
-				return null
-			case 'email-transaction': {
-				const submission = parse(formData, {
-					schema: z.object({
-						date: DateSchema,
-						email: z.string(),
-						emailSubject: z.string(),
-						amount: z.string(),
-						note: z.string(),
-					}),
-				})
-				invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
+	const { id: scheduleId, date } = await prisma.schedule.findFirstOrThrow({
+		select: { id: true, date: true },
+		where: { date: params.date },
+	})
+	invariantResponse(scheduleId, 'Invalid schedule', { status: 400 })
 
-				const { date, email, emailSubject, amount, note } = submission.value
+	const updatedBy = await requireUserWithRole(request, 'admin')
+	const intent = formData.get('intent')
+	switch (intent) {
+		case 'create-transaction': {
+			const submission = parse(formData, {
+				schema: z.object({
+					userId: z.string(),
+					scheduleId: z.string(),
+					date: DateSchema,
+					debit: z.preprocess(x => (x ? x : 0), z.coerce.number()),
+					note: z.string(),
+				}),
+			})
+			invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
+			await prisma.transactions.create({ data: { id: generatePublicId(), ...submission.value, updatedBy } })
+			return null
+		}
+		case 'delete-transaction': {
+			const submission = parse(formData, { schema: z.object({ id: z.string() }) })
+			invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
+			const { id } = submission.value
+			await prisma.transactions.delete({ where: { id } })
+			return null
+		}
+		case 'debit':
+		case 'note':
+			const submission = parse(formData, {
+				schema: z.object({
+					id: z.string(),
+					debit: z.preprocess(x => (x ? x : 0), z.coerce.number()).optional(),
+					note: z.string().optional(),
+				}),
+			})
+			invariantResponse(submission?.value, 'Invalid submission', { status: 404 })
+			const { id } = submission.value
+			if (submission.value[intent]) {
+				await prisma.transactions.update({ data: { [intent]: submission.value[intent] }, where: { id } })
+			}
+			return null
+		case 'email-transaction':
+			const transactionId = String(formData.get('transactionId'))
+			const transaction = await prisma.transactions.findFirst({
+				select: {
+					user: { select: { primaryEmail: true, emailSubject: true } },
+					debit: true,
+					note: true,
+				},
+				where: { id: transactionId },
+			})
+			invariantResponse(transaction, 'Transaction not found', { status: 404 })
+			invariantResponse(transaction.user, 'Transaction missing user', { status: 404 })
+			const {
+				user: { primaryEmail, emailSubject },
+				debit,
+				note,
+			} = transaction
+			if (emailSubject && note) {
 				const payload = {
 					from: 'clearwat@clearwaterfarmsunit1.com',
-					to: email,
-					subject: `Clearwater Farms Unit 1 - Schedule ${date} Generated`,
-					react: <ScheduleCreditEmail date={date} emailSubject={emailSubject} amount={amount} note={note} />,
+					to: primaryEmail,
+					subject: `Clearwater Farms Unit 1 - Credit Issued`,
+					react: <ScheduleCreditEmail date={date} emailSubject={emailSubject} amount={debit} note={note} />,
 				}
 
 				const resend = new Resend(process.env.RESEND_API_KEY)
+				// @ts-ignore
 				const { error } = await resend.batch.send([payload])
-				if (error) return json({ status: 'error', submission } as const, { status: 500 })
-				return null
+				if (error) return json({ status: 'error', error } as const, { status: 500 })
+				await prisma.transactions.update({ data: { emailed: true }, where: { id: transactionId } })
 			}
-			default:
-				return json({ status: 'error', error: 'Invalid intent' } as const, { status: 400 })
+			return null
+		case 'email-all': {
+			const transactions = await prisma.transactions.findMany({
+				select: {
+					id: true,
+					user: { select: { primaryEmail: true, emailSubject: true } },
+					debit: true,
+					note: true,
+				},
+				where: {
+					scheduleId,
+					debit: { not: 0 },
+					emailed: false,
+				},
+			})
+			const batchEmails = transactions
+				.map(({ user, debit, note }) => {
+					if (user && debit && note) {
+						const { primaryEmail, emailSubject } = user
+						return {
+							from: 'clearwat@clearwaterfarmsunit1.com',
+							to: primaryEmail,
+							subject: `Clearwater Farms Unit 1 - Credit Issued`,
+							react: <ScheduleCreditEmail date={date} emailSubject={emailSubject ?? ''} amount={debit} note={note} />,
+						}
+					} else return false
+				})
+				.filter(Boolean)
+
+			const resend = new Resend(process.env.RESEND_API_KEY)
+			// @ts-ignore
+			const { error } = await resend.batch.send(batchEmails)
+			if (error) return json({ status: 'error', error } as const, { status: 500 })
+
+			transactions.forEach(
+				async ({ id }) => await prisma.transactions.update({ data: { emailed: true }, where: { id } }),
+			)
+			return null
 		}
-	} catch (error) {
-		return json({ status: 'error', error } as const, { status: 400 })
+		default:
+			return json({ status: 'error', error: 'Invalid intent' } as const, { status: 400 })
 	}
 }
 
@@ -289,43 +337,45 @@ export default function ViewTransactions() {
 					<div className="col-span-1 px-3 text-right text-lg">Amount</div>
 					<div className="col-span-5 px-3 text-lg">Note</div>
 					<div className="col-span-1 pl-[52px]">
-						<EmailButton id="email-unread" all={true} />
+						<EmailButton all={true} />
 					</div>
 				</div>
 				{transactions && transactions.length ? (
-					transactions.map(({ id, user, debit, note }: Transaction) => (
-						<div key={`row-${id}`} className="grid grid-cols-12 gap-1 disabled:cursor-default">
-							<Input id="display" className="col-span-1 disabled:cursor-default" disabled={true} value={user.display} />
-							<Input
-								id="quickbooks"
-								className="col-span-2 disabled:cursor-default"
-								disabled={true}
-								value={user.quickbooks}
-							/>
-							<Input
-								id="primaryEmail"
-								className="col-span-2 disabled:cursor-default"
-								disabled={true}
-								value={user.primaryEmail}
-							/>
-							<Input
-								id="debit"
-								className="col-span-1 text-right disabled:cursor-default"
-								defaultValue={USDollar.format(debit) ?? ''}
-								onBlur={e => handleChange({ id, intent: 'debit', debit: e.currentTarget.value })}
-							/>
-							<Input
-								id="note"
-								className="col-span-5 mr-1"
-								defaultValue={note ?? ''}
-								onBlur={e => handleChange({ id, intent: 'note', note: e.currentTarget.value })}
-							/>
-							<div className="col-span-1 flex flex-row gap-1">
-								<DeleteButton id={id} />
-								<EmailButton id={id} emailed={user.emailed} />
+					transactions.map(
+						({ id: transactionId, user: { display, quickbooks, primaryEmail }, debit, note, emailed }: Transaction) => (
+							<div key={`row-${transactionId}`} className="grid grid-cols-12 gap-1 disabled:cursor-default">
+								<Input id="display" className="col-span-1 disabled:cursor-default" disabled={true} value={display} />
+								<Input
+									id="quickbooks"
+									className="col-span-2 disabled:cursor-default"
+									disabled={true}
+									value={quickbooks}
+								/>
+								<Input
+									id="primaryEmail"
+									className="col-span-2 disabled:cursor-default"
+									disabled={true}
+									value={primaryEmail}
+								/>
+								<Input
+									id="debit"
+									className="col-span-1 text-right disabled:cursor-default"
+									defaultValue={USDollar.format(debit) ?? ''}
+									onBlur={e => handleChange({ id: transactionId, intent: 'debit', debit: e.currentTarget.value })}
+								/>
+								<Input
+									id="note"
+									className="col-span-5 mr-1"
+									defaultValue={note ?? ''}
+									onBlur={e => handleChange({ id: transactionId, intent: 'note', note: e.currentTarget.value })}
+								/>
+								<div className="col-span-1 flex flex-row gap-1">
+									<DeleteButton transactionId={transactionId} />
+									<EmailButton transactionId={transactionId} emailed={emailed} />
+								</div>
 							</div>
-						</div>
-					))
+						),
+					)
 				) : (
 					<div className="flex w-full justify-center py-4">
 						<h4 className="font-medium tracking-wider text-gray-600">No results found</h4>
@@ -336,12 +386,12 @@ export default function ViewTransactions() {
 	)
 }
 
-function DeleteButton({ id }: { id: string }) {
+function DeleteButton({ transactionId }: { transactionId: string }) {
 	const fetcher = useFetcher<typeof action>()
 	const dc = useDoubleCheck()
 	return (
-		<fetcher.Form method="POST" key={`delete-${id}`}>
-			<input type="hidden" name="id" value={id} />
+		<fetcher.Form method="POST" key={`delete-${transactionId}`}>
+			<input type="hidden" name="id" value={transactionId} />
 			<StatusButton
 				{...dc.getButtonProps({
 					type: 'submit',
@@ -358,24 +408,28 @@ function DeleteButton({ id }: { id: string }) {
 	)
 }
 
-function EmailButton({ id, emailed, all }: { id: string; emailed?: boolean; all?: boolean }) {
-	const fetcher = useFetcher<typeof action>()
-	const dc = useDoubleCheck()
+function EmailButton({ transactionId, emailed, all }: { transactionId?: string; emailed?: boolean; all?: boolean }) {
+	const submit = useSubmit()
+	const intent = `email-${all ? 'all' : 'transaction'}`
+	const handleSendEmailClicked = () => {
+		if (transactionId) submit({ intent, transactionId }, { method: 'POST' })
+		else submit({ intent }, { method: 'POST' })
+	}
 	return (
-		<fetcher.Form method="POST" key={`delete-${id}`}>
-			<input type="hidden" name="id" value={id} />
-			<StatusButton
-				{...dc.getButtonProps({
-					type: 'submit',
-					name: 'intent',
-					value: all ? 'email-unread' : 'email-transaction',
-				})}
-				className={`${dc.doubleCheck ? 'text-secondary' : 'text-primary'}`}
-				variant={`${dc.doubleCheck ? 'outline' : 'outline-link'}`}
-				status={fetcher.state !== 'idle' ? 'pending' : 'idle'}
-			>
-				<Icon name={`envelope-${emailed ? 'open' : 'closed'}`} className="h-4 w-4" />
-			</StatusButton>
-		</fetcher.Form>
+		<div key={`email-${all ? 'all' : transactionId}`}>
+			{emailed ? (
+				<Button variant="outline" className="border-1 border-secondary-foreground bg-green-700 hover:bg-green-700">
+					<Icon name="envelope-open" className="h-4 w-4" />
+				</Button>
+			) : (
+				<HoldToConfirmButton
+					variant="outline"
+					className="border-1 border-secondary-foreground"
+					onSubmit={handleSendEmailClicked}
+				>
+					<Icon name="envelope-closed" className="h-4 w-4" />
+				</HoldToConfirmButton>
+			)}
+		</div>
 	)
 }

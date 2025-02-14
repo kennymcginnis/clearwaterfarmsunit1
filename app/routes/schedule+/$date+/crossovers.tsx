@@ -23,6 +23,8 @@ import { CrossoversAdminPanel, CrossoverSortingButtons } from '#app/routes/sched
 import { getUserId } from '#app/utils/auth.server'
 import { prisma } from '#app/utils/db.server.ts'
 import { cn, formatDate, formatDates, getDateTimeFormat } from '#app/utils/misc'
+import { generatePublicId } from '#app/utils/public-id.ts'
+import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { backgroundColor, crossoverDuties } from '#app/utils/user-schedule.ts'
 import { useOptionalAdminUser } from '#app/utils/user.ts'
 
@@ -166,17 +168,23 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	} as const)
 }
 
-export async function action({ request }: ActionFunctionArgs) {
-	const updatedBy = (await getUserId(request)) ?? 'admin'
-
+export async function action({ request, params }: ActionFunctionArgs) {
 	const formData = await request.formData()
-	const crossoverId = String(formData.get('crossoverId'))
-	if (!crossoverId) return new Response('Missing parameters', { status: 400 })
-	const crossover = await prisma.crossover.findFirst({ where: { id: crossoverId } })
-	if (!crossover) return new Response('Crossover not found', { status: 400 })
+	const { id: scheduleId, date } = await prisma.schedule.findFirstOrThrow({
+		select: { id: true, date: true },
+		where: { date: params.date },
+	})
 
 	let data = {}
 	const intent = String(formData.get('intent'))
+	const updatedBy = (await getUserId(request)) ?? 'admin'
+
+	let crossoverId, crossover
+	if (intent !== 'issueCredits') {
+		crossoverId = String(formData.get('crossoverId'))
+		if (!crossoverId) return new Response('Missing parameters', { status: 400 })
+		crossover = await prisma.crossover.findFirst({ where: { id: crossoverId } })
+	}
 	switch (intent) {
 		case 'acknowledge':
 		case 'training':
@@ -197,7 +205,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		case 'increment': {
 			const order = Number(formData.get('order'))
 			if (order) {
-				const scheduleId = String(formData.get('scheduleId'))
+				if (!crossover) return new Response('Crossover not found', { status: 400 })
 				const newOrder = crossover.order + 1
 				await prisma.crossover.updateMany({ data: { order }, where: { scheduleId, order: newOrder } })
 				data = { order: newOrder }
@@ -210,7 +218,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		case 'decrement': {
 			const order = Number(formData.get('order'))
 			if (order) {
-				const scheduleId = String(formData.get('scheduleId'))
+				if (!crossover) return new Response('Crossover not found', { status: 400 })
 				const newOrder = crossover.order - 1
 				await prisma.crossover.updateMany({ data: { order }, where: { scheduleId, order: newOrder } })
 				data = { order: newOrder }
@@ -232,6 +240,35 @@ export async function action({ request }: ActionFunctionArgs) {
 			data = { dutyStart }
 			break
 
+		case 'issueCredits':
+			const crossovers = await prisma.crossover.findMany({
+				select: {
+					userId: true,
+					ditch: true,
+					entry: true,
+					duty: true,
+					acknowledged: true,
+					volunteerId: true,
+				},
+				where: { scheduleId, OR: [{ acknowledged: true }, { volunteerId: { not: null } }] },
+			})
+
+			await prisma.transactions.createMany({
+				data: crossovers.map(({ userId, ditch, entry, duty, acknowledged, volunteerId }) => ({
+					id: generatePublicId(),
+					userId: acknowledged ? userId : volunteerId,
+					scheduleId,
+					date,
+					debit: 5,
+					note: crossoverDuties[ditch][entry][duty],
+				})),
+			})
+			return redirectWithToast(`/schedule/${date}/credits`, {
+				type: 'success',
+				title: 'Success',
+				description: `Credits created.`,
+			})
+
 		default:
 			return new Response('Invalid intent', { status: 400 })
 	}
@@ -241,6 +278,9 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function CrossoversRoute() {
 	const { users, currentUser, status, schedule, userSchedules } = useLoaderData<typeof loader>()
+
+	const submit = useSubmit()
+	const handleIssueCredits = () => submit({ intent: 'issueCredits' }, { method: 'POST' })
 
 	const userIsAdmin = useOptionalAdminUser()
 	const [showAdminButtons, setShowAdminButtons] = useState(false)
@@ -264,9 +304,14 @@ export default function CrossoversRoute() {
 				<Icon name="droplet" className="mx-1 h-8 w-8 p-1" aria-hidden="true" />
 				<div className="flex-1" />
 				{userIsAdmin ? (
-					<Button variant="outline" className="w-48 text-secondary-foreground" onClick={toggleAdminButtons}>
-						{`${showAdminButtons ? '▲ Hide' : '▼ Show'} Admin Buttons`}
-					</Button>
+					<>
+						<Button variant="secondary" className="mr-2" onClick={handleIssueCredits}>
+							Issue Credits
+						</Button>
+						<Button variant="outline" className="w-48 text-secondary-foreground" onClick={toggleAdminButtons}>
+							{`${showAdminButtons ? '▲ Hide' : '▼ Show'} Admin Buttons`}
+						</Button>
+					</>
 				) : null}
 			</div>
 			<h5 className="mt-2 text-h5 underline">Task Confirmation and Support Options:</h5>

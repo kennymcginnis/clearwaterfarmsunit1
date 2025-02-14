@@ -1,3 +1,4 @@
+import { formatCurrency } from '#app/utils/misc.tsx'
 import * as E from '@react-email/components'
 
 const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.clearwaterfarmsunit1.com'
@@ -9,7 +10,7 @@ export function ScheduleCreditEmail({
 }: {
 	date: string
 	emailSubject: string
-	amount: string
+	amount: number
 	note: string
 }) {
 	return (
@@ -67,10 +68,18 @@ export function ScheduleCreditEmail({
 							>
 								We recently issued you a credit for the irrigation schedule dated: {date}.
 							</E.Heading>
-							<E.Text key="amount" style={{ fontSize: 16, marginTop: -5 }}>
-								You have been credited {amount} for the following reason:
-							</E.Text>
-							<E.Text style={{ fontSize: 16 }}>{note}</E.Text>
+							<E.Heading as="h3" key="amount" style={{ fontSize: 18, fontWeight: 'bold', marginTop: -5 }}>
+								{`You have been credited $${formatCurrency(amount)} for the following reason:`}
+							</E.Heading>
+							<E.CodeBlock
+								key="amount"
+								style={{ fontSize: 16, marginTop: -5 }}
+								code={note}
+								fontFamily="'CommitMono', monospace"
+								language="javascript"
+								lineNumbers={false}
+								theme={E.darcula}
+							></E.CodeBlock>
 						</E.Column>
 					</E.Row>
 				</E.Section>
