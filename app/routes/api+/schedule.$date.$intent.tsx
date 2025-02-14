@@ -1,8 +1,8 @@
 import { invariantResponse } from '@epic-web/invariant'
 import { type ActionFunctionArgs } from '@remix-run/node'
-import { subMinutes } from 'date-fns'
+// import { subMinutes } from 'date-fns'
 import { prisma } from '#app/utils/db.server.ts'
-import { generatePublicId } from '#app/utils/public-id.ts'
+// import { generatePublicId } from '#app/utils/public-id.ts'
 import { assignDutiesToSchedules, SearchResultsSchema, type UserScheduleType } from '#app/utils/user-schedule.ts'
 
 export const action = async ({ params }: ActionFunctionArgs) => {
@@ -12,7 +12,7 @@ export const action = async ({ params }: ActionFunctionArgs) => {
 	})
 	invariantResponse(schedule?.id, 'Schedule Not found', { status: 404 })
 	switch (params.intent) {
-		case 'crossover': {
+		/*case 'crossover': {
 			const userSchedules = await prisma.userSchedule.findMany({
 				select: {
 					port: { select: { ditch: true, entry: true } },
@@ -131,7 +131,7 @@ export const action = async ({ params }: ActionFunctionArgs) => {
 				}))
 			await prisma.crossover.createMany({ data })
 			return data
-		}
+		}*/
 		case 'format': {
 			const rawUsers = await prisma.$queryRaw`
 				SELECT User.id AS userId, User.display, 
