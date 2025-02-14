@@ -248,12 +248,6 @@ model UserSchedule {
   firstId     String?
   crossoverId String?
 
-  acknowledgeFirst     Boolean?
-  acknowledgeCrossover Boolean?
-  volunteerFirst       String?
-  volunteerCrossover   String?
-  requestsTraining     Boolean?
-
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 
