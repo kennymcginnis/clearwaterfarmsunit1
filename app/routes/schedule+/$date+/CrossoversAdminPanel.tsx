@@ -1,6 +1,6 @@
 import { useForm } from '@conform-to/react'
 import { Form } from '@remix-run/react'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 import * as React from 'react'
 import { Button } from '#app/components/ui/button'
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '#app/components/ui/command'
@@ -8,19 +8,19 @@ import { Icon } from '#app/components/ui/icon.tsx'
 import { Popover, PopoverContent, PopoverTrigger } from '#app/components/ui/popover'
 import { cn } from '#app/utils/misc.tsx'
 
-interface FilterProps {
-	userId: string
-	scheduleId: string
-	portId: string
-	type: string
+export const CrossoversAdminPanel = ({
+	users,
+	crossoverId,
+	userId,
+}: {
+	crossoverId: string
 	users: { id: string; quickbooks: string }[]
-}
-
-const CrossoversAdminPanel: React.FC<FilterProps> = ({ users, userId, scheduleId, portId, type }) => {
+	userId: string | null
+}) => {
 	const [open, setOpen] = React.useState(false)
 	const [volunteerId, setVolunteerId] = React.useState('')
 
-	const [form] = useForm({ id: `userId=${userId}&scheduleId=${scheduleId}&portId=${portId}` })
+	const [form] = useForm({ id: `crossoverId=${crossoverId}` })
 
 	const userMap = new Map(users.map(user => [user.id, user.quickbooks]))
 	const quickbooksMap = new Map(users.map(user => [user.quickbooks.toLowerCase(), user.id]))
@@ -60,10 +60,7 @@ const CrossoversAdminPanel: React.FC<FilterProps> = ({ users, userId, scheduleId
 				</PopoverContent>
 			</Popover>
 			<Form method="POST" {...form.props}>
-				<input type="hidden" name="userId" value={userId} />
-				<input type="hidden" name="portId" value={portId} />
-				<input type="hidden" name="scheduleId" value={scheduleId} />
-				<input type="hidden" name="type" value={type} />
+				<input type="hidden" name="crossoverId" value={crossoverId} />
 				<input type="hidden" name="volunteerId" value={volunteerId} />
 				<Button
 					type="submit"
@@ -81,6 +78,7 @@ const CrossoversAdminPanel: React.FC<FilterProps> = ({ users, userId, scheduleId
 					name="intent"
 					value="acknowledge"
 					variant="outline"
+					disabled={!userId}
 					className="ml-1 border-2 border-green-700 text-primary shadow-sm shadow-gray-700"
 				>
 					<Icon name="check-circled" className={`h-6 w-6 text-green-700`} aria-hidden="true" />
@@ -90,6 +88,7 @@ const CrossoversAdminPanel: React.FC<FilterProps> = ({ users, userId, scheduleId
 					name="intent"
 					value="assistance"
 					variant="outline"
+					disabled={!userId}
 					className="ml-1 border-2 border-red-700 text-primary shadow-sm shadow-gray-700"
 				>
 					<Icon name="cross-circled" className={`h-6 w-6 text-red-700`} aria-hidden="true" />
@@ -99,4 +98,45 @@ const CrossoversAdminPanel: React.FC<FilterProps> = ({ users, userId, scheduleId
 	)
 }
 
-export default CrossoversAdminPanel
+export const CrossoverSortingButtons = ({
+	crossoverId,
+	scheduleId,
+	order,
+	start,
+}: {
+	crossoverId: string
+	scheduleId?: string
+	order?: number
+	start?: number
+}) => {
+	const [form] = useForm({ id: `crossoverId=${crossoverId}` })
+	return (
+		<Form method="POST" {...form.props}>
+			<input type="hidden" name="scheduleId" value={scheduleId} />
+			<input type="hidden" name="crossoverId" value={crossoverId} />
+			<input type="hidden" name="order" value={order} />
+			<input type="hidden" name="start" value={start} />
+			{/* <div className="w-full pr-2 text-center">{order}</div> */}
+			<Button
+				type="submit"
+				name="intent"
+				value="decrement"
+				variant="outline"
+				disabled={order === 1}
+				className="ml-1 rounded-b-none border-2 text-primary shadow-sm shadow-gray-700"
+			>
+				<ChevronUp />
+			</Button>
+			<Button
+				type="submit"
+				name="intent"
+				value="increment"
+				variant="outline"
+				disabled={order === 10}
+				className="ml-1 rounded-t-none border-2 text-primary shadow-sm shadow-gray-700"
+			>
+				<ChevronDown />
+			</Button>
+		</Form>
+	)
+}

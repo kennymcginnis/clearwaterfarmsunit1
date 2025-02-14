@@ -127,7 +127,7 @@ export const assignChargesToSchedules = (schedules: UserScheduleType[]) => {
 }
 
 const last = 'Please do not pull your checks after irrigation.'
-export const crossovers: {
+export const crossoverDuties: {
 	[key: string]: { [key: string]: { [key: string]: string } }
 } = {
 	'1': {
@@ -174,7 +174,7 @@ export const crossovers: {
 	},
 	'7': {
 		'10-03': {
-			first: 'Ditch 6 at Ditch 7 (Open Ditch 7, then Close Ditch 6)',
+			first: 'Ditch 6 to Ditch 7 (Open Ditch 7, then Close Ditch 6)',
 			crossover: 'Crossover @ Ditch 7 and Orangewood',
 			last,
 		},

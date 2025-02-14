@@ -2,7 +2,7 @@ import { invariantResponse } from '@epic-web/invariant'
 import { type Prisma } from '@prisma/client'
 import { type ActionFunctionArgs, json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node'
 import { Form, useLoaderData, useSubmit } from '@remix-run/react'
-import { add, parseISO } from 'date-fns'
+import { add, parseISO, subMinutes } from 'date-fns'
 import { useState } from 'react'
 import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Badge } from '#app/components/ui/badge'
@@ -21,8 +21,24 @@ import {
 	type UserScheduleType,
 } from '#app/utils/user-schedule.ts'
 
+export type CrossoverCreateManyInput = {
+	id: string
+	scheduleId: string
+	portId?: string | null
+	duty: string
+	userId?: string | null
+	acknowledge?: boolean | null
+	volunteer?: string | null
+	training?: boolean | null
+	hours?: number
+	start?: Date | string | null
+	stop?: Date | string | null
+	updatedBy?: string
+	updatedAt?: Date | string
+}
 type SidesType = { begins: Date; ends: Date; hours: number; irrigators: number; [key: string]: Date | number }
 type TimelinesType = { total: SidesType; '10-01': SidesType; '10-03': SidesType; [key: string]: SidesType }
+
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const userId = await requireUserWithRole(request, 'admin')
 	invariantResponse(params.date, 'Date parameter Not found', { status: 404 })
@@ -192,6 +208,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	const direction = formData.get('direction')?.toString()
 	const timestamp = formData.get('timestamp')?.toString()
 	const scheduleId = formData.get('scheduleId')?.toString()
+	invariantResponse(scheduleId, 'ScheduleId Not found', { status: 404 })
 
 	const schedule = await prisma.schedule.findFirst({ select: { date: true }, where: { id: scheduleId } })
 	invariantResponse(schedule?.date, 'Schedule Not found', { status: 404 })
@@ -212,15 +229,78 @@ export async function action({ request }: ActionFunctionArgs) {
 		case 'submit': {
 			const timeline = await prisma.timeline.findMany({ where: { scheduleId, hours: { gt: 0 } } })
 			timeline.forEach(async ({ userId, scheduleId, portId, start, stop, first, crossover, last }) => {
-				try {
-					await prisma.userSchedule.update({
-						data: { start, stop, first, crossover, last },
-						where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
-					})
-				} catch (error) {
-					console.error(error)
+				await prisma.userSchedule.update({
+					data: { start, stop, first, crossover, last },
+					where: { userId_scheduleId_portId: { userId, scheduleId, portId } },
+				})
+			})
+
+			type CrossoverCreateManyInput = {
+				ditch: number
+				entry: string
+				duty: string
+				dutyStart?: Date | null
+				userId?: string | null
+				hours?: number
+				start?: Date | string | null
+				stop?: Date | string | null
+			}
+			const crossoversFound: { [key: string]: CrossoverCreateManyInput } = {
+				'9.10-01.first': { ditch: 9, entry: '10-01', duty: 'first' },
+				'9.10-01.crossover': { ditch: 9, entry: '10-01', duty: 'crossover' },
+				'1.10-01.first': { ditch: 1, entry: '10-01', duty: 'first' },
+				'1.10-01.crossover': { ditch: 1, entry: '10-01', duty: 'crossover' },
+				'2.10-01.first': { ditch: 2, entry: '10-01', duty: 'first' },
+				'2.10-01.crossover': { ditch: 2, entry: '10-01', duty: 'crossover' },
+				'3.10-01.first': { ditch: 3, entry: '10-01', duty: 'first' },
+				'3.10-01.crossover': { ditch: 3, entry: '10-01', duty: 'crossover' },
+				'4.10-01.first': { ditch: 4, entry: '10-01', duty: 'first' },
+				'4.10-01.crossover': { ditch: 4, entry: '10-01', duty: 'crossover' },
+				'9.10-03.first': { ditch: 9, entry: '10-03', duty: 'first' },
+				'9.10-03.crossover': { ditch: 9, entry: '10-03', duty: 'crossover' },
+				'5.10-03.first': { ditch: 5, entry: '10-03', duty: 'first' },
+				'5.10-03.crossover': { ditch: 5, entry: '10-03', duty: 'crossover' },
+				'6.10-03.first': { ditch: 6, entry: '10-03', duty: 'first' },
+				'6.10-03.crossover': { ditch: 6, entry: '10-03', duty: 'crossover' },
+				'7.10-03.first': { ditch: 7, entry: '10-03', duty: 'first' },
+				'7.10-03.crossover': { ditch: 7, entry: '10-03', duty: 'crossover' },
+				'8.10-03.first': { ditch: 8, entry: '10-03', duty: 'first' },
+				'8.10-03.crossover': { ditch: 8, entry: '10-03', duty: 'crossover' },
+			}
+
+			timeline.forEach(({ ditch, entry, first, crossover, userId, hours, start, stop }) => {
+				if (first && start) {
+					const original = crossoversFound[`${ditch}.${entry}.first`]
+					crossoversFound[`${ditch}.${entry}.first`] = {
+						...original,
+						userId,
+						duty: 'first',
+						dutyStart: subMinutes(start, 15),
+						hours,
+						start,
+						stop,
+					}
+				}
+				if (crossover && start) {
+					const original = crossoversFound[`${ditch}.${entry}.crossover`]
+					crossoversFound[`${ditch}.${entry}.crossover`] = {
+						...original,
+						userId,
+						duty: 'crossover',
+						dutyStart: subMinutes(start, 5),
+						hours,
+						start,
+						stop,
+					}
 				}
 			})
+
+			const data = Object.values(crossoversFound)
+				.sort((a, b) => (a.start && b.start ? new Date(a.start).getTime() - new Date(b.start).getTime() : 0))
+				.map((crossover, index) => ({ id: generatePublicId(), order: index + 1, scheduleId, ...crossover }))
+
+			await prisma.crossover.deleteMany({ where: { scheduleId } })
+			await prisma.crossover.createMany({ data })
 			await prisma.timeline.deleteMany()
 
 			return redirectWithToast(`/schedule/${schedule.date}/timeline`, {

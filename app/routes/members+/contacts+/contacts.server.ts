@@ -12,7 +12,6 @@ import {
 	getItemTableParams,
 } from '#app/utils/pagination/contacts'
 import { generatePublicId } from '#app/utils/public-id'
-import { redirectWithToast } from '#app/utils/toast.server'
 import { saveUserAudit } from '#app/utils/user-audit.ts'
 import { EmailSchema, PhoneNumberSchema } from '#app/utils/user-validation'
 
@@ -179,69 +178,48 @@ export async function action({ request }: ActionFunctionArgs) {
 						to: JSON.stringify({ type: submission.value.phoneType, number: submission.value.phoneNumber }),
 						updatedBy,
 					})
-					return redirectWithToast('.', {
-						type: 'success',
-						title: 'Success',
-						description: `New phone number added.`,
-					})
 				}
 				return null
 			case 'delete-phone':
-				try {
-					const current = await prisma.userPhone.findFirst({
-						select: { type: true, number: true },
-						where: { id: phoneId },
-					})
-					await prisma.userPhone.delete({ where: { id: phoneId } })
+				const current = await prisma.userPhone.findFirst({
+					select: { type: true, number: true },
+					where: { id: phoneId },
+				})
+				await prisma.userPhone.delete({ where: { id: phoneId } })
+				await saveUserAudit({
+					userId,
+					field: 'delete-phone',
+					from: JSON.stringify(current),
+					to: 'deleted',
+					updatedBy,
+				})
+				return null
+			default:
+				const replace = {
+					emailSubject: 'primary-subject',
+					primaryEmail: 'primary-email',
+					secondarySubject: 'secondary-subject',
+					secondaryEmail: 'secondary-email',
+				}
+
+				// @ts-ignore
+				if (submission.value[intent]) {
+					// @ts-ignore
+					const current = await prisma.user.findFirst({ select: { [intent]: true }, where: { id: userId } })
+					// @ts-ignore
+					await prisma.user.update({ data: { [intent]: submission.value[intent] }, where: { id: userId } })
 					await saveUserAudit({
 						userId,
-						field: 'delete-phone',
-						from: JSON.stringify(current),
-						to: 'deleted',
+						// @ts-ignore
+						field: replace?.[intent] ?? intent,
+						// @ts-ignore
+						from: current?.[intent],
+						// @ts-ignore
+						to: submission.value[intent],
 						updatedBy,
 					})
-					return redirectWithToast('.', {
-						type: 'success',
-						title: 'Success',
-						description: `Phone number deleted.`,
-					})
-				} catch (error) {
-					return null
 				}
-			default:
-				try {
-					const replace = {
-						emailSubject: 'primary-subject',
-						primaryEmail: 'primary-email',
-						secondarySubject: 'secondary-subject',
-						secondaryEmail: 'secondary-email',
-					}
-
-					// @ts-ignore
-					if (submission.value[intent]) {
-						// @ts-ignore
-						const current = await prisma.user.findFirst({ select: { [intent]: true }, where: { id: userId } })
-						// @ts-ignore
-						await prisma.user.update({ data: { [intent]: submission.value[intent] }, where: { id: userId } })
-						await saveUserAudit({
-							userId,
-							// @ts-ignore
-							field: replace?.[intent] ?? intent,
-							// @ts-ignore
-							from: current?.[intent],
-							// @ts-ignore
-							to: submission.value[intent],
-							updatedBy,
-						})
-					}
-					return redirectWithToast('.', {
-						type: 'success',
-						title: 'Success',
-						description: `${intent} updated.`,
-					})
-				} catch (error) {
-					return null
-				}
+				return null
 		}
 	} catch (error) {
 		return json({ status: 'error', error } as const, { status: 400 })

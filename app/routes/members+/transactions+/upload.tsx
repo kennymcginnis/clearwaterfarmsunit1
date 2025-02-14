@@ -63,14 +63,14 @@ export async function action({ request }: ActionFunctionArgs) {
 				missingUsers.push(transaction.userId)
 			}
 		}
-		return redirectWithToast('/members/transactions', {
+		return redirectWithToast('', {
 			type: 'success',
 			title: 'Success',
 			description: JSON.stringify(missingUsers),
 		})
 	} catch (error) {
 		console.error({ error })
-		return redirectWithToast('/members/transactions', {
+		return redirectWithToast('', {
 			type: 'error',
 			title: 'Error',
 			description: JSON.stringify(error),
