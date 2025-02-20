@@ -300,7 +300,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 			// add order to Crossover
 			const data = Object.values(crossoversFound)
-				.sort((a, b) => (a.start && b.start ? new Date(a.start).getTime() - new Date(b.start).getTime() : 0))
+				.sort((a, b) => new Date(a?.start ?? new Date()).getTime() - new Date(b?.start ?? new Date()).getTime())
 				.map((crossover, index) => ({
 					id: crossover.id ?? generatePublicId(),
 					order: index + 1,

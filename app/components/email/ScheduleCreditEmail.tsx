@@ -1,18 +1,21 @@
-import { formatCurrency } from '#app/utils/misc.tsx'
 import * as E from '@react-email/components'
+import { formatCurrency } from '#app/utils/misc.tsx'
 
 const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.clearwaterfarmsunit1.com'
 export function ScheduleCreditEmail({
 	date,
 	emailSubject,
-	amount,
-	note,
+	credits,
 }: {
 	date: string
 	emailSubject: string
-	amount: number
-	note: string
+	credits: {
+		amount: number
+		note: string
+	}[]
 }) {
+	const creditsTotal = credits.reduce((agg, cur) => ((agg += cur.amount), agg), 0)
+
 	return (
 		<E.Html lang="en" dir="ltr">
 			<E.Container>
@@ -66,20 +69,31 @@ export function ScheduleCreditEmail({
 									fontWeight: 'bold',
 								}}
 							>
-								We recently issued you a credit for the irrigation schedule dated: {date}.
+								{credits.length === 1 ? (
+									<>We recently issued you a credit for the irrigation schedule dated: {date}.</>
+								) : (
+									<>
+										We recently issued you {credits.length} credits totalling ${formatCurrency(creditsTotal)} for the
+										irrigation schedule dated: {date}.
+									</>
+								)}
 							</E.Heading>
-							<E.Heading as="h3" key="amount" style={{ fontSize: 18, fontWeight: 'bold', marginTop: -5 }}>
-								{`You have been credited $${formatCurrency(amount)} for the following reason:`}
-							</E.Heading>
-							<E.CodeBlock
-								key="amount"
-								style={{ fontSize: 16, marginTop: -5 }}
-								code={note}
-								fontFamily="'CommitMono', monospace"
-								language="javascript"
-								lineNumbers={false}
-								theme={E.darcula}
-							></E.CodeBlock>
+							{credits.map(({ amount, note }, index) => (
+								<>
+									<E.Heading as="h3" key="amount" style={{ fontSize: 18, fontWeight: 'bold' }}>
+										You have been credited ${formatCurrency(amount)} for the following reason:
+									</E.Heading>
+									<E.CodeBlock
+										key={`amount-${index}`}
+										style={{ fontSize: 16, marginTop: -5 }}
+										code={note}
+										fontFamily="'CommitMono', monospace"
+										language="javascript"
+										lineNumbers={false}
+										theme={E.darcula}
+									/>
+								</>
+							))}
 						</E.Column>
 					</E.Row>
 				</E.Section>

@@ -54,6 +54,15 @@ type ChangesType = {
 	debit?: string
 	note?: string
 }
+type AggregateEmails = {
+	[primaryEmail: string]: {
+		emailSubject: string
+		credits: {
+			amount: number
+			note: string
+		}[]
+	}
+}
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	await requireUserWithRole(request, 'admin')
@@ -158,9 +167,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
 			})
 			invariantResponse(transaction, 'Transaction not found', { status: 404 })
 			invariantResponse(transaction.user, 'Transaction missing user', { status: 404 })
+
 			const {
 				user: { primaryEmail, emailSubject },
-				debit,
+				debit: amount,
 				note,
 			} = transaction
 			if (emailSubject && note) {
@@ -168,7 +178,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 					from: 'clearwat@clearwaterfarmsunit1.com',
 					to: primaryEmail,
 					subject: `Clearwater Farms Unit 1 - Credit Issued`,
-					react: <ScheduleCreditEmail date={date} emailSubject={emailSubject} amount={debit} note={note} />,
+					react: <ScheduleCreditEmail date={date} emailSubject={emailSubject} credits={[{ amount, note }]} />,
 				}
 
 				const resend = new Resend(process.env.RESEND_API_KEY)
@@ -190,21 +200,33 @@ export async function action({ request, params }: ActionFunctionArgs) {
 					scheduleId,
 					debit: { not: 0 },
 					emailed: false,
+					user: { primaryEmail: { not: 'missing' } },
 				},
 			})
-			const batchEmails = transactions
-				.map(({ user, debit, note }) => {
-					if (user && debit && note) {
-						const { primaryEmail, emailSubject } = user
-						return {
-							from: 'clearwat@clearwaterfarmsunit1.com',
-							to: primaryEmail,
-							subject: `Clearwater Farms Unit 1 - Credit Issued`,
-							react: <ScheduleCreditEmail date={date} emailSubject={emailSubject ?? ''} amount={debit} note={note} />,
+
+			const emails: AggregateEmails = transactions.reduce(
+				(agg, { debit: amount, note, user: { primaryEmail, emailSubject } }) => {
+					if (agg[primaryEmail]) {
+						agg[primaryEmail].credits.push({ amount, note })
+					} else {
+						agg[primaryEmail] = {
+							emailSubject: emailSubject ?? primaryEmail,
+							credits: [{ amount, note }],
 						}
-					} else return false
-				})
-				.filter(Boolean)
+					}
+					return agg
+				},
+				{} as AggregateEmails,
+			)
+
+			const batchEmails = Object.entries(emails).map(([primaryEmail, { emailSubject, credits }]) => {
+				return {
+					from: 'clearwat@clearwaterfarmsunit1.com',
+					to: primaryEmail,
+					subject: `Clearwater Farms Unit 1 - Credit Issued`,
+					react: <ScheduleCreditEmail date={date} emailSubject={emailSubject ?? ''} credits={credits} />,
+				}
+			})
 
 			const resend = new Resend(process.env.RESEND_API_KEY)
 			// @ts-ignore

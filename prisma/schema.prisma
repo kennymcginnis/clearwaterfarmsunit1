@@ -23,8 +23,8 @@ model User {
 
   userAddress UserAddress[]
 
-  emailSubject     String?
-  primaryEmail     String? @unique
+  emailSubject     String  @default("Neighbor")
+  primaryEmail     String  @default("missing")
   secondarySubject String?
   secondaryEmail   String?
 
@@ -35,6 +35,7 @@ model User {
   schedules    UserSchedule[]
   crossover    Crossover[]    @relation("user")
   volunteer    Crossover[]    @relation("volunteer")
+  // notifications Notification[]
 
   defaultHours Float @default(0)
 
@@ -49,6 +50,25 @@ model User {
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt
 }
+
+// model Notification {
+//   id Int @id
+
+//   userId String
+//   user   User   @relation(fields: [userId], references: [id])
+
+//   type    String
+//   message String
+//   isRead  Boolean @default(false)
+
+//   updatedBy String   @default("Admin")
+//   updatedAt DateTime @updatedAt
+
+//   relatedId   Int? // Optional ID to relate to another entity (e.g., post, comment)
+//   relatedType String? // Optional type of related entity (e.g., 'Post', 'Comment')
+
+//   @@index([userId])
+// }
 
 model UserAudit {
   userId    String
@@ -129,23 +149,23 @@ model Port {
 }
 
 model Transactions {
-  id String @id
+  id     String @id
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 
-  date     String
-  debit    Float   @default(0)
-  credit   Float   @default(0)
-  quantity Float?
-  rate     Int?
-  note     String?
+  date    String
+  debit   Float   @default(0)
+  credit  Float   @default(0)
+  type    String  @default("Irrigation")
+  note    String  @default("")
+  emailed Boolean @default(false)
 
-  user       User?     @relation(fields: [userId], references: [id])
-  userId     String?
   scheduleId String?
   schedule   Schedule? @relation(fields: [scheduleId], references: [id])
-
+  quantity   Float?
+  rate       Int?
   ditch      Int?
   waterStart DateTime?
-  emailed    Boolean?  @default(false)
 
   updatedBy String   @default("Admin")
   updatedAt DateTime @updatedAt

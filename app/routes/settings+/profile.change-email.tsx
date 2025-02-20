@@ -102,18 +102,7 @@ export async function action({ request }: LoaderFunctionArgs) {
 	const formData = await request.formData()
 	await validateCSRF(formData, request.headers)
 	const submission = await parse(formData, {
-		schema: ChangeEmailSchema.superRefine(async (data, ctx) => {
-			const existingUser = await prisma.user.findUnique({
-				where: { primaryEmail: data.email },
-			})
-			if (existingUser) {
-				ctx.addIssue({
-					path: ['email'],
-					code: z.ZodIssueCode.custom,
-					message: 'This email is already in use.',
-				})
-			}
-		}),
+		schema: ChangeEmailSchema,
 		async: true,
 	})
 

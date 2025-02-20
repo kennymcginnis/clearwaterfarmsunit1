@@ -19,7 +19,7 @@ import { DateSchema } from '#app/utils/user-validation'
 const TransactionsUploadSchema = z.array(
 	z.object({
 		id: z.string().optional(),
-		userId: z.string().optional(),
+		userId: z.string(),
 		scheduleId: z.string().optional(),
 		ditch: z.preprocess(x => (x ? x : null), z.coerce.number()).optional(),
 		date: DateSchema,
@@ -45,7 +45,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		const missingUsers = []
 		for (let { id, ...transaction } of result.data) {
 			try {
-				if (!id) id = '__new_transaction__'
+				id ??= '__new_transaction__'
 				await prisma.transactions.upsert({
 					where: { id },
 					create: {

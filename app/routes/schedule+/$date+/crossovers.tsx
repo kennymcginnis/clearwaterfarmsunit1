@@ -252,11 +252,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				},
 				where: { scheduleId, OR: [{ acknowledged: true }, { volunteerId: { not: null } }] },
 			})
-
 			await prisma.transactions.createMany({
 				data: crossovers.map(({ userId, ditch, entry, duty, acknowledged, volunteerId }) => ({
 					id: generatePublicId(),
-					userId: acknowledged ? userId : volunteerId,
+					userId: (acknowledged ? userId : volunteerId) ?? 'missing',
 					scheduleId,
 					date,
 					debit: 5,

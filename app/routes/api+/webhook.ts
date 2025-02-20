@@ -24,7 +24,7 @@ export async function action({ request }: ActionFunctionArgs) {
 					select: { id: true, primaryEmail: true },
 					where: { stripeId: customer as string },
 				})
-				if (!primaryEmail) {
+				if (!primaryEmail && customer_email) {
 					await prisma.user.update({
 						data: { primaryEmail: customer_email },
 						where: { id: userId },
